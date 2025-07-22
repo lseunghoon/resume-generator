@@ -1,0 +1,122 @@
+.main-cta {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 16px 32px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.main-cta:hover {
+  background: #174bbd;
+}
+
+.main-cta:disabled {
+  background-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.chip {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.feature-card {
+  background: #fff;
+  border-radius: 40px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  padding: 32px 24px;
+  width: 260px;
+  text-align: left;
+}
+.feature-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.feature-card p {
+  font-size: 16px;
+  color: #333;
+}
+
+.landing-root {
+  background: linear-gradient(180deg, #eaeffa 0%, #fff 100%);
+  min-height: 100vh;
+}
+.landing-header {
+  display: flex;
+  align-items: center;
+  height: 111px;
+  padding: 0 2rem;
+}
+.landing-hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem 0 1rem;
+  text-align: center;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.landing-title {
+  font-size: 4vw;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
+  letter-spacing: -1px;
+}
+.landing-sub {
+  font-size: 1.5vw;
+  margin-bottom: 2rem;
+  color: #333;
+}
+.landing-features {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .landing-title {
+    font-size: 36px;
+  }
+  .landing-sub {
+    font-size: 18px;
+  }
+  .landing-features {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .feature-card {
+    width: 100% !important;
+    min-width: 0;
+  }
+}
+
+.secondary-cta {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.secondary-cta:hover {
+  background-color: #e5e7eb;
+} 

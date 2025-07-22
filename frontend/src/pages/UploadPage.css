@@ -1,0 +1,134 @@
+.upload-page-container {
+  max-width: 1043px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: 'Pretendard Variable', sans-serif;
+  color: #000;
+}
+
+.upload-header {
+  margin-bottom: 60px;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.upload-main {
+  width: 100%;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-label {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.form-input {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.form-input::placeholder {
+  color: #a0a2a3;
+}
+
+.chip-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chip {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.form-description {
+  font-size: 16px;
+  color: #a0a2a3;
+  margin: 0;
+}
+
+.form-description-small {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.file-attach-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.file-attach-button {
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-count {
+  font-size: 14px;
+  color: #3b82f6;
+}
+
+.submit-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.submit-button {
+  width: 100%;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.submit-button:not(:disabled) {
+    background-color: #111827; /* 피그마에 지정된 활성화 색상이 없어서 임의의 색상으로 지정 */
+    color: #fff;
+}
+
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  text-align: left;
+} 
