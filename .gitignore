@@ -158,3 +158,5 @@ dist-ssr/
 # Frontend
 .env.local
 .env.*.local 
+
+gen-lang-client-0050370482-fa51721528ae.json

@@ -6,6 +6,57 @@ const api = axios.create({
   // baseURL: 'https://90fd-125-143-163-25.ngrok-free.app//api/v1'
 });
 
+// 직무 정보 추출을 위한 새로운 API 함수
+export const extractJobInfo = async (jobPostingUrl) => {
+  try {
+    const response = await api.post('/extract-job', { 
+      jobPostingUrl 
+    });
+    return response.data;
+  } catch (err) {
+    console.error('직무 정보 추출 오류:', err);
+    throw err;
+  }
+};
+
+// 세션 생성 및 파일 업로드 (기존 upload 함수 개선)
+export const createSession = async (jobPostingUrl, selectedJob, uploadedFiles, question, jobDescription, selectedQuestions = []) => {
+  try {
+    const formData = new FormData();
+    
+    // 다중 파일 처리
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      uploadedFiles.forEach(file => {
+        formData.append('files', file);
+      });
+    } else {
+      // 파일이 없으면 더미 파일 생성
+      const dummyFile = new File([''], 'no-file.txt', { type: 'text/plain' });
+      formData.append('files', dummyFile);
+    }
+    
+    // 사용자가 선택한 문항들을 사용, 없으면 기본값 사용
+    const defaultQuestions = ['성장과정', '성격의 장단점', '지원동기 및 포부'];
+    const questionsToUse = selectedQuestions.length > 0 ? selectedQuestions : defaultQuestions;
+    
+    const jsonData = {
+      jobDescriptionUrl: jobPostingUrl,
+      questions: questionsToUse, // 선택된 질문들 사용
+      lengths: Array(questionsToUse.length).fill('500'), // 문항 수에 맞춰 길이 배열 생성
+      selectedJob,
+      additionalQuestion: question,
+      jobDescription // 이미 크롤링된 데이터를 전달하여 중복 크롤링 방지
+    };
+    formData.append('data', JSON.stringify(jsonData));
+    
+    const response = await api.post('/upload', formData);
+    return response.data;
+  } catch (err) {
+    console.error('세션 생성 오류:', err);
+    throw err;
+  }
+};
+
 export const upload = async (formData) => {
   console.log('API: /upload 호출 시도');
   try {
@@ -40,13 +91,18 @@ export const generate = async (data) => {
   }
 };
 
+// 자기소개서 수정
 export const revise = async (data) => {
   try {
-    // data: { sessionId, q_idx, action, prompt? }
-    const response = await api.post('/revise', data);
+    const response = await api.post('/revise', {
+      sessionId: data.sessionId,
+      questionIndex: data.questionIndex, // q_idx에서 questionIndex로 변경
+      action: data.action || 'revise',
+      revisionRequest: data.revisionRequest // prompt에서 revisionRequest로 변경
+    });
     return response.data;
   } catch (err) {
-    console.error('API /revise 호출 오류:', err);
+    console.error('자기소개서 수정 오류:', err);
     throw err;
   }
 };

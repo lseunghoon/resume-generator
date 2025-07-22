@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from sqlalchemy.dialects.postgresql import UUID, TEXT
 import json
 
 load_dotenv()
@@ -62,10 +61,10 @@ class Question(Base):
     length = Column(Integer, nullable=False)
     
     # 버전 히스토리 시스템
-    answer_history = Column(TEXT, nullable=True)  # JSON 형태의 문자열로 답변 리스트 저장
+    answer_history = Column(Text, nullable=True)  # JSON 형태의 문자열로 답변 리스트 저장
     current_version_index = Column(Integer, default=0, nullable=False)
 
-    session_id = Column(UUID(as_uuid=True), ForeignKey('sessions.id'), nullable=False)
+    session_id = Column(String(36), ForeignKey('sessions.id'), nullable=False)
     
     # 관계 설정
     session = relationship("Session", back_populates="questions")
@@ -84,7 +83,7 @@ class Question(Base):
         }
 
 # 데이터베이스 연결 설정
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/resume_ai')
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///resume_ai.db')
 
 # 엔진 생성
 engine = create_engine(DATABASE_URL)

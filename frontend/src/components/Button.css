@@ -1,3 +1,96 @@
+/* Base button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 30px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-height: 58px;
+  padding: 14px 24px;
+}
+
+/* Primary button (active state) */
+.btn-primary {
+  background: #1e82ff;
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(.btn-disabled) {
+  background: #1a73e6;
+}
+
+/* Secondary button (inactive/disabled state) */
+.btn-secondary {
+  background: #f0f0f2;
+  color: #a6a6a7;
+}
+
+.btn-secondary:hover:not(.btn-disabled) {
+  background: #e6e6e8;
+}
+
+/* Outline button */
+.btn-outline {
+  background: transparent;
+  color: #1e82ff;
+  border: 1px solid #1e82ff;
+}
+
+.btn-outline:hover:not(.btn-disabled) {
+  background: #1e82ff;
+  color: #ffffff;
+}
+
+/* Disabled state */
+.btn-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Size variants */
+.btn-small {
+  min-height: 44px;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 8px 16px;
+}
+
+.btn-large {
+  min-height: 64px;
+  font-size: 22px;
+  line-height: 32px;
+  padding: 16px 32px;
+}
+
+/* Width variants */
+.btn-full-width {
+  width: 100%;
+}
+
+/* Icon button */
+.btn-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  padding: 0;
+  min-height: auto;
+}
+
+/* Focus states for accessibility */
+.btn:focus {
+  outline: 2px solid #1e82ff;
+  outline-offset: 2px;
+}
+
+/* Legacy styles for existing components */
 .main-cta {
   background: #2563eb;
   color: #fff;
@@ -17,92 +110,6 @@
   background-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
-}
-
-.chip {
-  display: inline-block;
-  background: #f3f4f6;
-  color: #9ca3af;
-  border-radius: 999px;
-  padding: 8px 20px;
-  font-size: 14px;
-  margin-right: 4px;
-}
-
-.feature-card {
-  background: #fff;
-  border-radius: 40px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-  padding: 32px 24px;
-  width: 260px;
-  text-align: left;
-}
-.feature-card h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-.feature-card p {
-  font-size: 16px;
-  color: #333;
-}
-
-.landing-root {
-  background: linear-gradient(180deg, #eaeffa 0%, #fff 100%);
-  min-height: 100vh;
-}
-.landing-header {
-  display: flex;
-  align-items: center;
-  height: 111px;
-  padding: 0 2rem;
-}
-.landing-hero {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem 0 1rem;
-  text-align: center;
-  min-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.landing-title {
-  font-size: 4vw;
-  font-weight: 700;
-  margin: 2rem 0 1rem;
-  letter-spacing: -1px;
-}
-.landing-sub {
-  font-size: 1.5vw;
-  margin-bottom: 2rem;
-  color: #333;
-}
-.landing-features {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem 1rem;
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
-}
-@media (max-width: 900px) {
-  .landing-title {
-    font-size: 36px;
-  }
-  .landing-sub {
-    font-size: 18px;
-  }
-  .landing-features {
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-  }
-  .feature-card {
-    width: 100% !important;
-    min-width: 0;
-  }
 }
 
 .secondary-cta {
