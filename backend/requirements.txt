@@ -7,6 +7,12 @@ requests==2.31.0
 python-dotenv==1.0.1
 PyPDF2==3.0.1
 python-docx==1.1.0
-SQLAlchemy==2.0.27
-psycopg2-binary==2.9.9
-alembic==1.13.1 
+SQLAlchemy>=2.0.35
+psycopg[binary]>=3.0.0
+alembic>=1.13.1
+# 웹 크롤링 관련
+selenium==4.16.0
+webdriver-manager==4.0.1
+# OCR 관련 라이브러리 (GCP Vision AI)
+Pillow>=10.0.0
+google-cloud-vision>=3.4.0

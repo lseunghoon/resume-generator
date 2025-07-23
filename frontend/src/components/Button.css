@@ -5,68 +5,81 @@
   justify-content: center;
   border: none;
   border-radius: 12px;
-  font-family: 'Pretendard Variable', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-weight: 600;
-  font-size: 20px;
-  line-height: 30px;
+  font-size: 16px;
+  line-height: 1.5;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s ease;
-  min-height: 58px;
-  padding: 14px 24px;
+  min-height: 48px;
+  padding: 12px 24px;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Primary button (active state) */
 .btn-primary {
-  background: #1e82ff;
+  background: #3b82f6;
   color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover:not(.btn-disabled) {
-  background: #1a73e6;
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Secondary button (inactive/disabled state) */
 .btn-secondary {
-  background: #f0f0f2;
-  color: #a6a6a7;
+  background: #f8f9fa;
+  color: #64748b;
+  border: 1px solid #e1e5e9;
 }
 
 .btn-secondary:hover:not(.btn-disabled) {
-  background: #e6e6e8;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
 }
 
 /* Outline button */
 .btn-outline {
   background: transparent;
-  color: #1e82ff;
-  border: 1px solid #1e82ff;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
 }
 
 .btn-outline:hover:not(.btn-disabled) {
-  background: #1e82ff;
+  background: #3b82f6;
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Disabled state */
 .btn-disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
   pointer-events: none;
 }
 
 /* Size variants */
 .btn-small {
-  min-height: 44px;
-  font-size: 18px;
-  line-height: 28px;
+  min-height: 40px;
+  font-size: 14px;
   padding: 8px 16px;
 }
 
 .btn-large {
-  min-height: 64px;
-  font-size: 22px;
-  line-height: 32px;
+  min-height: 56px;
+  font-size: 18px;
   padding: 16px 32px;
 }
 
@@ -77,53 +90,146 @@
 
 /* Icon button */
 .btn-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   padding: 0;
   min-height: auto;
 }
 
 /* Focus states for accessibility */
 .btn:focus {
-  outline: 2px solid #1e82ff;
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
 /* Legacy styles for existing components */
 .main-cta {
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
   border: none;
-  border-radius: 16px;
-  font-size: 20px;
-  font-weight: 700;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
   padding: 16px 32px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
 .main-cta:hover {
-  background: #174bbd;
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
 }
 
 .main-cta:disabled {
-  background-color: #e5e7eb;
+  background-color: #e1e5e9;
   color: #9ca3af;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .secondary-cta {
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border: 1px solid #d1d5db;
+  background-color: #f8f9fa;
+  color: #374151;
+  border: 1px solid #e1e5e9;
   padding: 12px 24px;
   border-radius: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .secondary-cta:hover {
-  background-color: #e5e7eb;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1f2937;
+} 
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .button {
+    padding: 14px 24px;
+    font-size: 14px;
+    min-height: 48px;
+  }
+
+  .button.small {
+    padding: 10px 16px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .button.large {
+    padding: 16px 32px;
+    font-size: 16px;
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    padding: 12px 20px;
+    font-size: 14px;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .button.small {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 32px;
+    width: auto;
+  }
+
+  .button.large {
+    padding: 14px 28px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+
+  .button:disabled {
+    opacity: 0.6;
+  }
+}
+
+/* 터치 친화적 스타일 */
+@media (hover: none) and (pointer: coarse) {
+  .button {
+    min-height: 44px;
+    transition: all 0.2s ease;
+  }
+
+  .button:active {
+    transform: scale(0.98);
+  }
+
+  .button:not(:disabled):active {
+    opacity: 0.8;
+  }
+}
+
+/* 웹뷰 최적화 */
+@media (max-width: 390px) {
+  .button {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .button.small {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 28px;
+  }
+
+  .button.large {
+    padding: 12px 24px;
+    font-size: 14px;
+    min-height: 44px;
+  }
 } 

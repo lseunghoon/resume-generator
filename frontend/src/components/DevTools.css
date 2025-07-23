@@ -1,0 +1,151 @@
+.dev-tools {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.dev-tools-toggle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.dev-tools-toggle:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+}
+
+.dev-tools-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 320px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  font-size: 14px;
+}
+
+.dev-tools-panel h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.dev-tools-section {
+  margin-bottom: 20px;
+}
+
+.dev-tools-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+}
+
+.dev-tools-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-tools-control label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dev-tools-control input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.dev-tools-description {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.dev-tools-info ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.dev-tools-info li {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.dev-tools-status p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .dev-tools {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .dev-tools-toggle {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .dev-tools-panel {
+    width: 280px;
+    padding: 16px;
+    bottom: 50px;
+  }
+
+  .dev-tools-panel h3 {
+    font-size: 15px;
+  }
+
+  .dev-tools-section h4 {
+    font-size: 13px;
+  }
+
+  .dev-tools-info li {
+    font-size: 11px;
+  }
+
+  .dev-tools-status p {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dev-tools-panel {
+    width: 260px;
+    padding: 12px;
+  }
+
+  .dev-tools-panel h3 {
+    font-size: 14px;
+  }
+
+  .dev-tools-section h4 {
+    font-size: 12px;
+  }
+} 

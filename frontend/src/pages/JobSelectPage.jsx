@@ -6,24 +6,43 @@ import './JobSelectPage.css';
 
 const JobSelectPage = () => {
   const [selectedJob, setSelectedJob] = useState('');
-  const [customJob, setCustomJob] = useState('');
   const [isCustomInput, setIsCustomInput] = useState(false);
+  const [customJob, setCustomJob] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [extractedJobs, setExtractedJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [jobPostingUrl, setJobPostingUrl] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const { jobPostingUrl, extractedJobs: receivedJobs, jobDescription } = location.state || {};
 
   useEffect(() => {
-    // 전달받은 추출된 직무 정보가 있으면 사용
-    if (receivedJobs && receivedJobs.length > 0) {
-      setExtractedJobs(receivedJobs);
+    console.log('JobSelectPage - location.state:', location.state);
+    console.log('JobSelectPage - jobPostingUrl from state:', location.state?.jobPostingUrl);
+    
+    if (location.state) {
+      setJobPostingUrl(location.state.jobPostingUrl || '');
+      setExtractedJobs(location.state.extractedJobs || []);
+      setJobDescription(location.state.jobDescription || '');
+      
+      // 이전에 선택한 직무가 있으면 복원
+      if (location.state.selectedJob) {
+        setSelectedJob(location.state.selectedJob);
+      }
+      
+      // 이전에 직접 입력한 직무가 있으면 복원
+      if (location.state.customJob) {
+        setCustomJob(location.state.customJob);
+        setIsCustomInput(true);
+      }
+      
+      console.log('JobSelectPage - Setting jobPostingUrl to:', location.state.jobPostingUrl || '');
       setIsLoading(false);
     } else {
-      // 백업으로 이전 페이지로 리다이렉트
-      navigate('/', { replace: true });
+      // 상태가 없으면 홈으로 이동
+      console.log('JobSelectPage - No state, redirecting to home');
+      navigate('/');
     }
-  }, [receivedJobs, navigate]);
+  }, [location.state, navigate]);
 
   const handleJobSelect = (job) => {
     setSelectedJob(job);
@@ -41,23 +60,44 @@ const JobSelectPage = () => {
   };
 
   const handleNext = () => {
-    const finalJob = isCustomInput ? customJob.trim() : selectedJob;
-    if (finalJob) {
+    const finalJob = isCustomInput ? customJob : selectedJob;
+    if (finalJob && finalJob.trim()) {
       navigate('/file-upload', { 
         state: { 
           jobPostingUrl, 
           selectedJob: finalJob,
-          jobDescription
+          jobDescription,
+          extractedJobs,
+          customJob: isCustomInput ? customJob : null // 직접 입력한 직무도 전달
         } 
       });
     }
   };
 
-  const handleBack = () => {
-    navigate('/');
+  const handleGoBack = () => {
+    console.log('JobSelectPage - Going back with state:', { jobPostingUrl });
+    navigate('/', { 
+      state: { 
+        jobPostingUrl,
+        fromJobSelect: true // 뒤로가기 표시
+      } 
+    });
+  };
+
+  const handleGoForward = () => {
+    const finalJob = isCustomInput ? customJob : selectedJob;
+    if (finalJob && finalJob.trim()) {
+      handleNext();
+    }
   };
 
   const isNextEnabled = isCustomInput ? customJob.trim() !== '' : selectedJob !== '';
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && isNextEnabled) {
+      handleNext();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -72,15 +112,21 @@ const JobSelectPage = () => {
   }
 
   return (
-    <div className="job-select-page">
-      <Header progress={50} />
+    <div className="job-select-page" onKeyPress={handleKeyPress} tabIndex={0}>
+      <Header 
+        progress={50} 
+        showNavigation={true}
+        canGoBack={true}
+        canGoForward={isNextEnabled}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        currentStep="2"
+        totalSteps="4"
+      />
       
       <div className="page-content">
         <div className="content-wrapper">
           <div className="form-section">
-            <button className="back-button" onClick={handleBack}>
-              ←
-            </button>
             
             <div className="form-content">
               <div className="form-header">
@@ -126,11 +172,7 @@ const JobSelectPage = () => {
                     value={customJob}
                     onChange={handleCustomJobChange}
                     disabled={!isCustomInput}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && isNextEnabled) {
-                        handleNext();
-                      }
-                    }}
+                    onKeyPress={handleKeyPress}
                   />
                 </div>
               </div>
@@ -153,4 +195,5 @@ const JobSelectPage = () => {
   );
 };
 
-export default JobSelectPage; 
+export default JobSelectPage;
+

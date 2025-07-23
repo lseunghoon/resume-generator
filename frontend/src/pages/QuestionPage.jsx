@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Button from '../components/Button';
@@ -7,32 +7,40 @@ import { createSession, generate } from '../services/api';
 import './QuestionPage.css';
 
 const QuestionPage = () => {
-  const [question, setQuestion] = useState('');
-  const [selectedQuestions, setSelectedQuestions] = useState([
-    '지원 동기는 무엇인가요?'
-  ]); // 기본 선택된 문항
+  const [question, setQuestion] = useState(''); // 직접 입력 질문
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [jobPostingUrl, setJobPostingUrl] = useState('');
+  const [selectedJob, setSelectedJob] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [jobDescription, setJobDescription] = useState('');
+  const [extractedJobs, setExtractedJobs] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const { jobPostingUrl, selectedJob, uploadedFiles, jobDescription } = location.state || {};
 
-  // 추천 질문 chip 버튼들
+  useEffect(() => {
+    if (location.state) {
+      setJobPostingUrl(location.state.jobPostingUrl || '');
+      setSelectedJob(location.state.selectedJob || '');
+      setUploadedFiles(location.state.uploadedFiles || []);
+      setJobDescription(location.state.jobDescription || '');
+      setExtractedJobs(location.state.extractedJobs || []);
+      
+      // 이전에 입력한 질문이 있으면 복원
+      if (location.state.question) {
+        setQuestion(location.state.question);
+      }
+    } else {
+      // 상태가 없으면 홈으로 이동
+      navigate('/');
+    }
+  }, [location.state, navigate]);
+
+  // 추천 질문 chip 버튼들 (Figma 디자인 기준)
   const recommendedQuestions = [
-    '성장과정을 말씀해주세요',
     '성격의 장단점은 무엇인가요?',
-    '학업이 관련된 경험을 설명해주세요',
-    '실제 경험과 극복 과정에 대해 말씀해주세요'
-  ];
-
-  // 기본 자기소개서 문항들
-  const defaultQuestions = [
-    '지원 동기는 무엇인가요?',
-    '성장과정을 말씀해주세요',
-    '성격의 장단점은 무엇인가요?',
-    '학업이 관련된 경험을 설명해주세요',
-    '프로젝트 경험을 설명해주세요',
-    '입사 후 포부를 말씀해주세요'
+    '입사 후 포부는 무엇인가요?',
+    '직무와 관련된 경험을 설명해주세요',
+    '실패 경험과 극복 과정에 대해 말해주세요'
   ];
 
   const handleQuestionChange = (e) => {
@@ -40,72 +48,48 @@ const QuestionPage = () => {
   };
 
   const handleChipClick = (chipQuestion) => {
-    if (question.trim() === '') {
-      setQuestion(chipQuestion);
-    } else {
-      setQuestion(question + ' ' + chipQuestion);
-    }
-  };
-
-  const handleQuestionSelect = (questionText) => {
-    if (selectedQuestions.includes(questionText)) {
-      // 이미 선택된 경우 제거 (단, 최소 1개는 유지)
-      if (selectedQuestions.length > 1) {
-        setSelectedQuestions(selectedQuestions.filter(q => q !== questionText));
-      }
-    } else {
-      // 최대 3개까지만 선택 가능
-      if (selectedQuestions.length < 3) {
-        setSelectedQuestions([...selectedQuestions, questionText]);
-      }
-    }
-  };
-
-  const handleAddCustomQuestion = (customQuestion) => {
-    if (customQuestion.trim() && selectedQuestions.length < 3) {
-      setSelectedQuestions([...selectedQuestions, customQuestion.trim()]);
-    }
-    setShowQuestionModal(false);
+    setQuestion(chipQuestion); // chip 클릭 시 입력창에 해당 질문 설정
   };
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    
-    try {
-      // 선택된 문항들과 추가 질문을 함께 전달
-      const sessionResponse = await createSession(
-        jobPostingUrl, 
-        selectedJob, 
-        uploadedFiles,
-        question.trim(),
-        jobDescription,
-        selectedQuestions // 선택된 자기소개서 문항들 추가
-      );
-      
-      const sessionId = sessionResponse.sessionId;
-      if (!sessionId) {
-        throw new Error('세션 ID를 받아오지 못했습니다.');
-      }
-      
-      await generate({ sessionId });
-      
-      navigate(`/result?sessionId=${sessionId}`);
-      
-    } catch (err) {
-      console.error('자기소개서 생성 실패:', err);
-      setIsGenerating(false);
-      alert('자기소개서 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+    if (!question.trim()) {
+      alert('질문을 입력해주세요.');
+      return;
     }
-  };
 
-  const handleBack = () => {
-    navigate('/file-upload', { 
-      state: { 
-        jobPostingUrl, 
+    setIsGenerating(true);
+
+    try {
+      // API 호출을 위한 데이터 준비
+      const sessionData = {
+        jobPostingUrl,
         selectedJob,
+        uploadedFiles: uploadedFiles || [],
+        questions: [question], // 사용자가 입력한 질문
         jobDescription
-      } 
-    });
+      };
+
+      console.log('QuestionPage - Creating session with data:', sessionData);
+      const response = await createSession(sessionData);
+      console.log('QuestionPage - Session created:', response);
+      
+      // 세션 ID를 사용하여 결과 페이지로 이동
+      console.log('QuestionPage - Navigating to result with sessionId:', response.session_id);
+      navigate('/result', { 
+        state: { 
+          sessionId: response.session_id,
+          jobPostingUrl,
+          selectedJob,
+          jobDescription,
+          question // 입력한 질문도 함께 전달
+        } 
+      });
+    } catch (error) {
+      console.error('자기소개서 생성 오류:', error);
+      alert(error.message || '자기소개서 생성에 실패했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRestart = () => {
@@ -113,76 +97,62 @@ const QuestionPage = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !isGenerating) {
+    if (e.key === 'Enter' && !isGenerating && question.trim()) {
+      handleGenerate();
+    }
+  };
+
+  const handleGoBack = () => {
+    navigate('/file-upload', { 
+      state: { 
+        jobPostingUrl, 
+        selectedJob,
+        jobDescription,
+        extractedJobs,
+        uploadedFiles, // 업로드된 파일들 전달
+        question // 입력한 질문 전달
+      } 
+    });
+  };
+
+  const handleGoForward = () => {
+    if (question.trim()) {
       handleGenerate();
     }
   };
 
   return (
     <div className="question-page">
-      <Header progress={90} showRestartButton={true} onRestart={handleRestart} />
+      <Header 
+        progress={90} 
+        showNavigation={true}
+        canGoBack={true}
+        canGoForward={!!question.trim() && !isGenerating}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        currentStep="4"
+        totalSteps="4"
+      />
 
       <div className="page-content">
         <div className="content-wrapper">
           <div className="form-section">
-            <button className="back-button" onClick={() => navigate('/file-upload', {
-              state: { jobPostingUrl, selectedJob, jobDescription }
-            })}>
-              ←
-            </button>
-
-            <div className="form-content">
-              {/* 자기소개서 문항 선택 섹션 */}
-              <div className="question-selection-section">
-                <h2>생성하고자 하는 문항을<br/>선택하거나 직접 입력해주세요</h2>
+            {/* 질문 입력 섹션 - Figma 디자인 기준 */}
+            <div className="question-input-section">
+              <div className="form-header">
+                <h1>생성하고자 하는 문항을<br/>선택하거나 직접 입력해주세요</h1>
                 <p>자기소개서 문항 중 하나를 골라 입력해보세요.</p>
-
-                <div className="question-chips">
-                  {defaultQuestions.map((questionText, index) => (
-                    <button
-                      key={index}
-                      className={`question-chip ${selectedQuestions.includes(questionText) ? 'selected' : ''}`}
-                      onClick={() => handleQuestionSelect(questionText)}
-                    >
-                      {questionText}
-                    </button>
-                  ))}
-                </div>
-
-                {selectedQuestions.length < 3 && (
-                  <button 
-                    className="add-question-button"
-                    onClick={() => setShowQuestionModal(true)}
-                  >
-                    + 질문 추가
-                  </button>
-                )}
-
-                <div className="selected-questions">
-                  <h3>선택된 문항 ({selectedQuestions.length}/3)</h3>
-                  <ul>
-                    {selectedQuestions.map((q, index) => (
-                      <li key={index}>
-                        {index + 1}. {q}
-                        {selectedQuestions.length > 1 && (
-                          <button 
-                            className="remove-question"
-                            onClick={() => handleQuestionSelect(q)}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </div>
 
-              {/* 추가 질문 입력 섹션 */}
-              <div className="form-header">
-                <h1>추가로 궁금한 점이 있나요?</h1>
-                <p>자기소개서 작성 시 추가로 고려했으면 하는 사항이나 궁금한 점을 자유롭게 작성해 주세요.<br/>
-                <span className="optional-text">입력하지 않고 바로 생성할 수도 있습니다.</span></p>
+              {/* 질문 직접 입력 */}
+              <div className="question-input">
+                <Input
+                  placeholder="지원 동기는 무엇인가요?"
+                  value={question}
+                  onChange={handleQuestionChange}
+                  onKeyPress={handleKeyPress}
+                  disabled={isGenerating}
+                />
               </div>
 
               {/* 추천 질문 chips */}
@@ -198,23 +168,13 @@ const QuestionPage = () => {
                   </button>
                 ))}
               </div>
-
-              <div className="question-input">
-                <Input
-                  placeholder="예) 해당 회사의 핵심 가치를 반영해 주세요."
-                  value={question}
-                  onChange={handleQuestionChange}
-                  onKeyPress={handleKeyPress}
-                  disabled={isGenerating}
-                />
-              </div>
             </div>
           </div>
 
           <div className="action-section">
             <Button
-              variant="primary"
-              disabled={isGenerating}
+              variant={question.trim() ? 'primary' : 'secondary'}
+              disabled={isGenerating || !question.trim()}
               onClick={handleGenerate}
               className="generate-button"
             >
@@ -229,49 +189,13 @@ const QuestionPage = () => {
               <p className="generating-details">
                 • 채용 공고 분석 중<br/>
                 • 직무 정보 반영 중<br/>
-                {uploadedFiles && uploadedFiles.length > 0 && '• 기존 자기소개서 분석 중'}<br/>
+                {uploadedFiles && uploadedFiles.length > 0 && '• 기존 자기소개서/이력서 분석 중'}<br/>
                 • 맞춤형 답변 생성 중...
               </p>
             </div>
           )}
         </div>
       </div>
-
-      {/* 추가 질문 모달 */}
-      {showQuestionModal && (
-        <div className="modal-overlay">
-          <div className="question-modal">
-            <h3>추가로 생성하고자 하는<br/>문항을 입력해주세요</h3>
-            <p>자기소개서 문항은 최대 3개까지 추가 가능합니다.</p>
-            <input
-              type="text"
-              placeholder="예) 지원 동기는 무엇인가요?"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleAddCustomQuestion(e.target.value);
-                }
-              }}
-            />
-            <div className="modal-buttons">
-              <Button 
-                variant="primary" 
-                onClick={(e) => {
-                  const input = e.target.closest('.question-modal').querySelector('input');
-                  handleAddCustomQuestion(input.value);
-                }}
-              >
-                추가 생성하기
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowQuestionModal(false)}
-              >
-                다음에 할게요
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

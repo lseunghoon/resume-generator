@@ -1,120 +1,125 @@
-import axios from 'axios';
+import { mockApi, isMockApiEnabled } from './mockApi';
 
-// baseURL을 localhost:5000으로 수정
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api/v1',
-  // baseURL: 'https://90fd-125-143-163-25.ngrok-free.app//api/v1'
-});
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-// 직무 정보 추출을 위한 새로운 API 함수
-export const extractJobInfo = async (jobPostingUrl) => {
-  try {
-    const response = await api.post('/extract-job', { 
-      jobPostingUrl 
+// Mock API 모드 확인
+const useMock = isMockApiEnabled();
+
+// 공통 API 호출 함수
+const apiCall = async (endpoint, options = {}) => {
+  if (useMock) {
+    console.log('Mock API 모드 사용 중');
+    return mockApi[endpoint] || (() => Promise.reject(new Error('Mock API not found')));
+  }
+
+  const url = `${API_BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API 호출 실패: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// 직무 정보 추출
+export const extractJobInfo = async (url) => {
+  if (useMock) {
+    return mockApi.extractJobInfo(url);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/extract-job`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || '직무 정보 추출에 실패했습니다.');
+  }
+
+  return response.json();
+};
+
+// 세션 생성 (자기소개서 생성)
+export const createSession = async (data) => {
+  if (useMock) {
+    return mockApi.createSession(data);
+  }
+
+  const formData = new FormData();
+  
+  // 파일들 추가
+  if (data.uploadedFiles && data.uploadedFiles.length > 0) {
+    data.uploadedFiles.forEach((file, index) => {
+      formData.append('files', file);
     });
-    return response.data;
-  } catch (err) {
-    console.error('직무 정보 추출 오류:', err);
-    throw err;
   }
+
+  // JSON 데이터 추가
+  const jsonData = {
+    job_posting_url: data.jobPostingUrl,
+    selected_job: data.selectedJob,
+    questions: data.questions,
+    job_description: data.jobDescription
+  };
+  
+  formData.append('data', JSON.stringify(jsonData));
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/sessions`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || '자기소개서 생성에 실패했습니다.');
+  }
+
+  return response.json();
 };
 
-// 세션 생성 및 파일 업로드 (기존 upload 함수 개선)
-export const createSession = async (jobPostingUrl, selectedJob, uploadedFiles, question, jobDescription, selectedQuestions = []) => {
-  try {
-    const formData = new FormData();
-    
-    // 다중 파일 처리
-    if (uploadedFiles && uploadedFiles.length > 0) {
-      uploadedFiles.forEach(file => {
-        formData.append('files', file);
-      });
-    } else {
-      // 파일이 없으면 더미 파일 생성
-      const dummyFile = new File([''], 'no-file.txt', { type: 'text/plain' });
-      formData.append('files', dummyFile);
-    }
-    
-    // 사용자가 선택한 문항들을 사용, 없으면 기본값 사용
-    const defaultQuestions = ['성장과정', '성격의 장단점', '지원동기 및 포부'];
-    const questionsToUse = selectedQuestions.length > 0 ? selectedQuestions : defaultQuestions;
-    
-    const jsonData = {
-      jobDescriptionUrl: jobPostingUrl,
-      questions: questionsToUse, // 선택된 질문들 사용
-      lengths: Array(questionsToUse.length).fill('500'), // 문항 수에 맞춰 길이 배열 생성
-      selectedJob,
-      additionalQuestion: question,
-      jobDescription // 이미 크롤링된 데이터를 전달하여 중복 크롤링 방지
-    };
-    formData.append('data', JSON.stringify(jsonData));
-    
-    const response = await api.post('/upload', formData);
-    return response.data;
-  } catch (err) {
-    console.error('세션 생성 오류:', err);
-    throw err;
+// 자기소개서 결과 조회
+export const getCoverLetter = async (sessionId) => {
+  if (useMock) {
+    return mockApi.getCoverLetter(sessionId);
   }
+
+  return apiCall(`/api/v1/sessions/${sessionId}/cover-letter`);
 };
 
-export const upload = async (formData) => {
-  console.log('API: /upload 호출 시도');
-  try {
-    const response = await api.post('/upload', formData);
-    console.log('API: /upload 응답 받음');
-    return response.data;
-  } catch (err) {
-    console.error('🔴 API 서비스 내부에서 오류가 발생했습니다!');
-    if (axios.isAxiosError(err)) {
-      console.error('Axios 오류 상세 정보 (services/api.js):', {
-        message: err.message,
-        code: err.code,
-        response: err.response ? {
-          status: err.response.status,
-          data: err.response.data,
-        } : '응답 없음',
-      });
-    } else {
-      console.error('일반 오류 상세 정보 (services/api.js):', err);
-    }
-    throw err;
+// 문항 추가
+export const addQuestion = async (sessionId, question) => {
+  if (useMock) {
+    return mockApi.addQuestion(sessionId, question);
   }
+
+  return apiCall(`/api/v1/sessions/${sessionId}/questions`, {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  });
 };
 
-export const generate = async (data) => {
-  try {
-    const response = await api.post('/generate', data);
-    return response.data;
-  } catch (err) {
-    console.error('API /generate 호출 오류:', err);
-    throw err;
+// 답변 수정
+export const reviseAnswer = async (sessionId, questionId, revision) => {
+  if (useMock) {
+    return mockApi.reviseAnswer(sessionId, questionId, revision);
   }
+
+  return apiCall(`/api/v1/sessions/${sessionId}/questions/${questionId}/revise`, {
+    method: 'POST',
+    body: JSON.stringify({ revision }),
+  });
 };
 
-// 자기소개서 수정
-export const revise = async (data) => {
-  try {
-    const response = await api.post('/revise', {
-      sessionId: data.sessionId,
-      questionIndex: data.questionIndex, // q_idx에서 questionIndex로 변경
-      action: data.action || 'revise',
-      revisionRequest: data.revisionRequest // prompt에서 revisionRequest로 변경
-    });
-    return response.data;
-  } catch (err) {
-    console.error('자기소개서 수정 오류:', err);
-    throw err;
-  }
-};
-
-export const getSession = async (sessionId) => {
-  try {
-    const response = await api.get(`/session/${sessionId}`);
-    return response.data;
-  } catch (err) {
-    console.error('API /session/:id 호출 오류:', err);
-    throw err;
-  }
-}
-
-export default api;
+// Mock API 모드 제어 함수들
+export { useMockApi, disableMockApi, isMockApiEnabled } from './mockApi';

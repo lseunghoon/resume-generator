@@ -5,6 +5,7 @@ const Input = ({
   placeholder, 
   value, 
   onChange, 
+  onKeyPress,
   disabled = false,
   error,
   hasIcon = false,
@@ -21,6 +22,7 @@ const Input = ({
             placeholder={placeholder}
             value={value}
             onChange={onChange}
+            onKeyPress={onKeyPress}
             disabled={disabled}
             className="input-field"
           />
