@@ -1,12 +1,14 @@
+"""
+SQLAlchemy 모델 정의 (리팩토링 버전)
+"""
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
-import os
-from dotenv import load_dotenv
 import json
 
-load_dotenv()
+from config.settings import get_database_config
 
 Base = declarative_base()
 
@@ -82,11 +84,11 @@ class Question(Base):
             'has_redo': self.current_version_index < len(history) - 1
         }
 
-# 데이터베이스 연결 설정
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///resume_ai.db')
+# 데이터베이스 설정 가져오기
+db_config = get_database_config()
 
 # 엔진 생성
-engine = create_engine(DATABASE_URL)
+engine = create_engine(db_config['url'], echo=db_config['echo'])
 
 # 세션 팩토리 생성
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -95,7 +97,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-# 데이터베이스 세션 의존성
+# 데이터베이스 세션 제너레이터
 def get_db():
     db = SessionLocal()
     try:

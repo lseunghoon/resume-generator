@@ -10,8 +10,10 @@ const FileUploadPage = () => {
   const [error, setError] = useState('');
   const [jobPostingUrl, setJobPostingUrl] = useState('');
   const [selectedJob, setSelectedJob] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
   const [extractedJobs, setExtractedJobs] = useState([]);
+  const [htmlContent, setHtmlContent] = useState(''); // htmlContent 추가
+  const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
+  const [contentId, setContentId] = useState(null); // contentId 추가
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,8 +22,10 @@ const FileUploadPage = () => {
     if (location.state) {
       setJobPostingUrl(location.state.jobPostingUrl || '');
       setSelectedJob(location.state.selectedJob || '');
-      setJobDescription(location.state.jobDescription || '');
       setExtractedJobs(location.state.extractedJobs || []);
+      setHtmlContent(location.state.htmlContent || ''); // htmlContent 설정
+      setPreloadedContent(location.state.preloadedContent || null); // 프리로딩된 콘텐츠 설정
+      setContentId(location.state.contentId || null); // contentId 설정
       
       // 이전에 업로드한 파일들이 있으면 복원
       if (location.state.uploadedFiles && location.state.uploadedFiles.length > 0) {
@@ -40,7 +44,7 @@ const FileUploadPage = () => {
   }, [location.state, navigate]);
 
   const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const maxFileSize = 50 * 1024 * 1024; // 50MB (백엔드와 동일하게 설정)
   const maxFiles = 3;
 
   const validateFile = (file) => {
@@ -50,7 +54,7 @@ const FileUploadPage = () => {
     }
     
     if (file.size > maxFileSize) {
-      setError('파일 크기는 10MB 이하여야 합니다.');
+      setError('파일 크기는 50MB 이하여야 합니다.');
       return false;
     }
     
@@ -68,7 +72,14 @@ const FileUploadPage = () => {
     const fileArray = Array.from(files);
     const validFiles = [];
     
+    // 디버깅: 파일 크기 로깅
+    console.log('=== 파일 업로드 디버깅 ===');
+    let totalSize = 0;
+    
     for (const file of fileArray) {
+      console.log(`파일: ${file.name}, 크기: ${file.size} bytes (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      totalSize += file.size;
+      
       if (uploadedFiles.length + validFiles.length >= maxFiles) {
         setError(`최대 ${maxFiles}개까지만 업로드 가능합니다.`);
         break;
@@ -83,6 +94,9 @@ const FileUploadPage = () => {
         });
       }
     }
+    
+    console.log(`총 파일 크기: ${totalSize} bytes (${(totalSize / 1024 / 1024).toFixed(2)} MB)`);
+    console.log('========================');
     
     if (validFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...validFiles]);
@@ -133,16 +147,18 @@ const FileUploadPage = () => {
     // 업로드된 파일들의 실제 File 객체들을 전달
     const fileObjects = uploadedFiles.map(f => f.file);
     
-    navigate('/question', { 
-      state: { 
-        jobPostingUrl, 
-        selectedJob,
-        uploadedFiles: fileObjects, // 다중 파일 배열로 전달
-        jobDescription,
-        extractedJobs,
-        question: location.state?.question || '' // 이전에 입력한 질문 전달
-      } 
-    });
+          navigate('/question', { 
+        state: { 
+          jobPostingUrl, 
+          selectedJob,
+          uploadedFiles: fileObjects, // 다중 파일 배열로 전달
+          extractedJobs,
+          htmlContent, // htmlContent 전달
+          preloadedContent, // 프리로딩된 콘텐츠 전달
+          contentId, // contentId 전달
+          question: location.state?.question || '' // 이전에 입력한 질문 전달
+        } 
+      });
   };
 
   const handleSkip = () => {
@@ -151,8 +167,10 @@ const FileUploadPage = () => {
         jobPostingUrl, 
         selectedJob,
         uploadedFiles: [], // 빈 배열
-        jobDescription,
         extractedJobs,
+        htmlContent, // htmlContent 전달
+        preloadedContent, // 프리로딩된 콘텐츠 전달
+        contentId, // contentId 전달
         question: location.state?.question || '' // 이전에 입력한 질문 전달
       } 
     });
@@ -163,7 +181,7 @@ const FileUploadPage = () => {
       state: { 
         jobPostingUrl,
         extractedJobs,
-        jobDescription,
+        htmlContent, // htmlContent 전달
         selectedJob, // 선택한 직무 전달
         customJob: null // 직접 입력한 직무는 null로 전달
       } 

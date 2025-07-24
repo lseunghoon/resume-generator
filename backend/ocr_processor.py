@@ -7,9 +7,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 from google.cloud import vision
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from utils.chrome_driver import safe_create_chrome_driver
 import time
 import os
 
@@ -31,14 +29,14 @@ class OCRProcessor:
     def detect_images_in_webpage(self, url: str) -> List[str]:
         """웹페이지에서 채용공고 관련 이미지들을 감지하고 URL 목록 반환"""
         try:
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            # 새로운 안전한 ChromeDriver 사용
+            driver = safe_create_chrome_driver()
             
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=chrome_options)
+            if driver is None:
+                logger.warning("ChromeDriver 초기화 실패")
+                # 대안: requests와 BeautifulSoup만 사용
+                logger.info("requests와 BeautifulSoup으로 이미지 감지 fallback")
+                return self._detect_images_with_requests(url)
             
             driver.get(url)
             time.sleep(3)  # 페이지 로딩 대기
@@ -316,3 +314,57 @@ class OCRProcessor:
                 error_msg += "\n2. 서비스 계정에 필요한 권한 부여"
             
             return False, error_msg 
+
+    def _detect_images_with_requests(self, url: str) -> List[str]:
+        """requests와 BeautifulSoup을 사용한 이미지 감지 (ChromeDriver 실패 시 사용)"""
+        try:
+            logger.info(f"requests를 사용한 이미지 감지 시작: {url}")
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # 이미지 요소들 찾기
+            image_elements = soup.find_all('img')
+            
+            image_urls = []
+            for img_element in image_elements:
+                try:
+                    img_src = img_element.get('src')
+                    img_alt = img_element.get('alt') or ""
+                    img_class = img_element.get('class', [])
+                    img_id = img_element.get('id') or ""
+                    
+                    # 채용공고 관련 이미지 필터링
+                    if self._is_job_posting_image(img_src, img_alt, ' '.join(img_class), img_id):
+                        # 상대 경로인 경우 절대 경로로 변환
+                        if img_src.startswith('/'):
+                            from urllib.parse import urljoin
+                            img_src = urljoin(url, img_src)
+                        elif img_src.startswith('data:'):
+                            # Base64 인코딩된 이미지는 별도 처리
+                            continue
+                        
+                        image_urls.append(img_src)
+                        
+                except Exception as e:
+                    logger.warning(f"이미지 요소 처리 중 오류: {e}")
+                    continue
+            
+            logger.info(f"requests로 발견된 채용공고 관련 이미지 개수: {len(image_urls)}")
+            return image_urls
+            
+        except Exception as e:
+            logger.error(f"requests 이미지 감지 실패: {str(e)}")
+            return [] 

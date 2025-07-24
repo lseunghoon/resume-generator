@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { upload, generate } from '../services/api';
+import { upload, generate, extractJobInfo } from '../services/api';
 import axios from 'axios';
 import '../components/Button.css';
 import './UploadPage.css';
@@ -24,6 +24,7 @@ const UploadPage = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [htmlContent, setHtmlContent] = useState(''); // HTML 콘텐츠 저장
   const fileInput = useRef();
 
   const handleQuestionChipClick = (question) => {
@@ -68,12 +69,23 @@ const UploadPage = () => {
       if (!jdUrl) throw new Error('채용공고 URL을 입력해주세요.');
       if (files.length === 0) throw new Error('이력서 혹은 자기소개서 파일을 업로드해주세요.');
 
+      // 1단계: 채용공고 URL에서 HTML 콘텐츠 추출
+      console.log('채용공고 크롤링 시작:', jdUrl);
+      const jobInfo = await extractJobInfo(jdUrl);
+      console.log('채용공고 크롤링 완료:', jobInfo);
+      
+      // HTML 콘텐츠 저장
+      if (jobInfo.htmlContent) {
+        setHtmlContent(jobInfo.htmlContent);
+      }
+
       const formData = new FormData();
 
       const jsonData = {
         jobDescriptionUrl: jdUrl,
         questions: questions,
-        lengths: [],
+        lengths: lengths,
+        htmlContent: jobInfo.htmlContent || '' // HTML 콘텐츠 전달
       };
       formData.append('data', JSON.stringify(jsonData));
       
@@ -82,14 +94,38 @@ const UploadPage = () => {
       }
       
       const uploadResponse = await upload(formData);
+      console.log('UploadPage - uploadResponse:', uploadResponse);
+      
       const sessionId = uploadResponse.sessionId;
+      console.log('UploadPage - sessionId:', sessionId);
+      
       if (!sessionId) {
         throw new Error('세션 ID를 받아오지 못했습니다.');
       }
 
-      await generate({ sessionId });
+      // Mock API 사용 시에는 generate 함수 호출 불필요 (이미 생성 완료)
+      // 실제 API 사용 시에만 generate 함수 호출
+      const isMockEnabled = localStorage.getItem('useMockApi') === 'true';
+      console.log('UploadPage - isMockEnabled:', isMockEnabled);
+      
+      if (!isMockEnabled) {
+        console.log('UploadPage - 실제 API 사용, generate 함수 호출');
+        await generate({ sessionId });
+      } else {
+        console.log('UploadPage - Mock API 사용, generate 함수 건너뜀');
+      }
 
-      navigate(`/result?sessionId=${sessionId}`);
+      // location.state로 sessionId 전달
+      const navigateState = { 
+        sessionId: sessionId,
+        jobPostingUrl: jdUrl,
+        selectedJob: '',
+        jobDescription: '',
+        question: questions[0]
+      };
+      console.log('UploadPage - navigate to /result with state:', navigateState);
+      
+      navigate('/result', { state: navigateState });
 
     } catch (err) {
       console.error('‼️ 업로드 및 생성 과정에서 오류가 발생했습니다.');

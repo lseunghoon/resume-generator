@@ -8,6 +8,7 @@ import './LinkUploadPage.css';
 
 const LinkUploadPage = () => {
   const [jobPostingUrl, setJobPostingUrl] = useState('');
+  const [htmlContent, setHtmlContent] = useState(''); // htmlContent 상태 추가
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState('');
   const [isValidUrl, setIsValidUrl] = useState(false);
@@ -63,21 +64,16 @@ const LinkUploadPage = () => {
     try {
       const response = await extractJobInfo(jobPostingUrl);
       
-      // 응답 구조에 맞게 수정
       const extractedJobs = response.positions || [];
-      const jobDescription = response.jobDescription || '';
+      const newHtmlContent = response.htmlContent || ''; // htmlContent 받기
       
-      console.log('LinkUploadPage - Navigating to job-select with state:', { 
-        jobPostingUrl, 
-        extractedJobs,
-        jobDescription
-      });
+      setHtmlContent(newHtmlContent); // 상태에 저장
       
       navigate('/job-select', { 
         state: { 
           jobPostingUrl, 
           extractedJobs,
-          jobDescription
+          htmlContent: newHtmlContent // 다음 페이지로 전달
         } 
       });
     } catch (error) {
@@ -135,9 +131,7 @@ const LinkUploadPage = () => {
                   onChange={handleUrlChange}
                   onKeyPress={handleKeyPress}
                   error={error}
-                  hasIcon={true}
-                  iconType="send"
-                  onIconClick={handleExtractJobInfo}
+                  hasIcon={false}
                   disabled={isExtracting}
                 />
               </div>
@@ -148,19 +142,13 @@ const LinkUploadPage = () => {
             <Button
               variant={isValidUrl ? 'primary' : 'secondary'}
               disabled={!isValidUrl || isExtracting}
+              loading={isExtracting}
               onClick={handleExtractJobInfo}
               className="extract-button"
             >
               {isExtracting ? '직무 정보 추출 중...' : '직무 정보 추출'}
             </Button>
           </div>
-
-          {isExtracting && (
-            <div className="extracting-info">
-              <div className="extracting-spinner"></div>
-              <p>채용공고를 분석하고 있습니다...</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

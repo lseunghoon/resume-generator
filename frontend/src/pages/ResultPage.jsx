@@ -39,45 +39,47 @@ function ResultPage() {
 
     useEffect(() => {
         console.log('ResultPage - location.state:', location.state);
-        console.log('ResultPage - sessionId from state:', location.state?.sessionId);
+        console.log('ResultPage - location.search:', location.search);
+        console.log('ResultPage - location.pathname:', location.pathname);
         
-        // location.state에서 데이터 가져오기
-        if (location.state) {
-            setSessionId(location.state.sessionId || '');
-            setJobPostingUrl(location.state.jobPostingUrl || '');
-            setSelectedJob(location.state.selectedJob || '');
-            setJobDescription(location.state.jobDescription || '');
-            setUserQuestion(location.state.question || ''); // 사용자가 선택한 문항
-            
-            // 사용자가 선택한 문항으로 초기 답변 생성
-            if (location.state.question) {
-                const initialAnswer = {
-                    id: 1,
-                    question: location.state.question,
-                    answer: "저는 어린 시절부터 컴퓨터에 관심이 많았습니다. 중학교 때 처음 프로그래밍을 접하게 되었고, 그때부터 개발자의 꿈을 키워왔습니다. 고등학교에서는 정보올림피아드에 참가하여 전국 대회에서 입상하는 성과를 거두었고, 대학교에서는 컴퓨터공학을 전공하며 더욱 깊이 있는 지식을 쌓았습니다. 특히 웹 개발에 관심을 가지고 React, Node.js 등의 기술을 학습하며 실무 프로젝트에도 참여했습니다. 이러한 경험들을 통해 저는 지속적인 학습과 도전 정신의 중요성을 깨달았고, 이를 바탕으로 더 나은 개발자가 되기 위해 노력하고 있습니다.",
-                    length: 300,
-                    has_undo: false,
-                    has_redo: false
-                };
-                setAnswers([initialAnswer]);
-                setIsLoading(false);
-                return;
-            }
-        }
-
-        // 세션 ID가 있으면 자기소개서 데이터 가져오기
+        // sessionId를 여러 소스에서 찾기
+        let currentSessionId = '';
+        
+        // 1. location.state에서 찾기
         if (location.state?.sessionId) {
-            console.log('ResultPage - Fetching cover letter with sessionId:', location.state.sessionId);
-            fetchCoverLetter();
+            currentSessionId = location.state.sessionId;
+            console.log('ResultPage - sessionId from location.state:', currentSessionId);
+        }
+        // 2. 쿼리 파라미터에서 찾기
+        else if (location.search) {
+            const urlParams = new URLSearchParams(location.search);
+            currentSessionId = urlParams.get('sessionId') || '';
+            console.log('ResultPage - sessionId from query params:', currentSessionId);
+        }
+        
+        console.log('ResultPage - Final sessionId:', currentSessionId);
+        
+        if (currentSessionId) {
+            setSessionId(currentSessionId);
+            
+            // location.state에서 다른 데이터 가져오기
+            if (location.state) {
+                setJobPostingUrl(location.state.jobPostingUrl || '');
+                setSelectedJob(location.state.selectedJob || '');
+                setJobDescription(location.state.jobDescription || '');
+                setUserQuestion(location.state.question || '');
+            }
+            
+            // 자기소개서 데이터 가져오기
+            fetchCoverLetter(currentSessionId);
         } else {
             // 세션 ID가 없으면 홈으로 이동
-            console.log('ResultPage - No sessionId, redirecting to home');
+            console.log('ResultPage - No sessionId found, redirecting to home');
             navigate('/');
         }
-    }, [location.state, navigate]);
+    }, [location.state, location.search, navigate]);
 
-    const fetchCoverLetter = async () => {
-        const currentSessionId = location.state?.sessionId;
+    const fetchCoverLetter = async (currentSessionId) => {
         if (!currentSessionId) {
             console.error('세션 ID가 없습니다.');
             setError('세션 ID가 없습니다.');
@@ -89,14 +91,18 @@ function ResultPage() {
         try {
             const response = await getCoverLetter(currentSessionId);
             
-            if (response.answers && response.answers.length > 0) {
-                // Mock 환경에서는 사용자가 선택한 문항을 사용
-                const mockAnswers = response.answers.map((answer, index) => ({
-                    ...answer,
-                    question: index === 0 ? userQuestion : answer.question // 첫 번째 문항은 사용자가 선택한 문항으로 교체
+            if (response.questions && response.questions.length > 0) {
+                // 실제 API 응답 구조에 맞게 수정
+                const answers = response.questions.map((question, index) => ({
+                    id: question.id || index + 1,
+                    question: question.question,
+                    answer: question.answer_history ? JSON.parse(question.answer_history)[question.current_version_index || 0] : question.answer || '',
+                    length: question.length || 500,
+                    has_undo: (question.current_version_index || 0) > 0,
+                    has_redo: question.answer_history ? JSON.parse(question.answer_history).length > (question.current_version_index || 0) + 1 : false
                 }));
                 
-                setAnswers(mockAnswers);
+                setAnswers(answers);
                 setActiveTab(0);
             } else {
                 setError('자기소개서 데이터를 불러올 수 없습니다.');

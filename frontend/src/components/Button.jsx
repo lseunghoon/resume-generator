@@ -7,12 +7,13 @@ const Button = ({
   disabled = false, 
   onClick, 
   className = '',
-  type = 'button'
+  type = 'button',
+  loading = false
 }) => {
   const getButtonClass = () => {
     const baseClass = 'btn';
     const variantClass = `btn-${variant}`;
-    const disabledClass = disabled ? 'btn-disabled' : '';
+    const disabledClass = (disabled || loading) ? 'btn-disabled' : '';
     return `${baseClass} ${variantClass} ${disabledClass} ${className}`.trim();
   };
 
@@ -20,9 +21,10 @@ const Button = ({
     <button
       type={type}
       className={getButtonClass()}
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
     >
+      {loading && <div className="btn-loading-spinner"></div>}
       {children}
     </button>
   );

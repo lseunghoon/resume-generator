@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMockApi, disableMockApi, isMockApiEnabled } from '../services/api';
+import { useMockApi, disableMockApi, isMockApiEnabled } from '../services/mockApi';
 import './DevTools.css';
 
 const DevTools = () => {
@@ -18,8 +18,8 @@ const DevTools = () => {
       useMockApi();
       setIsMockEnabled(true);
     }
-    // 페이지 새로고침으로 상태 반영
-    window.location.reload();
+    // 페이지 새로고침 없이 상태만 업데이트
+    // window.location.reload();
   };
 
   const toggleVisibility = () => {

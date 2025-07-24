@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Button from '../components/Button';
+import { preloadContent } from '../services/api';
 import './JobSelectPage.css';
 
 const JobSelectPage = () => {
@@ -11,7 +12,10 @@ const JobSelectPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [extractedJobs, setExtractedJobs] = useState([]);
   const [jobPostingUrl, setJobPostingUrl] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
+  const [htmlContent, setHtmlContent] = useState(''); // jobDescription -> htmlContent
+  const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
+  const [contentId, setContentId] = useState(null); // 프리로딩된 콘텐츠 ID
+  const hasStartedPreloading = useRef(false); // 프리로딩 시작 여부 추적
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,7 +26,7 @@ const JobSelectPage = () => {
     if (location.state) {
       setJobPostingUrl(location.state.jobPostingUrl || '');
       setExtractedJobs(location.state.extractedJobs || []);
-      setJobDescription(location.state.jobDescription || '');
+      setHtmlContent(location.state.htmlContent || ''); // htmlContent 받기
       
       // 이전에 선택한 직무가 있으면 복원
       if (location.state.selectedJob) {
@@ -43,6 +47,47 @@ const JobSelectPage = () => {
       navigate('/');
     }
   }, [location.state, navigate]);
+
+  // 프리로딩 함수 (백그라운드에서 조용히 실행)
+  const startPreloading = useCallback(async () => {
+    if (!jobPostingUrl || hasStartedPreloading.current) return;
+    
+    hasStartedPreloading.current = true;
+    console.log('JobSelectPage - 백그라운드 프리로딩 시작');
+    
+    try {
+      const response = await preloadContent({
+        jobPostingUrl,
+        htmlContent
+      });
+      
+      console.log('JobSelectPage - 백그라운드 프리로딩 완료');
+      
+      if (response.contentId) {
+        // 대용량 콘텐츠인 경우 contentId 저장
+        console.log('JobSelectPage - 대용량 콘텐츠, contentId 저장:', response.contentId);
+        setContentId(response.contentId);
+        setPreloadedContent(null);
+      } else {
+        // 작은 콘텐츠인 경우 직접 저장
+        console.log('JobSelectPage - 작은 콘텐츠, 직접 저장');
+        setPreloadedContent(response.jobDescription);
+        setContentId(null);
+      }
+    } catch (error) {
+      console.error('JobSelectPage - 백그라운드 프리로딩 실패:', error);
+      // 프리로딩 실패해도 계속 진행
+    }
+  }, [jobPostingUrl, htmlContent]);
+
+  // jobPostingUrl이 설정된 후 백그라운드 프리로딩 시작
+  useEffect(() => {
+    console.log('JobSelectPage - 백그라운드 프리로딩 useEffect 실행:', { jobPostingUrl, isLoading });
+    if (jobPostingUrl && !isLoading) {
+      console.log('JobSelectPage - 백그라운드 프리로딩 조건 만족, 시작');
+      startPreloading();
+    }
+  }, [jobPostingUrl, isLoading, startPreloading]);
 
   const handleJobSelect = (job) => {
     setSelectedJob(job);
@@ -66,8 +111,10 @@ const JobSelectPage = () => {
         state: { 
           jobPostingUrl, 
           selectedJob: finalJob,
-          jobDescription,
+          htmlContent, // htmlContent 전달
           extractedJobs,
+          preloadedContent, // 프리로딩된 콘텐츠 전달
+          contentId, // contentId 전달
           customJob: isCustomInput ? customJob : null // 직접 입력한 직무도 전달
         } 
       });
@@ -95,9 +142,25 @@ const JobSelectPage = () => {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && isNextEnabled) {
+      e.preventDefault();
       handleNext();
     }
   };
+
+  // 페이지 로드 시 포커스 설정
+  useEffect(() => {
+    const handleGlobalKeyPress = (e) => {
+      if (e.key === 'Enter' && isNextEnabled) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyPress);
+    };
+  }, [isNextEnabled]);
 
   if (isLoading) {
     return (

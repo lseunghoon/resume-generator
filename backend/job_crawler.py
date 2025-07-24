@@ -1,388 +1,432 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import logging
 import time
+import requests
+import re
 from job_posting_filter import JobPostingFilter
 from ocr_processor import OCRProcessor
+from utils.chrome_driver import safe_create_chrome_driver
 
 logger = logging.getLogger(__name__)
 
 def crawl_job_description(url):
-    """채용공고 크롤링 메인 함수 (필터링 + OCR + 검증 포함)"""
+    """채용공고 크롤링 메인 함수 - 새로운 구조화된 추출 방식"""
     try:
-        logger.info(f"채용공고 크롤링 시작: {url}")
+        logger.info(f"새로운 구조화된 채용공고 크롤링 시작: {url}")
         
-        # 1단계: 텍스트 기반 크롤링
-        text_content = _crawl_text_content(url)
-        logger.info(f"텍스트 크롤링 완료: {'성공' if text_content else '실패'}")
+        # 1단계: Selenium으로 동적 페이지 로드 및 HTML 확보
+        html_content = _get_dynamic_html(url)
+        if not html_content:
+            logger.warning("HTML 확보 실패")
+            return None
         
-        # 링커리어 특화 결과이거나 이미 이미지 OCR이 포함된 경우 별도 이미지 크롤링 건너뛰기
-        if isinstance(text_content, dict) and text_content.get('needs_ocr'):
-            logger.info("텍스트 크롤링에서 이미지 OCR 정보 포함됨 - 별도 이미지 크롤링 건너뛰기")
-            ocr_content = None
+        # 2단계: BeautifulSoup으로 파싱 및 1차 구조적 클리닝
+        soup = _parse_and_clean_html(html_content)
+        
+        # 3단계: 2차 콘텐츠 클리닝 및 텍스트 데이터 추출
+        crawled_text = _extract_clean_text(soup)
+        logger.info(f"텍스트 추출 완료: {len(crawled_text)}자")
+        
+        # 4단계: 텍스트 유효성 분석 (OCR 실행 여부 결정)
+        is_text_insufficient = _analyze_text_sufficiency(crawled_text)
+        logger.info(f"텍스트 충분성 분석: {'부족' if is_text_insufficient else '충분'}")
+        
+        # 5단계: OCR 대상 이미지 분석 및 '최고 후보' 선정
+        best_image_url = None
+        if is_text_insufficient:
+            best_image_url = _select_best_image_candidate(soup, url)
+            logger.info(f"최고 후보 이미지: {best_image_url[:50] if best_image_url else '없음'}...")
+        
+        # 6단계: 조건부 단일 이미지 OCR 실행
+        ocr_text = ""
+        if is_text_insufficient and best_image_url:
+            logger.info("텍스트 부족으로 OCR 실행")
+            ocr_text = _execute_single_image_ocr(best_image_url)
+            logger.info(f"OCR 결과: {len(ocr_text)}자")
         else:
-            # 2단계: 이미지 기반 OCR 크롤링 (일반적인 경우만)
-            ocr_content = _crawl_image_content(url)
-            logger.info(f"이미지 OCR 크롤링 완료: {'성공' if ocr_content else '실패'}")
+            logger.info("텍스트 충분 또는 이미지 없음 - OCR 건너뛰기")
         
-        # 3단계: 콘텐츠 통합
-        combined_content = _combine_content(text_content, ocr_content)
+        # 7단계: 최종 콘텐츠 통합 및 정제
+        final_content = _integrate_and_refine_content(crawled_text, ocr_text)
         
-        if not combined_content:
-            logger.warning("크롤링된 콘텐츠가 없음")
+        if not final_content or len(final_content) < 100:
+            logger.warning("최종 콘텐츠 부족")
             return None
         
-        # 4단계: 채용공고 필터링
-        from job_posting_filter import JobPostingFilter
-        filtered_content = JobPostingFilter.filter_job_posting_content(combined_content)
+        # 8단계: 구조화된 데이터 추출
+        structured_data = _extract_structured_data(final_content)
         
-        if not filtered_content:
-            logger.warning("채용공고 필터링 실패")
-            return None
-        
-        # 5단계: 최종 검증
-        is_valid, score, status = JobPostingFilter.validate_job_posting(filtered_content)
-        
-        if not is_valid:
-            logger.warning(f"채용공고 검증 실패: {status}")
-            return None
-        
-        logger.info(f"채용공고 크롤링 및 검증 완료 (점수: {score:.2f})")
-        return filtered_content
+        logger.info(f"구조화된 데이터 추출 완료: {len(structured_data)}자")
+        return structured_data
         
     except Exception as e:
         logger.error(f"채용공고 크롤링 중 오류: {str(e)}")
         return None
 
-def _crawl_text_content(url):
-    """기존 텍스트 기반 크롤링 로직 (링커리어 특화 포함)"""
+def _get_dynamic_html(url):
+    """1단계: Selenium으로 동적 페이지 로드 및 HTML 확보"""
     try:
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-
-        driver.get(url)
-        time.sleep(3)
-
-        html = driver.page_source
-        soup = BeautifulSoup(html, 'html.parser')
+        # 새로운 안전한 ChromeDriver 사용
+        driver = safe_create_chrome_driver()
         
-        # 웹페이지 제목 추출
-        page_title = ""
-        title_tag = soup.find('title')
-        if title_tag:
-            page_title = title_tag.get_text(strip=True)
-            logger.info(f"웹페이지 제목 추출: {page_title[:100]}...")
+        if driver is not None:
+            try:
+                driver.get(url)
+                time.sleep(3)  # JavaScript 렌더링 대기
+                
+                html_content = driver.page_source
+                driver.quit()
+                
+                logger.info("Selenium으로 HTML 확보 성공")
+                return html_content
+                
+            except Exception as selenium_error:
+                if driver:
+                    driver.quit()
+                logger.warning(f"Selenium 실행 중 오류: {selenium_error}")
+        else:
+            logger.warning("ChromeDriver 초기화 실패")
         
-        driver.quit()
-
-        # 링커리어 특화 크롤링 (다른 일반 크롤링 대신 우선 실행)
-        if url.startswith("https://linkareer.com/activity/"):
-            logger.info("링커리어 특화 크롤링 시작 - 일반 크롤링 건너뛰기")
-            linkareer_content = _extract_linkareer_content(soup, url)
-            if linkareer_content:
-                logger.info("링커리어 특화 크롤링 성공 - 다른 크롤링 방식 건너뛰기")
-                
-                # 제목 정보 추가
-                if isinstance(linkareer_content, dict):
-                    linkareer_content['page_title'] = page_title
-                    return linkareer_content
-                else:
-                    # 일반 텍스트인 경우 제목을 앞에 추가
-                    if page_title:
-                        return f"=== 제목 ===\n{page_title}\n\n=== 내용 ===\n{linkareer_content}"
-                    return linkareer_content
-            else:
-                logger.warning("링커리어 특화 크롤링 실패 - 일반 크롤링으로 fallback")
-
-        # 일반적인 채용공고 컨테이너 선택자들
-        common_selectors = [
-            'main[role="main"]',
-            '.job-description',
-            '.job-content',
-            '.post-content',
-            '.content',
-            'article',
-            '.detail-content',
-            '.job-detail',
-            '#content',
-            '.main-content'
-        ]
-
-        # 선택자로 텍스트 추출 시도
-        for selector in common_selectors:
-            content = soup.select_one(selector)
-            if content:
-                # 이미지가 있는지 먼저 확인
-                images = content.find_all('img')
-                
-                for tag in content.find_all(['button', 'a', 'form', 'input']):
-                    tag.decompose()
-                    
-                text = content.get_text(strip=True, separator='\n')
-                
-                # 이미지가 있으면 OCR 처리 필요한 형태로 반환
-                if images and len(text) > 50:
-                    image_urls = [img.get('src') for img in images if img.get('src')]
-                    if image_urls:
-                        logger.info(f"일반 크롤링에서 이미지 발견 - 선택자: {selector}, 이미지 {len(image_urls)}개")
-                        result = {
-                            'text': text,
-                            'images': image_urls,
-                            'needs_ocr': True,
-                            'source_url': url,
-                            'page_title': page_title
-                        }
-                        return result
-                
-                # 이미지가 없으면 텍스트만 반환 (제목 포함)
-                if len(text) > 100:
-                    logger.info(f"텍스트 콘텐츠 추출 성공 - 선택자: {selector}")
-                    if page_title:
-                        return f"=== 제목 ===\n{page_title}\n\n=== 내용 ===\n{text}"
-                    return text
-
-        # 선택자로 찾지 못한 경우 전체 텍스트 추출
-        # 먼저 이미지가 있는지 확인
-        all_images = soup.find_all('img')
-        
-        text = soup.get_text(strip=True, separator='\n')
-        blocks = [block for block in text.split('\n') if len(block) > 100]
-        
-        if blocks:
-            result = '\n'.join(blocks)
+        # 대안: requests 사용
+        logger.info("requests로 fallback")
+        return _get_html_with_requests(url)
             
-            # 이미지가 있으면 OCR 처리 필요한 형태로 반환
-            if all_images:
-                image_urls = [img.get('src') for img in all_images if img.get('src')]
-                if image_urls:
-                    logger.info(f"전체 텍스트에서 이미지 발견 - 이미지 {len(image_urls)}개")
-                    return {
-                        'text': result,
-                        'images': image_urls,
-                        'needs_ocr': True,
-                        'source_url': url,
-                        'page_title': page_title
-                    }
-            
-            logger.info("텍스트 콘텐츠 추출 성공 (전체 텍스트)")
-            if page_title:
-                return f"=== 제목 ===\n{page_title}\n\n=== 내용 ===\n{result}"
+    except Exception as e:
+        logger.error(f"HTML 확보 실패: {str(e)}")
+        return None
+
+def _get_html_with_requests(url):
+    """대안: requests로 HTML 확보"""
+    try:
+        logger.info("requests로 HTML 확보 시도")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        logger.info("requests로 HTML 확보 성공")
+        return response.text
+        
+    except Exception as e:
+        logger.error(f"requests HTML 확보 실패: {str(e)}")
+        return None
+
+def _parse_and_clean_html(html_content):
+    """2단계: BeautifulSoup으로 파싱 및 1차 구조적 클리닝"""
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # 직무와 전혀 관련 없는 구조적 요소 제거
+    unwanted_tags = ['header', 'footer', 'nav', 'script', 'style', 'aside', 'iframe']
+    for tag_name in unwanted_tags:
+        for tag in soup.find_all(tag_name):
+            tag.decompose()
+    
+    # 광고 및 불필요한 클래스 제거
+    unwanted_classes = ['ad', 'advertisement', 'banner', 'popup', 'modal', 'cookie', 'gdpr']
+    for class_name in unwanted_classes:
+        for tag in soup.find_all(class_=lambda x: x and any(unwanted in str(x).lower() for unwanted in unwanted_classes)):
+            tag.decompose()
+    
+    logger.info("1차 구조적 클리닝 완료")
+    return soup
+
+def _extract_clean_text(soup):
+    """3단계: 2차 콘텐츠 클리닝 및 텍스트 데이터 추출"""
+    # 불필요한 버튼/링크 영역 제거
+    unwanted_texts = ['지원하기', '공유하기', '스크랩', '신고하기', '목록보기', '이전글', '다음글']
+    for text in unwanted_texts:
+        for element in soup.find_all(text=re.compile(text, re.IGNORECASE)):
+            parent = element.parent
+            if parent and parent.name in ['button', 'a', 'span']:
+                parent.decompose()
+    
+    # 핵심 본문 영역 탐색 (우선순위 순)
+    main_selectors = [
+        'main',
+        'article', 
+        'div#content',
+        'div.content',
+        '.job-description',
+        '.job-detail',
+        '.post-content',
+        '.detail-content'
+    ]
+    
+    main_content = None
+    for selector in main_selectors:
+        main_content = soup.select_one(selector)
+        if main_content:
+            logger.info(f"핵심 본문 영역 발견: {selector}")
+            break
+    
+    # 핵심 영역을 찾지 못한 경우 body 전체 사용
+    if not main_content:
+        main_content = soup.find('body') or soup
+        logger.info("핵심 영역 미발견 - body 전체 사용")
+    
+    # 텍스트 추출 및 정제
+    raw_text = main_content.get_text(separator='\n', strip=True)
+    
+    # 불필요한 단어 제거
+    noise_words = ['jd', '직무정보', '채용정보', '상세보기', '더보기', '접기']
+    for word in noise_words:
+        raw_text = re.sub(rf'\b{word}\b', '', raw_text, flags=re.IGNORECASE)
+    
+    # 과도한 공백 정리
+    raw_text = re.sub(r'\n\s*\n', '\n', raw_text)
+    raw_text = re.sub(r'\s+', ' ', raw_text)
+    
+    return raw_text.strip()
+
+def _analyze_text_sufficiency(text):
+    """4단계: 텍스트 유효성 분석 (OCR 실행 여부 결정)"""
+    if len(text) < 200:
+        logger.info("텍스트 길이 부족 (200자 미만)")
+        return True
+    
+    # 필수 키워드 체크
+    essential_keywords = [
+        '주요업무', '담당업무', '업무내용', '자격요건', '우대사항',
+        '주요 업무', '담당 업무', '업무 내용', '자격 요건', '우대 사항',
+        '채용', '모집', 'job', 'work', 'responsibility', 'requirement'
+    ]
+    
+    text_lower = text.lower()
+    found_keywords = sum(1 for keyword in essential_keywords if keyword.lower() in text_lower)
+    
+    if found_keywords < 2:
+        logger.info(f"필수 키워드 부족 ({found_keywords}/2)")
+        return True
+    
+    logger.info("텍스트 충분성 확인")
+    return False
+
+def _select_best_image_candidate(soup, base_url):
+    """5단계: OCR 대상 이미지 분석 및 '최고 후보' 선정"""
+    images = soup.find_all('img')
+    if not images:
+        logger.info("이미지 없음")
+        return None
+    
+    candidates = []
+    
+    for img in images:
+        src = img.get('src')
+        if not src:
+            continue
+        
+        # 상대 경로를 절대 경로로 변환
+        if src.startswith('/'):
+            from urllib.parse import urljoin
+            src = urljoin(base_url, src)
+        elif src.startswith('data:'):
+            continue  # Base64 이미지 제외
+        
+        # 기본 점수: 이미지 크기 (추정)
+        width = img.get('width', '0')
+        height = img.get('height', '0')
+        try:
+            area = int(width) * int(height) if width.isdigit() and height.isdigit() else 1000
+        except:
+            area = 1000
+        
+        score = area
+        
+        # 보너스 점수: 관련 키워드
+        bonus_keywords = ['채용', 'job', 'recruit', 'description', 'detail', 'info']
+        alt_text = (img.get('alt') or '').lower()
+        src_lower = src.lower()
+        
+        for keyword in bonus_keywords:
+            if keyword in alt_text or keyword in src_lower:
+                score += 10000  # 매우 큰 보너스
+        
+        candidates.append((src, score))
+        logger.debug(f"이미지 후보: {src[:50]}... (점수: {score})")
+    
+    if not candidates:
+        return None
+
+    # 최고 점수 이미지 선정
+    best_candidate = max(candidates, key=lambda x: x[1])
+    logger.info(f"최고 후보 이미지 선정 (점수: {best_candidate[1]})")
+    
+    return best_candidate[0]
+
+def _execute_single_image_ocr(image_url):
+    """6단계: 조건부 단일 이미지 OCR 실행"""
+    try:
+        ocr_processor = OCRProcessor()
+        result = ocr_processor.extract_text_from_image_url(image_url)
+        
+        if result and len(result) > 50:
+            logger.info("OCR 실행 성공")
             return result
-
-        return None
-        
+        else:
+            logger.warning("OCR 결과 부족")
+            return ""
+            
     except Exception as e:
-        logger.error(f"텍스트 크롤링 실패: {str(e)}")
-        if 'driver' in locals() and driver:
-            driver.quit()
-        return None
+        logger.error(f"OCR 실행 실패: {str(e)}")
+        return ""
 
-def _extract_linkareer_content(soup, source_url):
-    """링커리어 활동 페이지에서 '상세내용' 섹션만 정확히 추출 (엄격한 버전)"""
+def _integrate_and_refine_content(crawled_text, ocr_text):
+    """7단계: 최종 콘텐츠 통합 및 정제"""
+    # 콘텐츠 통합
+    final_content = crawled_text
+    if ocr_text:
+        final_content += f"\n\n=== 이미지에서 추출된 내용 ===\n{ocr_text}"
+    
+    # 최종 정제
+    final_content = re.sub(r'\n\s*\n+', '\n\n', final_content)
+    final_content = re.sub(r'\s+', ' ', final_content)
+    
+    return final_content.strip()
+
+def _extract_structured_data(content):
+    """8단계: 구조화된 데이터 추출"""
     try:
-        logger.info("링커리어 상세내용 섹션 정확한 추출 시작")
+        # 섹션별 패턴 정의
+        section_patterns = {
+            '주요업무': [
+                r'주요\s*업무[:\s]*(.+?)(?=\n(?:자격|우대|조건|혜택|기타|\Z))',
+                r'담당\s*업무[:\s]*(.+?)(?=\n(?:자격|우대|조건|혜택|기타|\Z))',
+                r'업무\s*내용[:\s]*(.+?)(?=\n(?:자격|우대|조건|혜택|기타|\Z))',
+                r'job\s*description[:\s]*(.+?)(?=\n(?:requirement|qualification|benefit|\Z))',
+            ],
+            '자격요건': [
+                r'자격\s*요건[:\s]*(.+?)(?=\n(?:우대|조건|혜택|기타|\Z))',
+                r'지원\s*자격[:\s]*(.+?)(?=\n(?:우대|조건|혜택|기타|\Z))',
+                r'requirement[:\s]*(.+?)(?=\n(?:preferred|benefit|other|\Z))',
+            ],
+            '우대사항': [
+                r'우대\s*사항[:\s]*(.+?)(?=\n(?:조건|혜택|기타|\Z))',
+                r'우대\s*조건[:\s]*(.+?)(?=\n(?:조건|혜택|기타|\Z))',
+                r'preferred[:\s]*(.+?)(?=\n(?:benefit|other|\Z))',
+            ],
+            '근무조건': [
+                r'근무\s*조건[:\s]*(.+?)(?=\n(?:혜택|기타|\Z))',
+                r'근무\s*환경[:\s]*(.+?)(?=\n(?:혜택|기타|\Z))',
+                r'working\s*condition[:\s]*(.+?)(?=\n(?:benefit|other|\Z))',
+            ],
+            '복리혜택': [
+                r'복리\s*혜택[:\s]*(.+?)(?=\n(?:기타|\Z))',
+                r'혜택[:\s]*(.+?)(?=\n(?:기타|\Z))',
+                r'benefit[:\s]*(.+?)(?=\n(?:other|\Z))',
+            ]
+        }
         
-        # 1단계: 정확한 '상세내용' 섹션 찾기
-        activity_sections = soup.find_all('section', class_=lambda x: x and 'ActivityDetailTabContent' in x)
-        logger.info(f"ActivityDetailTabContent 섹션 {len(activity_sections)}개 발견")
+        structured_result = {}
         
-        for i, section in enumerate(activity_sections):
-            # '상세내용' h2 태그가 있는 섹션 찾기
-            h2_tag = section.find('h2')
-            if h2_tag and '상세내용' in h2_tag.get_text():
-                logger.info(f"섹션 {i+1}에서 '상세내용' h2 태그 발견")
-                
-                # 정확히 h2 다음의 div만 추출 (형제 요소)
-                next_div = h2_tag.find_next_sibling('div')
-                if next_div:
-                    logger.info("h2 다음 div 발견 - 정확한 상세내용 컨테이너")
-                    
-                    # 이 div 안의 이미지만 확인 (다른 섹션 이미지 제외)
-                    images = next_div.find_all('img')
-                    text_content = next_div.get_text(strip=True, separator='\n')
-                    
-                    logger.info(f"상세내용 div: 텍스트 {len(text_content)}자, 이미지 {len(images)}개")
-                    
-                    if images:
-                        # se2editor 이미지만 필터링 (링커리어 채용공고 이미지)
-                        job_images = []
-                        for img in images:
-                            src = img.get('src', '')
-                            if 'se2editor' in src or 'media-cdn.linkareer.com' in src:
-                                job_images.append(src)
-                                logger.info(f"채용공고 이미지 발견: {src[:60]}...")
-                        
-                        if job_images:
-                            result = {
-                                'text': text_content,
-                                'images': job_images,
-                                'needs_ocr': True,
-                                'source_url': source_url
-                            }
-                            logger.info(f"링커리어 정확한 상세내용 추출 성공: 텍스트 {len(text_content)}자, 채용공고 이미지 {len(job_images)}개")
-                            return result
-                        else:
-                            logger.info("이미지가 있지만 채용공고 관련 이미지가 아님")
-                    
-                    # 이미지가 없거나 채용공고 이미지가 아닌 경우 텍스트만 반환
-                    if len(text_content) > 50:
-                        logger.info(f"링커리어 상세내용 텍스트만 추출: {len(text_content)}자")
-                        return text_content
-                
-                # h2 다음 div가 없으면 responsive-element 찾기
-                else:
-                    logger.info("h2 다음 div 없음, responsive-element 찾기")
-                    content_div = section.find('div', class_='responsive-element')
-                    if content_div:
-                        images = content_div.find_all('img')
-                        text_content = content_div.get_text(strip=True, separator='\n')
-                        
-                        # se2editor 이미지만 필터링
-                        job_images = []
-                        for img in images:
-                            src = img.get('src', '')
-                            if 'se2editor' in src or 'media-cdn.linkareer.com' in src:
-                                job_images.append(src)
-                        
-                        if job_images:
-                            result = {
-                                'text': text_content,
-                                'images': job_images,
-                                'needs_ocr': True,
-                                'source_url': source_url
-                            }
-                            logger.info(f"링커리어 responsive-element 추출 성공: 텍스트 {len(text_content)}자, 채용공고 이미지 {len(job_images)}개")
-                            return result
-                        elif len(text_content) > 50:
-                            return text_content
+        for section_name, patterns in section_patterns.items():
+            for pattern in patterns:
+                match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                if match:
+                    section_content = match.group(1).strip()
+                    if len(section_content) > 10:  # 최소 길이 체크
+                        structured_result[section_name] = section_content[:500]  # 최대 500자
+                        logger.info(f"{section_name} 섹션 추출 성공: {len(section_content)}자")
+                        break
         
-        logger.warning("링커리어 상세내용 섹션을 찾지 못함")
-        return None
+        # 구조화된 데이터가 없으면 원본 텍스트 반환
+        if not structured_result:
+            logger.warning("구조화된 데이터 추출 실패 - 원본 텍스트 반환")
+            return content[:1000]  # 최대 1000자
         
+        # 구조화된 데이터를 텍스트로 변환
+        formatted_result = []
+        for section, content in structured_result.items():
+            formatted_result.append(f"=== {section} ===\n{content}")
+        
+        return "\n\n".join(formatted_result)
+            
     except Exception as e:
-        logger.error(f"링커리어 컨텐츠 추출 실패: {e}")
-        return None
+        logger.error(f"구조화된 데이터 추출 실패: {str(e)}")
+        return content[:1000]  # 실패 시 원본 텍스트 반환
+
+# 기존 함수들은 유지 (하위 호환성)
+def _crawl_text_content(url):
+    """기존 호환성을 위한 래퍼 함수"""
+    return crawl_job_description(url)
 
 def _crawl_image_content(url):
-    """이미지 OCR 기반 크롤링"""
-    try:
-        logger.info("이미지 OCR 처리 시작")
-        ocr_processor = OCRProcessor()
-        
-        # OCR 설정 테스트
-        is_setup_ok, setup_message = ocr_processor.test_ocr_setup()
-        if not is_setup_ok:
-            logger.warning(f"OCR 설정 문제: {setup_message}")
-            return None
-        
-        # 웹페이지에서 이미지 처리
-        image_text = ocr_processor.process_webpage_images(url)
-        
-        if image_text:
-            logger.info("이미지 OCR 처리 성공")
-            return image_text
-        else:
-            logger.info("이미지에서 추출된 텍스트 없음")
-            return None
-            
-    except Exception as e:
-        logger.error(f"이미지 OCR 처리 실패: {str(e)}")
+    """이미지 크롤링 - 새로운 방식에서는 사용하지 않음"""
+    logger.info("새로운 방식에서는 별도 이미지 크롤링을 사용하지 않음")
         return None
 
 def _combine_content(text_content, ocr_content):
-    """텍스트와 이미지에서 추출한 내용을 통합 (새로운 형태 지원)"""
+    """콘텐츠 통합 - 새로운 방식에서는 내부적으로 처리됨"""
+    if isinstance(text_content, str):
+        return text_content
+    return text_content if text_content else ocr_content
+
+
+def _extract_job_positions_from_structured_data(structured_content):
+    """구조화된 데이터에서 직무 정보 추출"""
     try:
-        combined_parts = []
+        logger.info("구조화된 데이터에서 직무 정보 추출 시작")
         
-        # text_content가 딕셔너리 형태인 경우 (이미지 OCR 필요)
-        if isinstance(text_content, dict) and text_content.get('needs_ocr'):
-            logger.info("특별한 형태의 텍스트 콘텐츠 - 내장 이미지 OCR 처리")
-            
-            # 제목 정보 추가
-            page_title = text_content.get('page_title', '')
-            if page_title:
-                combined_parts.append("=== 제목 ===")
-                combined_parts.append(page_title)
-            
-            # 텍스트 부분 추가
-            if text_content.get('text') and len(text_content['text'].strip()) > 50:
-                combined_parts.append("=== 텍스트 콘텐츠 ===")
-                combined_parts.append(text_content['text'])
-            
-            # 내장 이미지들에 대해 OCR 실행
-            image_urls = text_content.get('images', [])
-            if image_urls:
-                logger.info(f"내장 이미지 {len(image_urls)}개에 대해 OCR 실행")
-                
-                from ocr_processor import OCRProcessor
-                ocr_processor = OCRProcessor()
-                
-                all_ocr_texts = []
-                for i, img_url in enumerate(image_urls[:5]):  # 최대 5개까지
-                    logger.info(f"내장 이미지 OCR 처리 ({i+1}/{min(len(image_urls), 5)}): {img_url[:50]}...")
-                    
-                    try:
-                        # 상대 경로인 경우 절대 경로로 변환
-                        if img_url.startswith('/'):
-                            from urllib.parse import urljoin, urlparse
-                            source_url = text_content.get('source_url', '')
-                            if source_url:
-                                parsed_url = urlparse(source_url)
-                                base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-                                img_url = urljoin(base_url, img_url)
-                        
-                        ocr_text = ocr_processor.extract_text_from_image_url(img_url)
-                        if ocr_text and len(ocr_text.strip()) > 20:
-                            all_ocr_texts.append(f"[이미지 {i+1}]\n{ocr_text}")
-                            logger.info(f"내장 이미지 {i+1} OCR 성공: {len(ocr_text)}자")
-                        else:
-                            logger.warning(f"내장 이미지 {i+1} OCR 실패 또는 텍스트 부족")
-                    except Exception as e:
-                        logger.error(f"내장 이미지 {i+1} OCR 처리 중 오류: {e}")
-                
-                if all_ocr_texts:
-                    combined_parts.append("=== 이미지에서 추출된 콘텐츠 ===")
-                    combined_parts.extend(all_ocr_texts)
-                    logger.info(f"내장 이미지 OCR 완료: {len(all_ocr_texts)}개 이미지에서 텍스트 추출")
+        # 구조화된 데이터에서 직무 키워드 추출
+        job_keywords = []
+        
+        # 섹션별로 직무 관련 키워드 추출
+        sections_to_check = ['주요업무', '담당업무', '업무내용']
+        
+        for section in sections_to_check:
+            if f"=== {section} ===" in structured_content:
+                # 해당 섹션 내용 추출
+                section_start = structured_content.find(f"=== {section} ===")
+                section_end = structured_content.find("===", section_start + 10)
+                if section_end == -1:
+                    section_content = structured_content[section_start:]
                 else:
-                    logger.warning("내장 이미지들에서 의미있는 텍스트를 추출하지 못함")
-            
-            # 딕셔너리 형태의 경우 별도 OCR 콘텐츠는 무시 (중복 방지)
-            if ocr_content:
-                logger.info("내장 이미지 OCR이 있으므로 별도 OCR 콘텐츠 무시 (중복 방지)")
+                    section_content = structured_content[section_start:section_end]
+                
+                # 직무 관련 키워드 패턴
+                job_patterns = [
+                    r'([가-힣]+)\s*(?:담당|업무|개발|기획|분석|설계)',
+                    r'(?:담당|업무):\s*([가-힣\s]+)',
+                    r'([A-Za-z\s]+)\s*(?:development|analysis|design|management)',
+                ]
+                
+                for pattern in job_patterns:
+                    matches = re.findall(pattern, section_content, re.IGNORECASE)
+                    for match in matches:
+                        if isinstance(match, tuple):
+                            match = match[0]
+                        clean_match = match.strip()
+                        if len(clean_match) > 2 and clean_match not in job_keywords:
+                            job_keywords.append(clean_match)
         
-        # 일반적인 텍스트 콘텐츠 처리
-        elif text_content and len(str(text_content).strip()) > 50:
-            combined_parts.append(str(text_content))
+        # 키워드가 없으면 기본 추론
+        if not job_keywords:
+            # 전체 텍스트에서 일반적인 직무 키워드 찾기
+            common_jobs = [
+                'Research Assistant', 'RA', '리서치 어시스턴트', '연구 보조',
+                '인턴', '인턴십', 'Intern', 'Internship',
+                '개발자', 'Developer', '기획자', 'Planner',
+                '분석가', 'Analyst', '매니저', 'Manager'
+            ]
             
-            # 별도 OCR 콘텐츠 처리 (일반 텍스트인 경우만)
-            if ocr_content and len(ocr_content.strip()) > 50:
-                combined_parts.append("=== 이미지에서 추출된 콘텐츠 ===")
-                combined_parts.append(ocr_content)
+            content_lower = structured_content.lower()
+            for job in common_jobs:
+                if job.lower() in content_lower:
+                    job_keywords.append(job)
+                    break
         
-        if combined_parts:
-            result = '\n\n'.join(combined_parts)
-            has_text = bool(text_content)
-            has_ocr = bool(ocr_content) or (isinstance(text_content, dict) and text_content.get('images'))
-            logger.info(f"콘텐츠 통합 완료 (텍스트: {'있음' if has_text else '없음'}, 이미지: {'있음' if has_ocr else '없음'})")
-            return result
+        # 결과 정리
+        if job_keywords:
+            logger.info(f"구조화된 데이터에서 직무 키워드 추출 성공: {job_keywords}")
+            return job_keywords[:3]
         else:
-            logger.warning("통합할 콘텐츠가 없음")
-            return None
+            logger.info("구조화된 데이터에서 직무 키워드 미발견 - 기본값 반환")
+            return ['인턴']
             
     except Exception as e:
-        logger.error(f"콘텐츠 통합 실패: {str(e)}")
-        # 실패 시 텍스트 콘텐츠라도 반환
-        if isinstance(text_content, dict):
-            return text_content.get('text', '')
-        return text_content if text_content else ocr_content 
+        logger.error(f"구조화된 데이터 직무 추출 실패: {e}")
+        return ['인턴'] 

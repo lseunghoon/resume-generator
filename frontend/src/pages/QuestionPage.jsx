@@ -12,8 +12,10 @@ const QuestionPage = () => {
   const [jobPostingUrl, setJobPostingUrl] = useState('');
   const [selectedJob, setSelectedJob] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [jobDescription, setJobDescription] = useState('');
   const [extractedJobs, setExtractedJobs] = useState([]);
+  const [htmlContent, setHtmlContent] = useState(''); // htmlContent 추가
+  const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
+  const [contentId, setContentId] = useState(null); // contentId 추가
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,8 +24,10 @@ const QuestionPage = () => {
       setJobPostingUrl(location.state.jobPostingUrl || '');
       setSelectedJob(location.state.selectedJob || '');
       setUploadedFiles(location.state.uploadedFiles || []);
-      setJobDescription(location.state.jobDescription || '');
       setExtractedJobs(location.state.extractedJobs || []);
+      setHtmlContent(location.state.htmlContent || ''); // htmlContent 설정
+      setPreloadedContent(location.state.preloadedContent || null); // 프리로딩된 콘텐츠 설정
+      setContentId(location.state.contentId || null); // contentId 설정
       
       // 이전에 입력한 질문이 있으면 복원
       if (location.state.question) {
@@ -66,21 +70,40 @@ const QuestionPage = () => {
         selectedJob,
         uploadedFiles: uploadedFiles || [],
         questions: [question], // 사용자가 입력한 질문
-        jobDescription
+        contentId, // contentId 사용
+        preloadedContent // 프리로딩된 콘텐츠 추가
       };
+      
+      // 디버깅: FormData 크기 확인
+      console.log('=== FormData 디버깅 ===');
+      console.log('sessionData:', sessionData);
+      const dataStr = JSON.stringify(sessionData);
+      console.log(`JSON 데이터 크기: ${dataStr.length} bytes (${(dataStr.length / 1024 / 1024).toFixed(2)} MB)`);
+      if (dataStr.length > 1024 * 1024) {
+        console.warn(`JSON 데이터가 매우 큽니다: ${(dataStr.length / 1024 / 1024).toFixed(2)} MB`);
+      }
+      console.log('=====================');
 
       console.log('QuestionPage - Creating session with data:', sessionData);
       const response = await createSession(sessionData);
       console.log('QuestionPage - Session created:', response);
       
+      // 실제 API 사용 시 generate 함수 호출
+      const isMockEnabled = localStorage.getItem('useMockApi') === 'true';
+      if (!isMockEnabled) {
+        console.log('QuestionPage - 실제 API 사용, generate 함수 호출');
+        await generate({ sessionId: response.sessionId });
+      } else {
+        console.log('QuestionPage - Mock API 사용, generate 함수 건너뜀');
+      }
+      
       // 세션 ID를 사용하여 결과 페이지로 이동
-      console.log('QuestionPage - Navigating to result with sessionId:', response.session_id);
+      console.log('QuestionPage - Navigating to result with sessionId:', response.sessionId);
       navigate('/result', { 
         state: { 
-          sessionId: response.session_id,
+          sessionId: response.sessionId,
           jobPostingUrl,
           selectedJob,
-          jobDescription,
           question // 입력한 질문도 함께 전달
         } 
       });
@@ -98,16 +121,31 @@ const QuestionPage = () => {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !isGenerating && question.trim()) {
+      e.preventDefault();
       handleGenerate();
     }
   };
+
+  // 전역 키보드 이벤트 리스너 추가
+  useEffect(() => {
+    const handleGlobalKeyPress = (e) => {
+      if (e.key === 'Enter' && !isGenerating && question.trim()) {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyPress);
+    };
+  }, [isGenerating, question]);
 
   const handleGoBack = () => {
     navigate('/file-upload', { 
       state: { 
         jobPostingUrl, 
         selectedJob,
-        jobDescription,
         extractedJobs,
         uploadedFiles, // 업로드된 파일들 전달
         question // 입력한 질문 전달
@@ -175,25 +213,13 @@ const QuestionPage = () => {
             <Button
               variant={question.trim() ? 'primary' : 'secondary'}
               disabled={isGenerating || !question.trim()}
+              loading={isGenerating}
               onClick={handleGenerate}
               className="generate-button"
             >
               {isGenerating ? '자기소개서 생성 중...' : '자기소개서 생성하기'}
             </Button>
           </div>
-
-          {isGenerating && (
-            <div className="generating-info">
-              <div className="generating-spinner"></div>
-              <p>AI가 맞춤형 자기소개서를 생성하고 있습니다...</p>
-              <p className="generating-details">
-                • 채용 공고 분석 중<br/>
-                • 직무 정보 반영 중<br/>
-                {uploadedFiles && uploadedFiles.length > 0 && '• 기존 자기소개서/이력서 분석 중'}<br/>
-                • 맞춤형 답변 생성 중...
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>
