@@ -475,7 +475,7 @@ def register_routes(app):
 
     @app.route('/api/v1/session/<string:id>', methods=['DELETE'])
     def delete_session(id):
-        """세션 삭제"""
+        """세션 삭제 및 관련 데이터 정리"""
         try:
             session_id = validate_session_id(id)
             app.logger.info(f"세션 삭제 요청: {session_id}")
@@ -487,10 +487,29 @@ def register_routes(app):
                 raise APIError("Session not found", status_code=404)
 
             try:
+                # 1. 세션과 관련된 모든 질문들 삭제 (CASCADE로 자동 삭제됨)
+                app.logger.info(f"세션 관련 질문들 삭제: {len(session.questions)}개")
+                
+                # 2. 세션 삭제
                 db.delete(session)
                 db.commit()
-                app.logger.info(f"세션 삭제 성공: {session_id}")
-                return jsonify({'message': 'Session deleted successfully'}), 200
+                
+                # 3. 메모리 정리 (프리로딩된 콘텐츠가 있다면 정리)
+                # preloaded_content_store는 세션별로 관리되지 않으므로 별도 정리 불필요
+                
+                # 4. 파일 정리 (업로드된 파일이 있다면 정리)
+                try:
+                    file_service = app.get_file_service()
+                    cleanup_result = file_service.cleanup_old_files(max_age_days=0)  # 즉시 정리
+                    app.logger.info(f"파일 정리 결과: {cleanup_result}")
+                except Exception as file_error:
+                    app.logger.warning(f"파일 정리 중 오류 (무시됨): {file_error}")
+                
+                app.logger.info(f"세션 삭제 및 데이터 정리 완료: {session_id}")
+                return jsonify({
+                    'success': True,
+                    'message': 'Session and related data deleted successfully'
+                }), 200
 
             except Exception as e:
                 db.rollback()

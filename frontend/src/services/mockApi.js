@@ -168,6 +168,17 @@ export const mockApi = {
       contentSize: 1024 * 1024, // 1MB
       message: '저장된 콘텐츠 조회 완료'
     };
+  },
+
+  // 세션 삭제
+  deleteSession: async (sessionId) => {
+    console.log('Mock: 세션 삭제 중...', sessionId);
+    await delay(MOCK_DELAY);
+    
+    return {
+      success: true,
+      message: '세션이 성공적으로 삭제되었습니다.'
+    };
   }
 };
 

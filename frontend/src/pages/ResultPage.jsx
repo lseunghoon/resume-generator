@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Button from '../components/Button';
-import { getCoverLetter, addQuestion, reviseAnswer } from '../services/api';
+import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
 import './ResultPage.css';
 
 function ResultPage() {
@@ -26,6 +26,41 @@ function ResultPage() {
     const [answerHistory, setAnswerHistory] = useState({}); // 각 문항별 히스토리: { questionIndex: [historyItems] }
     const [chatMessagesRef, setChatMessagesRef] = useState(null); // 스크롤을 위한 ref
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
+
+    // 세션 삭제 함수
+    const handleDeleteSession = async () => {
+        if (sessionId) {
+            try {
+                await deleteSession(sessionId);
+                console.log('세션이 성공적으로 삭제되었습니다.');
+            } catch (error) {
+                console.error('세션 삭제 실패:', error);
+            }
+        }
+    };
+
+    // 다시 시작 함수
+    const handleRestart = async () => {
+        await handleDeleteSession();
+        navigate('/');
+    };
+
+    // 새로고침 시 세션 삭제 준비
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionId) {
+                // 페이지를 떠날 때 세션 ID를 localStorage에 저장
+                localStorage.setItem('pendingSessionDelete', sessionId);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [sessionId]);
+
+
 
 
 
@@ -298,7 +333,7 @@ function ResultPage() {
                 <Header progress={100} />
                 <div className="error-container">
                     <p>{error || '결과를 찾을 수 없습니다.'}</p>
-                    <Button onClick={() => navigate('/')}>다시 시작</Button>
+                    <Button onClick={handleRestart}>다시 시작</Button>
                 </div>
             </div>
         );
@@ -306,7 +341,7 @@ function ResultPage() {
 
     return (
         <div className="result-page">
-            <Header progress={100} showRestartButton={true} onRestart={() => navigate('/')} />
+            <Header progress={100} showRestartButton={true} onRestart={handleRestart} />
             
             <div className="page-content">
                 <div className="content-wrapper">

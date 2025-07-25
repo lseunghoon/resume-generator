@@ -157,5 +157,16 @@ export const getPreloadedContent = async (contentId) => {
   });
 };
 
+// 세션 삭제
+export const deleteSession = async (sessionId) => {
+  if (checkMockMode()) {
+    return mockApi.deleteSession(sessionId);
+  }
+
+  return apiCall(`/api/v1/session/${sessionId}`, {
+    method: 'DELETE',
+  });
+};
+
 // Mock API 모드 제어 함수들
 export { useMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
