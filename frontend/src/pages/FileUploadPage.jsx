@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
+import Navigation from '../components/Navigation';
+import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import './FileUploadPage.css';
 
@@ -180,10 +182,11 @@ const FileUploadPage = () => {
     navigate('/job-select', { 
       state: { 
         jobPostingUrl,
+        selectedJob,
         extractedJobs,
-        htmlContent, // htmlContent 전달
-        selectedJob, // 선택한 직무 전달
-        customJob: null // 직접 입력한 직무는 null로 전달
+        htmlContent,
+        preloadedContent,
+        contentId
       } 
     });
   };
@@ -214,18 +217,14 @@ const FileUploadPage = () => {
 
   return (
     <div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
-      <Header 
-        progress={75} 
-        showNavigation={true}
-        canGoBack={true}
-        canGoForward={true}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        currentStep="3"
-        totalSteps="4"
-      />
+      <Header progress={75} />
       
       <div className="page-content">
+        <Navigation
+          canGoBack={true}
+          onGoBack={handleGoBack}
+        />
+        
         <div className="content-wrapper">
           <div className="form-section">
             
@@ -285,8 +284,8 @@ const FileUploadPage = () => {
                         ref={fileInputRef}
                         type="file"
                         accept=".pdf,.doc,.docx"
-                        onChange={handleFileInputChange}
                         multiple
+                        onChange={handleFileInputChange}
                         style={{ display: 'none' }}
                       />
                     </div>
@@ -306,27 +305,14 @@ const FileUploadPage = () => {
               </div>
             </div>
           </div>
-          
-          <div className="action-section">
-            <div className="action-buttons">
-              <Button
-                variant="outline"
-                onClick={handleSkip}
-                className="skip-button"
-              >
-                건너뛰기
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleNext}
-                className="next-button"
-              >
-                다음
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
+
+      <NextButton
+        text="다음"
+        disabled={false}
+        onClick={handleNext}
+      />
     </div>
   );
 };

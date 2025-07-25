@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
+import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { extractJobInfo } from '../services/api';
@@ -23,6 +24,7 @@ const LinkUploadPage = () => {
     if (location.state?.jobPostingUrl) {
       console.log('Restoring jobPostingUrl:', location.state.jobPostingUrl);
       setJobPostingUrl(location.state.jobPostingUrl);
+      setHtmlContent(location.state.htmlContent || '');
       setIsValidUrl(validateUrl(location.state.jobPostingUrl));
     }
   }, [location.state]);
@@ -103,16 +105,7 @@ const LinkUploadPage = () => {
 
   return (
     <div className="link-upload-page">
-      <Header 
-        progress={25} 
-        showNavigation={true}
-        canGoBack={false} // 첫 번째 페이지이므로 뒤로가기 비활성화
-        canGoForward={isValidUrl && !isExtracting} // 유효한 URL이 있을 때만 앞으로가기 활성화
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        currentStep="1"
-        totalSteps="4"
-      />
+      <Header progress={25} />
       
       <div className="page-content">
         <div className="content-wrapper">
@@ -137,20 +130,14 @@ const LinkUploadPage = () => {
               </div>
             </div>
           </div>
-          
-          <div className="action-section">
-            <Button
-              variant={isValidUrl ? 'primary' : 'secondary'}
-              disabled={!isValidUrl || isExtracting}
-              loading={isExtracting}
-              onClick={handleExtractJobInfo}
-              className="extract-button"
-            >
-              {isExtracting ? '직무 정보 추출 중...' : '직무 정보 추출'}
-            </Button>
-          </div>
         </div>
       </div>
+
+      <NextButton
+        text="다음"
+        disabled={!isValidUrl || isExtracting}
+        onClick={handleExtractJobInfo}
+      />
     </div>
   );
 };

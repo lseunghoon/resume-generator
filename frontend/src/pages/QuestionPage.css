@@ -9,7 +9,9 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 60px 20px;
+  padding: 80px 20px 100px 20px; /* 상단 Navigation을 위한 여백 추가 */
+  width: 100%;
+  position: relative; /* Navigation의 absolute positioning을 위해 */
 }
 
 .content-wrapper {
@@ -46,7 +48,6 @@
 
 .form-content {
   text-align: center;
-  padding-left: 60px;
 }
 
 .form-header {
@@ -76,21 +77,6 @@
   margin-bottom: 40px;
   text-align: left;
 }
-
-.action-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 40px;
-}
-
-.generate-button {
-  min-width: 250px;
-  padding: 16px 32px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-
 
 .generating-details {
   font-size: 14px !important;
@@ -342,16 +328,14 @@
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 40px 16px;
+    padding: 40px 16px 100px 16px; /* 하단 navigation 여백 추가 */
   }
   
   .form-header h1 {
     font-size: 28px;
   }
   
-  .form-content {
-    padding-left: 50px;
-  }
+
   
   .generate-button {
     min-width: 200px;
@@ -447,11 +431,12 @@
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 24px 12px;
+    padding: 24px 12px 100px 12px; /* 하단 navigation 여백 추가 */
   }
 
   .question-input-section .form-header h1 {
     font-size: 20px;
+    line-height: 1.3;
   }
 
   .question-input-section .form-header p {
@@ -463,13 +448,12 @@
   }
 
   .recommendation-chips {
-    gap: 8px;
+    gap: 6px;
   }
 
   .recommendation-chip {
-    padding: 6px 10px;
+    padding: 8px 12px;
     font-size: 12px;
-    border-radius: 10px;
   }
 
   .generate-button {
@@ -501,11 +485,12 @@
 /* 웹뷰 최적화 */
 @media (max-width: 390px) {
   .page-content {
-    padding: 20px 8px;
+    padding: 20px 10px 100px 10px; /* 하단 navigation 여백 추가 */
   }
 
   .question-input-section .form-header h1 {
     font-size: 18px;
+    line-height: 1.2;
   }
 
   .question-input-section .form-header p {
@@ -513,7 +498,7 @@
   }
 
   .recommendation-chip {
-    padding: 5px 8px;
+    padding: 6px 10px;
     font-size: 11px;
   }
 

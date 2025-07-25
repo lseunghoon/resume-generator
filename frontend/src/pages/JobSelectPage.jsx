@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
+import Navigation from '../components/Navigation';
+import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import { preloadContent } from '../services/api';
 import './JobSelectPage.css';
@@ -37,6 +39,11 @@ const JobSelectPage = () => {
       if (location.state.customJob) {
         setCustomJob(location.state.customJob);
         setIsCustomInput(true);
+      }
+      
+      // 이전에 직접 입력 모드였는지 확인
+      if (location.state.isCustomInput) {
+        setIsCustomInput(location.state.isCustomInput);
       }
       
       console.log('JobSelectPage - Setting jobPostingUrl to:', location.state.jobPostingUrl || '');
@@ -122,11 +129,13 @@ const JobSelectPage = () => {
   };
 
   const handleGoBack = () => {
-    console.log('JobSelectPage - Going back with state:', { jobPostingUrl });
-    navigate('/', { 
+    navigate('/link-upload', { 
       state: { 
         jobPostingUrl,
-        fromJobSelect: true // 뒤로가기 표시
+        htmlContent,
+        selectedJob,
+        customJob,
+        isCustomInput
       } 
     });
   };
@@ -176,18 +185,14 @@ const JobSelectPage = () => {
 
   return (
     <div className="job-select-page" onKeyPress={handleKeyPress} tabIndex={0}>
-      <Header 
-        progress={50} 
-        showNavigation={true}
-        canGoBack={true}
-        canGoForward={isNextEnabled}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        currentStep="2"
-        totalSteps="4"
-      />
+      <Header progress={50} />
       
       <div className="page-content">
+        <Navigation
+          canGoBack={true}
+          onGoBack={handleGoBack}
+        />
+        
         <div className="content-wrapper">
           <div className="form-section">
             
@@ -241,19 +246,14 @@ const JobSelectPage = () => {
               </div>
             </div>
           </div>
-          
-          <div className="action-section">
-            <Button
-              variant={isNextEnabled ? 'primary' : 'secondary'}
-              disabled={!isNextEnabled}
-              onClick={handleNext}
-              className="next-button"
-            >
-              다음
-            </Button>
-          </div>
         </div>
       </div>
+
+      <NextButton
+        text="다음"
+        disabled={!isNextEnabled}
+        onClick={handleNext}
+      />
     </div>
   );
 };

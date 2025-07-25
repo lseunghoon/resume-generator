@@ -5,14 +5,7 @@ import './Header.css';
 const Header = ({ 
   progress = 0, 
   showRestartButton = false, 
-  onRestart,
-  showNavigation = false,
-  canGoBack = false,
-  canGoForward = false,
-  onGoBack,
-  onGoForward,
-  currentStep = '',
-  totalSteps = ''
+  onRestart
 }) => {
   const navigate = useNavigate();
 
@@ -37,36 +30,6 @@ const Header = ({
           <span className="logo-fallback" style={{display: 'none'}}>
             Logo area
           </span>
-        </div>
-
-        <div className="header-center">
-          {showNavigation && (
-            <div className="navigation-section">
-              <div className={`nav-buttons ${canGoBack ? 'with-back' : 'without-back'}`}>
-                {canGoBack && (
-                  <button 
-                    className="nav-button back"
-                    onClick={onGoBack}
-                    disabled={!canGoBack}
-                    title="이전 단계"
-                  >
-                    ←
-                  </button>
-                )}
-                <span className="step-indicator">
-                  {currentStep} / {totalSteps}
-                </span>
-                <button 
-                  className="nav-button forward"
-                  onClick={onGoForward}
-                  disabled={!canGoForward}
-                  title="다음 단계"
-                >
-                  →
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="header-right">

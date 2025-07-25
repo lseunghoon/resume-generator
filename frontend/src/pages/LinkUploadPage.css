@@ -7,9 +7,10 @@
 .page-content {
   flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px 20px;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 60px 20px 100px 20px; /* 하단 NextButton을 위한 여백 추가 */
   width: 100%;
 }
 
@@ -63,26 +64,10 @@
   margin-bottom: 48px;
 }
 
-.action-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 40px;
-}
-
-.extract-button {
-  min-width: 240px;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 12px;
-}
-
-
-
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 40px 16px;
+    padding: 40px 16px 100px 16px; /* 하단 NextButton을 위한 여백 추가 */
   }
   
   .content-wrapper {
@@ -103,12 +88,6 @@
     font-size: 12px;
   }
 
-  .extract-button {
-    min-width: 200px;
-    padding: 14px 24px;
-    font-size: 14px;
-  }
-
   .extracting-info {
     margin-top: 24px;
   }
@@ -120,7 +99,7 @@
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 24px 12px;
+    padding: 24px 12px 100px 12px; /* 하단 NextButton을 위한 여백 추가 */
   }
 
   .form-header h1 {
@@ -129,12 +108,6 @@
 
   .form-header p {
     font-size: 13px;
-  }
-
-  .extract-button {
-    min-width: 100%;
-    padding: 12px 20px;
-    font-size: 14px;
   }
 
   .form-input {
@@ -147,18 +120,12 @@
   }
 }
 
-/* 웹뷰 최적화 */
 @media (max-width: 390px) {
   .page-content {
-    padding: 20px 8px;
+    padding: 20px 10px 100px 10px; /* 하단 NextButton을 위한 여백 추가 */
   }
 
   .form-header h1 {
     font-size: 18px;
-  }
-
-  .extract-button {
-    padding: 10px 16px;
-    font-size: 13px;
   }
 } 

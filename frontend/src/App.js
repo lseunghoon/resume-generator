@@ -18,6 +18,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<LinkUploadPage />} />
+          <Route path="/link-upload" element={<LinkUploadPage />} />
           <Route path="/job-select" element={<JobSelectPage />} />
           <Route path="/file-upload" element={<FileUploadPage />} />
           <Route path="/question" element={<QuestionPage />} />

@@ -39,79 +39,14 @@
   font-weight: 500;
 }
 
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.navigation-section {
-  display: flex;
-  align-items: center;
-}
-
-.nav-buttons {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background-color: #f8f9fa;
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1px solid #e1e5e9;
-  min-width: 120px; /* 최소 너비 설정 */
-  justify-content: center; /* 기본 중앙 정렬 */
-}
-
-.nav-buttons.with-back {
-  justify-content: space-between; /* 뒤로가기 버튼이 있을 때 양쪽 정렬 */
-}
-
-.nav-buttons.without-back {
-  justify-content: center; /* 뒤로가기 버튼이 없을 때 중앙 정렬 */
-}
-
-.nav-button {
-  background: none;
-  border: none;
-  font-size: 18px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #374151;
-}
-
-.nav-button:hover:not(:disabled) {
-  background-color: #e5e7eb;
-  color: #1a1d29;
-}
-
-.nav-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.step-indicator {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
-  min-width: 60px;
-  text-align: center;
-}
-
 .header-right {
   flex-shrink: 0;
 }
 
 .restart-button {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: 1px solid #3b82f6;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 14px;
@@ -120,8 +55,9 @@
 }
 
 .restart-button:hover {
-  background-color: #e5e7eb;
-  color: #1a1d29;
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 .progress-container {
@@ -149,22 +85,6 @@
     max-width: 120px;
   }
 
-  .nav-buttons {
-    gap: 12px;
-    padding: 6px 12px;
-  }
-
-  .nav-button {
-    width: 28px;
-    height: 28px;
-    font-size: 16px;
-  }
-
-  .step-indicator {
-    font-size: 12px;
-    min-width: 50px;
-  }
-
   .restart-button {
     padding: 6px 12px;
     font-size: 12px;
@@ -174,22 +94,6 @@
 @media (max-width: 480px) {
   .header-content {
     padding: 8px 12px;
-  }
-
-  .nav-buttons {
-    gap: 8px;
-    padding: 4px 8px;
-  }
-
-  .nav-button {
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-  }
-
-  .step-indicator {
-    font-size: 11px;
-    min-width: 40px;
   }
 
   .restart-button {

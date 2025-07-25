@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
+import Navigation from '../components/Navigation';
+import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { createSession, generate } from '../services/api';
@@ -161,18 +163,14 @@ const QuestionPage = () => {
 
   return (
     <div className="question-page">
-      <Header 
-        progress={90} 
-        showNavigation={true}
-        canGoBack={true}
-        canGoForward={!!question.trim() && !isGenerating}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        currentStep="4"
-        totalSteps="4"
-      />
+      <Header progress={90} />
 
       <div className="page-content">
+        <Navigation
+          canGoBack={true}
+          onGoBack={handleGoBack}
+        />
+        
         <div className="content-wrapper">
           <div className="form-section">
             {/* 질문 입력 섹션 - Figma 디자인 기준 */}
@@ -208,20 +206,14 @@ const QuestionPage = () => {
               </div>
             </div>
           </div>
-
-          <div className="action-section">
-            <Button
-              variant={question.trim() ? 'primary' : 'secondary'}
-              disabled={isGenerating || !question.trim()}
-              loading={isGenerating}
-              onClick={handleGenerate}
-              className="generate-button"
-            >
-              {isGenerating ? '자기소개서 생성 중...' : '자기소개서 생성하기'}
-            </Button>
-          </div>
         </div>
       </div>
+
+      <NextButton
+        text="자기소개서 생성하기"
+        disabled={isGenerating || !question.trim()}
+        onClick={handleGenerate}
+      />
     </div>
   );
 };

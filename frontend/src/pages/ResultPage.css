@@ -92,21 +92,21 @@
 }
 
 .tab:hover {
-  color: #3b82f6;
-  background-color: #f8faff;
+  color: #343435;
+  background-color: #f1f5f9;
 }
 
 .tab.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-  background-color: #f8faff;
+  color: #343435;
+  border-bottom-color: #343435;
+  background-color: #f1f5f9;
 }
 
 .add-tab {
   padding: 14px 24px;
-  border: 1px dashed #3b82f6;
+  border: 1px dashed #343435;
   background-color: transparent;
-  color: #3b82f6;
+  color: #343435;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -117,7 +117,7 @@
 }
 
 .add-tab:hover {
-  background-color: #f8faff;
+  background-color: #f1f5f9;
 }
 
 /* 탭 콘텐츠 */
@@ -762,9 +762,7 @@
   line-height: 24px;
 }
 
-.message-text:active {
-  cursor: grabbing;
-}
+
 
 .message-meta {
   display: flex;

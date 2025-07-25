@@ -27,14 +27,13 @@ function ResultPage() {
     const [chatMessagesRef, setChatMessagesRef] = useState(null); // 스크롤을 위한 ref
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
 
-    // 드래그 시작 시 시각적 피드백
-    const handleDragStart = (e) => {
-        e.target.style.opacity = '0.5';
-        e.dataTransfer.setData('text/plain', e.target.textContent);
-    };
 
-    const handleDragEnd = (e) => {
-        e.target.style.opacity = '1';
+
+    // 실제 텍스트 길이 계산 함수
+    const calculateTextLength = (text) => {
+        if (!text || typeof text !== 'string') return 0;
+        const cleanText = removeMarkdownBold(text);
+        return cleanText.length;
     };
 
     useEffect(() => {
@@ -342,17 +341,13 @@ function ResultPage() {
                             {answerHistory[activeTab] && answerHistory[activeTab].map((historyItem, historyIndex) => (
                                 <div key={historyItem.id} className="message-item history-message">
                                     <div className="message-content">
-                                        <div className="message-text" 
-                                             draggable="true"
-                                             onDragStart={handleDragStart}
-                                             onDragEnd={handleDragEnd}
-                                        >
+                                        <div className="message-text">
                                             {removeMarkdownBold(historyItem.answer).split('\n').map((line, i) => (
                                                 <p key={i}>{line}</p>
                                             ))}
                                         </div>
                                         <div className="message-meta">
-                                            <span className="message-character-count">공백포함 {historyItem.length}자</span>
+                                            <span className="message-character-count">공백포함 {calculateTextLength(historyItem.answer)}자</span>
                                             <button 
                                                 className="message-copy-button"
                                                 onClick={() => handleCopy(activeTab, true, historyIndex)}
@@ -375,17 +370,13 @@ function ResultPage() {
                             {/* 현재 버전 (가장 최신) */}
                             <div className="message-item current-message">
                                 <div className="message-content">
-                                    <div className="message-text" 
-                                         draggable="true"
-                                         onDragStart={handleDragStart}
-                                         onDragEnd={handleDragEnd}
-                                    >
+                                    <div className="message-text">
                                         {removeMarkdownBold(answers[activeTab].answer).split('\n').map((line, i) => (
                                             <p key={i}>{line}</p>
                                         ))}
                                     </div>
                                     <div className="message-meta">
-                                        <span className="message-character-count">공백포함 {answers[activeTab].length}자</span>
+                                        <span className="message-character-count">공백포함 {calculateTextLength(answers[activeTab].answer)}자</span>
                                         <button 
                                             className="message-copy-button"
                                             onClick={() => handleCopy(activeTab)}
