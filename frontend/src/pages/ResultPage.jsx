@@ -133,19 +133,19 @@ function ResultPage() {
         
         setIsRevising(true);
         try {
-            // 실제 질문 ID 사용
-            const questionId = answers[activeTab]?.id;
+            // 세션 내 질문 인덱스 사용 (0, 1, 2)
+            const questionIndex = activeTab;
             console.log('수정 요청 - 현재 탭:', activeTab);
             console.log('수정 요청 - answers:', answers);
             console.log('수정 요청 - 선택된 질문:', answers[activeTab]);
-            console.log('수정 요청 - 질문 ID:', questionId);
+            console.log('수정 요청 - 질문 인덱스:', questionIndex);
             
-            if (!questionId) {
-                console.error('질문 ID를 찾을 수 없습니다.');
+            if (questionIndex < 0 || questionIndex >= answers.length) {
+                console.error('유효하지 않은 질문 인덱스입니다.');
                 return;
             }
             
-            const response = await reviseAnswer(sessionId, questionId, revisionRequest);
+            const response = await reviseAnswer(sessionId, questionIndex, revisionRequest);
             
             // mock API 응답 구조에 맞게 수정
             const revisedAnswerText = response.revised_answer?.answer || response.revised_answer;
@@ -443,8 +443,8 @@ function ResultPage() {
 
             {/* 문항 추가 모달 */}
             {showAddQuestionModal && (
-                <div className="modal-overlay">
-                    <div className="add-question-modal">
+                <div className="modal-overlay" onClick={() => setShowAddQuestionModal(false)}>
+                    <div className="add-question-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>추가로 생성하고자 하는<br/>문항을 입력해주세요</h3>
                         <p>자기소개서 문항은 최대 3개까지 추가 가능합니다.</p>
                         <input

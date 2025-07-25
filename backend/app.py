@@ -175,22 +175,26 @@ def register_routes(app):
                 app.logger.error(f"요청 크기가 50MB를 초과합니다: {request.content_length / 1024 / 1024:.2f} MB")
                 return jsonify({'message': '업로드된 파일의 크기가 너무 큽니다. (최대 50MB)'}), 413
             
-            # 파일 검증
+            # 파일 검증 (파일이 없어도 허용)
             try:
                 files = request.files.getlist('files')
                 if not files or not any(f.filename for f in files):
-                    raise APIError("파일이 없습니다.", status_code=400)
+                    app.logger.info("파일이 없습니다. 건너뛰기 모드로 진행합니다.")
+                    files = []  # 빈 리스트로 설정
                 
-                # 디버깅: 파일 크기 로깅
+                # 디버깅: 파일 크기 로깅 (파일이 있을 때만)
                 total_size = 0
-                for file in files:
-                    file.seek(0, 2)  # 파일 끝으로 이동
-                    file_size = file.tell()  # 현재 위치 (파일 크기)
-                    file.seek(0)  # 파일 시작으로 되돌리기
-                    total_size += file_size
-                    app.logger.info(f"파일: {file.filename}, 크기: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
-                
-                app.logger.info(f"총 파일 크기: {total_size} bytes ({total_size / 1024 / 1024:.2f} MB)")
+                if files:
+                    for file in files:
+                        file.seek(0, 2)  # 파일 끝으로 이동
+                        file_size = file.tell()  # 현재 위치 (파일 크기)
+                        file.seek(0)  # 파일 시작으로 되돌리기
+                        total_size += file_size
+                        app.logger.info(f"파일: {file.filename}, 크기: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
+                    
+                    app.logger.info(f"총 파일 크기: {total_size} bytes ({total_size / 1024 / 1024:.2f} MB)")
+                else:
+                    app.logger.info("업로드된 파일이 없습니다.")
                 
             except werkzeug.exceptions.RequestEntityTooLarge:
                 app.logger.error("파일 크기가 너무 큽니다.")
@@ -294,13 +298,17 @@ def register_routes(app):
                     job_description = ""
 
 
-            # 파일 텍스트 추출
-            file_result = app.get_file_service().process_uploaded_files(files)
-            if not file_result['success']:
-                raise APIError(file_result['message'], status_code=400)
-            
-            resume_text = file_result['extracted_text']
-            app.logger.info(f"이력서 텍스트 추출 완료: {len(resume_text)}자")
+            # 파일 텍스트 추출 (파일이 없으면 빈 텍스트)
+            if files:
+                file_result = app.get_file_service().process_uploaded_files(files)
+                if not file_result['success']:
+                    raise APIError(file_result['message'], status_code=400)
+                
+                resume_text = file_result['extracted_text']
+                app.logger.info(f"이력서 텍스트 추출 완료: {len(resume_text)}자")
+            else:
+                resume_text = ""  # 파일이 없으면 빈 텍스트
+                app.logger.info("파일이 없어서 이력서 텍스트를 빈 문자열로 설정")
 
             # 세션 생성
             new_session = Session(
@@ -726,7 +734,7 @@ def register_routes(app):
             db.commit()
             db.refresh(new_question_obj)
             
-            app.logger.info(f"새 질문 저장 완료 - ID: {new_question_obj.id}")
+            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {new_question_obj.question_number}")
             
             return jsonify({
                 'questionId': new_question_obj.id,
@@ -805,7 +813,7 @@ def register_routes(app):
             db.commit()
             db.refresh(new_question_obj)
             
-            app.logger.info(f"새 질문 저장 완료 - ID: {new_question_obj.id}")
+            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {new_question_obj.question_number}")
             
             return jsonify({
                 'questionId': new_question_obj.id,
@@ -826,13 +834,13 @@ def register_routes(app):
         finally:
             db.close()
 
-    @app.route('/api/v1/sessions/<string:session_id>/questions/<int:question_id>/revise', methods=['POST'])
-    def revise_answer(session_id, question_id):
-        """특정 질문의 답변 수정"""
+    @app.route('/api/v1/sessions/<string:session_id>/questions/<int:question_index>/revise', methods=['POST'])
+    def revise_answer(session_id, question_index):
+        """특정 질문의 답변 수정 (세션 내 인덱스 기반)"""
         db = next(get_db())
         
         try:
-            app.logger.info(f"답변 수정 요청 시작 - 세션: {session_id}, 질문: {question_id}")
+            app.logger.info(f"답변 수정 요청 시작 - 세션: {session_id}, 질문 인덱스: {question_index}")
             
             data = request.get_json()
             if not data or 'revision' not in data:
@@ -845,13 +853,14 @@ def register_routes(app):
             if not session:
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
-            # 질문 조회
-            question = db.query(Question).filter(
-                Question.session_id == session_id, 
-                Question.id == question_id
-            ).first()
-            if not question:
+            # 세션 내 질문 인덱스 검증
+            if question_index < 0 or question_index >= len(session.questions):
                 raise APIError("질문을 찾을 수 없습니다.", status_code=404)
+            
+            # 세션 내 해당 인덱스의 질문 가져오기 (안전한 접근)
+            question = session.questions[question_index]
+            
+            app.logger.info(f"질문 번호: {question.question_number} (세션 내 인덱스: {question_index})")
             
             # 현재 답변을 히스토리에 추가
             current_answer = question.answer_history
@@ -888,7 +897,7 @@ def register_routes(app):
             
             db.commit()
             
-            app.logger.info(f"답변 수정 완료 - 세션: {session_id}, 질문: {question_id}")
+            app.logger.info(f"답변 수정 완료 - 세션: {session_id}, 질문 인덱스: {question_index}")
             
             return jsonify({
                 'success': True,

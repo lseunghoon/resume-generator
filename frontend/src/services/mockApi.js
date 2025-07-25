@@ -122,8 +122,8 @@ export const mockApi = {
   },
 
   // 답변 수정
-  reviseAnswer: async (sessionId, questionId, revision) => {
-    console.log('Mock: 답변 수정 중...', { sessionId, questionId, revision });
+  reviseAnswer: async (sessionId, questionIndex, revision) => {
+    console.log('Mock: 답변 수정 중...', { sessionId, questionIndex, revision });
     await delay(MOCK_DELAY);
     
     return {

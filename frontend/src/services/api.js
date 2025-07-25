@@ -3,11 +3,11 @@ import { mockApi, isMockApiEnabled } from './mockApi';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Mock API 모드 확인 (런타임에 확인)
-const useMock = () => isMockApiEnabled();
+const checkMockMode = () => isMockApiEnabled();
 
 // 공통 API 호출 함수
 const apiCall = async (endpoint, options = {}) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     console.log('Mock API 모드 사용 중');
     return mockApi[endpoint] || (() => Promise.reject(new Error('Mock API not found')));
   }
@@ -31,7 +31,7 @@ const apiCall = async (endpoint, options = {}) => {
 
 // 직무 정보 추출
 export const extractJobInfo = async (url) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.extractJobInfo(url);
   }
 
@@ -53,7 +53,7 @@ export const extractJobInfo = async (url) => {
 
 // 세션 생성 (자기소개서 생성)
 export const createSession = async (data) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.createSession(data);
   }
 
@@ -91,7 +91,7 @@ export const createSession = async (data) => {
 
 // 자기소개서 결과 조회
 export const getCoverLetter = async (sessionId) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.getCoverLetter(sessionId);
   }
 
@@ -100,7 +100,7 @@ export const getCoverLetter = async (sessionId) => {
 
 // 자기소개서 생성 (AI 모델 호출)
 export const generate = async ({ sessionId }) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.generate({ sessionId });
   }
 
@@ -112,7 +112,7 @@ export const generate = async ({ sessionId }) => {
 
 // 문항 추가
 export const addQuestion = async (sessionId, question) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.addQuestion(sessionId, question);
   }
 
@@ -123,12 +123,12 @@ export const addQuestion = async (sessionId, question) => {
 };
 
 // 답변 수정
-export const reviseAnswer = async (sessionId, questionId, revision) => {
-  if (useMock()) {
-    return mockApi.reviseAnswer(sessionId, questionId, revision);
+export const reviseAnswer = async (sessionId, questionIndex, revision) => {
+  if (checkMockMode()) {
+    return mockApi.reviseAnswer(sessionId, questionIndex, revision);
   }
 
-  return apiCall(`/api/v1/sessions/${sessionId}/questions/${questionId}/revise`, {
+  return apiCall(`/api/v1/sessions/${sessionId}/questions/${questionIndex}/revise`, {
     method: 'POST',
     body: JSON.stringify({ revision }),
   });
@@ -136,7 +136,7 @@ export const reviseAnswer = async (sessionId, questionId, revision) => {
 
 // 콘텐츠 프리로딩
 export const preloadContent = async (data) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.preloadContent(data);
   }
 
@@ -148,7 +148,7 @@ export const preloadContent = async (data) => {
 
 // 저장된 프리로딩 콘텐츠 조회
 export const getPreloadedContent = async (contentId) => {
-  if (useMock()) {
+  if (checkMockMode()) {
     return mockApi.getPreloadedContent(contentId);
   }
 

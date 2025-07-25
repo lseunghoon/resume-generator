@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
-import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import './FileUploadPage.css';
 
@@ -308,11 +307,20 @@ const FileUploadPage = () => {
         </div>
       </div>
 
-      <NextButton
-        text="다음"
-        disabled={false}
-        onClick={handleNext}
-      />
+      <div className="button-container">
+        <button 
+          className="skip-button"
+          onClick={handleSkip}
+        >
+          건너뛰기
+        </button>
+        <button 
+          className="next-button active"
+          onClick={handleNext}
+        >
+          다음
+        </button>
+      </div>
     </div>
   );
 };
