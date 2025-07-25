@@ -133,7 +133,19 @@ function ResultPage() {
         
         setIsRevising(true);
         try {
-            const response = await reviseAnswer(sessionId, activeTab, revisionRequest);
+            // 실제 질문 ID 사용
+            const questionId = answers[activeTab]?.id;
+            console.log('수정 요청 - 현재 탭:', activeTab);
+            console.log('수정 요청 - answers:', answers);
+            console.log('수정 요청 - 선택된 질문:', answers[activeTab]);
+            console.log('수정 요청 - 질문 ID:', questionId);
+            
+            if (!questionId) {
+                console.error('질문 ID를 찾을 수 없습니다.');
+                return;
+            }
+            
+            const response = await reviseAnswer(sessionId, questionId, revisionRequest);
             
             // mock API 응답 구조에 맞게 수정
             const revisedAnswerText = response.revised_answer?.answer || response.revised_answer;
@@ -230,7 +242,7 @@ function ResultPage() {
             
             if (newAnswerData.question) {
                 const newAnswer = {
-                    id: answers.length + 1,
+                    id: newAnswerData.questionId || response.questionId || answers.length + 1,
                     question: newAnswerData.question,
                     length: newAnswerData.answer?.length || 0,
                     answer: newAnswerData.answer,

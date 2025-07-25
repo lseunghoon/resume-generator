@@ -62,6 +62,9 @@ class Question(Base):
     question = Column(String, nullable=False)
     length = Column(Integer, nullable=False)
     
+    # 세션 내 질문 번호 (1, 2, 3...)
+    question_number = Column(Integer, nullable=False)
+    
     # 버전 히스토리 시스템
     answer_history = Column(Text, nullable=True)  # JSON 형태의 문자열로 답변 리스트 저장
     current_version_index = Column(Integer, default=0, nullable=False)

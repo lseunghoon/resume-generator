@@ -319,7 +319,9 @@ def register_routes(app):
                 
                 new_question = Question(
                     question=validated_question['question'],
-                    length=validated_question['length']
+                    length=validated_question['length'],
+                    question_number=i + 1,  # 세션 내 질문 번호 (1, 2, 3...)
+                    session_id=new_session.id
                 )
                 new_session.questions.append(new_question)
 
@@ -538,8 +540,10 @@ def register_routes(app):
             
             job_posting_url = data['jobPostingUrl']
             
-            if not check_robots_txt_permission(job_posting_url):
-                raise APIError("로봇이 못보게 방화벽을 설치한 링크에요. 다른 링크를 입력해주세요.", 403)
+            # 책임감 있는 robots.txt 검증
+            can_crawl, delay = check_robots_txt_permission(job_posting_url)
+            if not can_crawl:
+                raise APIError("로봇이 읽지 못하는 링크입니다 :( 다른 채용공고를 입력해보세요.", 403)
             
             if not validate_job_posting_url(job_posting_url):
                 raise APIError("유효하지 않은 채용공고 URL입니다.", 400)
@@ -569,12 +573,17 @@ def register_routes(app):
             app.logger.info("콘텐츠 프리로딩 요청 시작")
             data = request.get_json()
             
-            job_description_url = validate_job_posting_url(data.get('jobPostingUrl'))
+            job_description_url = data.get('jobPostingUrl')
             html_content = data.get('htmlContent', '')
             
-            # robots.txt 권한 확인
-            if not check_robots_txt_permission(job_description_url):
-                raise APIError("해당 웹사이트의 크롤링이 허용되지 않습니다.", status_code=403)
+            # URL 유효성 검증
+            if not validate_job_posting_url(job_description_url):
+                raise APIError("올바른 채용공고 URL이 아닙니다.", status_code=400)
+            
+            # 책임감 있는 robots.txt 검증
+            can_crawl, delay = check_robots_txt_permission(job_description_url)
+            if not can_crawl:
+                raise APIError("로봇이 읽지 못하는 링크입니다 :( 다른 채용공고를 입력해보세요.", status_code=403)
             
             app.logger.info("백그라운드 콘텐츠 추출 시작")
             
@@ -693,17 +702,21 @@ def register_routes(app):
             generated_answer = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=session.jd_text,
-                resume_text=session.resume_text,
-                length=str(validated_question['length'])
+                resume_text=session.resume_text
             )
             
             if not generated_answer:
                 raise APIError("답변 생성에 실패했습니다.", status_code=500)
             
+            # 세션 내 질문 번호 계산
+            existing_questions_count = len(session.questions)
+            question_number = existing_questions_count + 1
+            
             # 새 질문 저장
             new_question_obj = Question(
                 question=validated_question['question'],
                 length=len(generated_answer),
+                question_number=question_number,
                 answer_history=json.dumps([generated_answer]),
                 current_version_index=0,
                 session_id=session_id
@@ -731,6 +744,166 @@ def register_routes(app):
             app.logger.error(f"새 질문 추가 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"새 질문 추가에 실패했습니다: {str(e)}", status_code=500)
+        finally:
+            db.close()
+
+    @app.route('/api/v1/sessions/<string:session_id>/questions', methods=['POST'])
+    def add_question_to_session(session_id):
+        """특정 세션에 새로운 질문 추가 (RESTful 엔드포인트)"""
+        db = next(get_db())
+        
+        try:
+            app.logger.info(f"새 질문 추가 요청 시작 - 세션: {session_id}")
+            
+            data = request.get_json()
+            if not data or 'question' not in data:
+                raise APIError("question이 필요합니다.", status_code=400)
+            
+            question_text = data.get('question')
+            
+            # 질문 검증
+            validated_question = validate_question_data(question_text)
+            
+            # 세션 조회
+            session = db.query(Session).filter(Session.id == session_id).first()
+            if not session:
+                raise APIError("세션을 찾을 수 없습니다.", status_code=404)
+            
+            # 최대 질문 수 제한
+            if len(session.questions) >= 3:
+                raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
+            
+            # 데이터 유효성 검증
+            if not session.resume_text or not session.jd_text:
+                raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
+            
+            # AI 답변 생성
+            generated_answer = app.get_ai_service().generate_cover_letter(
+                question=validated_question['question'],
+                jd_text=session.jd_text,
+                resume_text=session.resume_text
+            )
+            
+            if not generated_answer:
+                raise APIError("답변 생성에 실패했습니다.", status_code=500)
+            
+            # 세션 내 질문 번호 계산
+            existing_questions_count = len(session.questions)
+            question_number = existing_questions_count + 1
+            
+            # 새 질문 저장
+            new_question_obj = Question(
+                question=validated_question['question'],
+                length=len(generated_answer),
+                question_number=question_number,
+                answer_history=json.dumps([generated_answer]),
+                current_version_index=0,
+                session_id=session_id
+            )
+            
+            db.add(new_question_obj)
+            db.commit()
+            db.refresh(new_question_obj)
+            
+            app.logger.info(f"새 질문 저장 완료 - ID: {new_question_obj.id}")
+            
+            return jsonify({
+                'questionId': new_question_obj.id,
+                'question': validated_question['question'],
+                'answer': generated_answer,
+                'length': len(generated_answer),
+                'message': '새로운 질문과 답변이 생성되었습니다.'
+            }), 200
+            
+        except (APIError, ValidationError):
+            db.rollback()
+            raise
+        except Exception as e:
+            db.rollback()
+            app.logger.error(f"새 질문 추가 오류: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            raise APIError(f"새 질문 추가에 실패했습니다: {str(e)}", status_code=500)
+        finally:
+            db.close()
+
+    @app.route('/api/v1/sessions/<string:session_id>/questions/<int:question_id>/revise', methods=['POST'])
+    def revise_answer(session_id, question_id):
+        """특정 질문의 답변 수정"""
+        db = next(get_db())
+        
+        try:
+            app.logger.info(f"답변 수정 요청 시작 - 세션: {session_id}, 질문: {question_id}")
+            
+            data = request.get_json()
+            if not data or 'revision' not in data:
+                raise APIError("revision이 필요합니다.", status_code=400)
+            
+            revision_text = data['revision']
+            
+            # 세션 조회
+            session = db.query(Session).filter(Session.id == session_id).first()
+            if not session:
+                raise APIError("세션을 찾을 수 없습니다.", status_code=404)
+            
+            # 질문 조회
+            question = db.query(Question).filter(
+                Question.session_id == session_id, 
+                Question.id == question_id
+            ).first()
+            if not question:
+                raise APIError("질문을 찾을 수 없습니다.", status_code=404)
+            
+            # 현재 답변을 히스토리에 추가
+            current_answer = question.answer_history
+            if current_answer:
+                try:
+                    history_list = json.loads(current_answer) if isinstance(current_answer, str) else current_answer
+                except (json.JSONDecodeError, TypeError):
+                    history_list = []
+            else:
+                history_list = []
+            
+            # 현재 답변을 히스토리에 추가
+            if question.current_version_index < len(history_list):
+                current_answer_text = history_list[question.current_version_index]
+                history_list.append(current_answer_text)
+            else:
+                history_list.append("")
+            
+            # 답변 수정
+            revised_answer = app.get_ai_service().revise_cover_letter(
+                question=question.question,
+                jd_text=session.jd_text,
+                resume_text=session.resume_text or "",
+                original_answer=current_answer_text if 'current_answer_text' in locals() else "",
+                user_edit_prompt=revision_text
+            )
+            
+            # 새로운 답변을 히스토리에 추가
+            history_list.append(revised_answer)
+            
+            # 데이터베이스 업데이트
+            question.answer_history = json.dumps(history_list)
+            question.current_version_index = len(history_list) - 1
+            
+            db.commit()
+            
+            app.logger.info(f"답변 수정 완료 - 세션: {session_id}, 질문: {question_id}")
+            
+            return jsonify({
+                'success': True,
+                'revised_answer': revised_answer,
+                'message': '답변이 수정되었습니다.'
+            }), 200
+            
+        except (APIError, ValidationError):
+            db.rollback()
+            raise
+        except Exception as e:
+            db.rollback()
+            app.logger.error(f"답변 수정 중 오류: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            raise APIError(f"답변 수정에 실패했습니다: {str(e)}", status_code=500)
         finally:
             db.close()
 

@@ -211,7 +211,8 @@ const QuestionPage = () => {
 
       <NextButton
         text="자기소개서 생성하기"
-        disabled={isGenerating || !question.trim()}
+        disabled={!question.trim()}
+        loading={isGenerating}
         onClick={handleGenerate}
       />
     </div>

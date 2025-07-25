@@ -12,7 +12,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from bs4 import BeautifulSoup
 import requests
+import time
 from utils.chrome_driver import create_chrome_driver, ChromeDriverError
+from utils.robots_checker import check_robots_txt_permission, get_custom_user_agent
 from utils.validators import analyze_job_posting_content
 from utils.logger import LoggerMixin
 
@@ -50,6 +52,9 @@ class CrawlingService(LoggerMixin):
             
         except Exception as e:
             self.logger.error(f"빠른 직무 추출 실패: {str(e)}")
+            self.logger.error(f"예외 타입: {type(e).__name__}")
+            import traceback
+            self.logger.error(f"상세 오류: {traceback.format_exc()}")
             raise
             
     def extract_content_from_html(self, html_content: str, base_url: str) -> str:
@@ -103,10 +108,24 @@ class CrawlingService(LoggerMixin):
             return "" # 실패 시 빈 문자열 반환
 
     def _load_dynamic_page(self, url: str) -> str:
-        """1단계: Selenium을 사용한 동적 페이지 로드"""
+        """1단계: Selenium을 사용한 동적 페이지 로드 (선-검증, 후-실행)"""
+        
+        # === 핵심 수정: 크롤링 실행 전 검증 및 지연 ===
+        can_crawl, delay = check_robots_txt_permission(url)
+        
+        if not can_crawl:
+            # 명시적으로 에러를 발생시켜 크롤링을 중단
+            raise PermissionError(f"robots.txt 정책에 따라 '{url}'의 크롤링이 거부되었습니다.")
+            
+        self.logger.info(f"robots.txt 정책 준수: {delay}초 대기 후 크롤링을 시작합니다.")
+        time.sleep(delay)
+        # ============================================
+
         driver = None
         try:
-            driver = create_chrome_driver()
+            # create_chrome_driver가 CUSTOM_USER_AGENT를 사용하도록 수정
+            custom_ua = get_custom_user_agent()
+            driver = create_chrome_driver(user_agent=custom_ua)
             driver.get(url)
             
             # 페이지 로드 대기
@@ -117,12 +136,22 @@ class CrawlingService(LoggerMixin):
             return driver.page_source
             
         except Exception as e:
-            self.logger.warning(f"Selenium 크롤링 실패, requests로 대체: {e}")
+            self.logger.error(f"Selenium 크롤링 실패: {str(e)}")
+            self.logger.error(f"예외 타입: {type(e).__name__}")
+            import traceback
+            self.logger.error(f"상세 오류: {traceback.format_exc()}")
+            
+            self.logger.info("requests로 대체 시도...")
             try:
                 response = requests.get(url, timeout=10)
                 response.raise_for_status()
+                self.logger.info("requests 크롤링 성공")
                 return response.text
             except Exception as fallback_error:
+                self.logger.error(f"requests 크롤링도 실패: {str(fallback_error)}")
+                self.logger.error(f"fallback 예외 타입: {type(fallback_error).__name__}")
+                import traceback
+                self.logger.error(f"fallback 상세 오류: {traceback.format_exc()}")
                 raise Exception(f"모든 크롤링 방법 실패: {fallback_error}")
         finally:
             if driver:

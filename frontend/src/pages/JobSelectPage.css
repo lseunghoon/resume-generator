@@ -98,9 +98,50 @@
 .form-header p {
   font-size: 16px;
   color: #64748b;
-  line-height: 1.6;
-  max-width: 520px;
-  margin: 0 auto;
+}
+
+/* 프리로딩 오류 메시지 스타일 */
+.preload-error-message {
+  display: flex;
+  align-items: flex-start;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.error-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0 0 4px 0;
+}
+
+.error-description {
+  font-size: 14px;
+  color: #dc2626;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.error-note {
+  font-size: 13px;
+  color: #7f1d1d;
+  margin: 0;
+  line-height: 1.4;
 }
 
 .job-options {
@@ -221,6 +262,23 @@
 
   .form-header p {
     font-size: 14px;
+  }
+
+  .preload-error-message {
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+
+  .error-title {
+    font-size: 13px;
+  }
+
+  .error-description {
+    font-size: 13px;
+  }
+
+  .error-note {
+    font-size: 12px;
   }
 
   .job-option {

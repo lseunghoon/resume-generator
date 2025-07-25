@@ -13,6 +13,8 @@ const LinkUploadPage = () => {
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState('');
   const [isValidUrl, setIsValidUrl] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,7 +82,21 @@ const LinkUploadPage = () => {
       });
     } catch (error) {
       console.error('직무 정보 추출 오류:', error);
-      setError(error.message || '직무 정보 추출에 실패했습니다.');
+      
+      // 크롤링 관련 오류인지 확인
+      if (error.message && error.message.includes('로봇이 읽지 못하는 링크')) {
+        // 알림 표시
+        setNotificationMessage(error.message);
+        setShowNotification(true);
+        
+        // 3초 후 알림 숨기기
+        setTimeout(() => {
+          setShowNotification(false);
+          setNotificationMessage('');
+        }, 3000);
+      } else {
+        setError(error.message || '직무 정보 추출에 실패했습니다.');
+      }
     } finally {
       setIsExtracting(false);
     }
@@ -106,6 +122,18 @@ const LinkUploadPage = () => {
   return (
     <div className="link-upload-page">
       <Header progress={25} />
+      
+      {/* 알림 메시지 */}
+      {showNotification && (
+        <div className="notification-overlay">
+          <div className="notification-message">
+            <div className="notification-icon">⚠️</div>
+            <div className="notification-content">
+              <p className="notification-text">{notificationMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="page-content">
         <div className="content-wrapper">
@@ -135,7 +163,8 @@ const LinkUploadPage = () => {
 
       <NextButton
         text="다음"
-        disabled={!isValidUrl || isExtracting}
+        disabled={!isValidUrl}
+        loading={isExtracting}
         onClick={handleExtractJobInfo}
       />
     </div>

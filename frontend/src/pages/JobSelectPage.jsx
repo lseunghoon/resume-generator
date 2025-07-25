@@ -17,6 +17,7 @@ const JobSelectPage = () => {
   const [htmlContent, setHtmlContent] = useState(''); // jobDescription -> htmlContent
   const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
   const [contentId, setContentId] = useState(null); // 프리로딩된 콘텐츠 ID
+  const [preloadError, setPreloadError] = useState(''); // 프리로딩 오류 메시지
   const hasStartedPreloading = useRef(false); // 프리로딩 시작 여부 추적
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,6 +70,7 @@ const JobSelectPage = () => {
       });
       
       console.log('JobSelectPage - 백그라운드 프리로딩 완료');
+      setPreloadError(''); // 성공 시 오류 메시지 초기화
       
       if (response.contentId) {
         // 대용량 콘텐츠인 경우 contentId 저장
@@ -83,7 +85,7 @@ const JobSelectPage = () => {
       }
     } catch (error) {
       console.error('JobSelectPage - 백그라운드 프리로딩 실패:', error);
-      // 프리로딩 실패해도 계속 진행
+      // 프리로딩 실패해도 계속 진행 (사용자에게 알림하지 않음)
     }
   }, [jobPostingUrl, htmlContent]);
 
@@ -201,6 +203,8 @@ const JobSelectPage = () => {
                 <h1>추출된 직무 중,<br/>원하는 직무를 선택해주세요.</h1>
                 <p>원하는 직무가 없다면 '직접 입력'을 선택해 입력해주세요.</p>
               </div>
+              
+
               
               <div className="job-options">
                 <div className="job-list">
