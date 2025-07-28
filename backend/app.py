@@ -8,6 +8,7 @@ from flask_cors import CORS
 import traceback
 import json
 import werkzeug
+import uuid
 
 # 설정 및 유틸리티 모듈
 from config import get_cors_config, validate_settings
@@ -234,97 +235,39 @@ def register_routes(app):
             data = json.loads(data_str)
             validated_data = validate_session_data(data)
             
-            job_description_url = validated_data['jobDescriptionUrl'].strip()
-            questions_data = validated_data['questions']
-            lengths_data = validated_data.get('lengths', [])
-            html_content = validated_data.get('htmlContent') # 프론트에서 전달받을 HTML
-            preloaded_content = validated_data.get('preloadedContent') # 프리로딩된 콘텐츠
-            content_id = validated_data.get('contentId') # 프리로딩된 콘텐츠 ID
-
-            # 디버깅: contentId 확인
-            app.logger.info(f"받은 contentId: {content_id}")
-            app.logger.info(f"preloaded_content_store 키 목록: {list(preloaded_content_store.keys())}")
-
-            job_description = ""
-            if content_id:
-                # contentId로 저장된 콘텐츠 조회 (우선순위 1)
-                app.logger.info(f"contentId로 저장된 콘텐츠 조회: {content_id}")
-                if content_id in preloaded_content_store:
-                    content_data = preloaded_content_store[content_id]
-                    job_description = content_data['content']
-                    # 사용 후 삭제
-                    del preloaded_content_store[content_id]
-                    app.logger.info(f"저장된 콘텐츠 사용 후 삭제: {content_id}")
-                else:
-                    app.logger.warning(f"저장된 콘텐츠를 찾을 수 없음: {content_id}")
-                    # contentId가 있지만 저장소에 없으면 크롤링 수행
-                    app.logger.info("contentId가 유효하지 않으므로 직접 크롤링 수행")
-                    try:
-                        crawling_service = app.get_crawling_service()
-                        job_titles, html_content = crawling_service.extract_job_quick(job_description_url)
-                        job_description = crawling_service.extract_content_from_html(html_content, job_description_url)
-                        app.logger.info("직접 크롤링 완료")
-                    except Exception as e:
-                        app.logger.error(f"크롤링 실패: {str(e)}")
-                        job_description = ""
-            elif preloaded_content:
-                # 프리로딩된 콘텐츠가 있으면 사용 (우선순위 2)
-                app.logger.info("프리로딩된 콘텐츠 사용")
-                job_description = preloaded_content
-            elif html_content:
-                app.logger.info("미리 받아온 HTML 소스로 전체 콘텐츠 추출 시작")
-                job_description = app.get_crawling_service().extract_content_from_html(
-                    html_content, job_description_url
-                )
-                app.logger.info("전체 콘텐츠 추출 완료")
-            else:
-                # htmlContent가 없는 경우 직접 크롤링 수행
-                app.logger.info("HTML 콘텐츠가 없습니다. 직접 크롤링을 수행합니다.")
-                try:
-                    crawling_service = app.get_crawling_service()
-                    job_titles, html_content = crawling_service.extract_job_quick(job_description_url)
-                    job_description = crawling_service.extract_content_from_html(html_content, job_description_url)
-                    app.logger.info("직접 크롤링 완료")
-                except Exception as e:
-                    app.logger.error(f"크롤링 실패: {str(e)}")
-                    # 크롤링 실패 시에도 계속 진행 (빈 job_description으로)
-                    job_description = ""
+            # 사용자 직접 입력 채용정보 사용
+            job_description = validated_data['jobDescription'].strip()
+            resume_text = validated_data['resumeText'].strip()
+            
+            app.logger.info(f"채용정보 텍스트: {len(job_description)}자")
+            app.logger.info(f"이력서 텍스트: {len(resume_text)}자")
 
 
-            # 파일 텍스트 추출 (파일이 없으면 빈 텍스트)
+            # 파일 텍스트 추출 (파일이 있으면 파일에서 추출, 없으면 사용자 입력 사용)
             if files:
                 file_result = app.get_file_service().process_uploaded_files(files)
                 if not file_result['success']:
                     raise APIError(file_result['message'], status_code=400)
                 
-                resume_text = file_result['extracted_text']
-                app.logger.info(f"이력서 텍스트 추출 완료: {len(resume_text)}자")
+                file_resume_text = file_result['extracted_text']
+                app.logger.info(f"파일에서 이력서 텍스트 추출 완료: {len(file_resume_text)}자")
+                
+                # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합
+                if resume_text and file_resume_text:
+                    resume_text = f"{resume_text}\n\n=== 파일에서 추출한 내용 ===\n{file_resume_text}"
+                    app.logger.info(f"사용자 입력과 파일 내용 결합: {len(resume_text)}자")
+                elif file_resume_text:
+                    resume_text = file_resume_text
+                    app.logger.info("파일에서 추출한 텍스트만 사용")
             else:
-                resume_text = ""  # 파일이 없으면 빈 텍스트
-                app.logger.info("파일이 없어서 이력서 텍스트를 빈 문자열로 설정")
+                app.logger.info("파일이 없어서 사용자 입력 텍스트만 사용")
 
             # 세션 생성
             new_session = Session(
                 id=str(uuid.uuid4()),
-                jd_url=job_description_url,
                 jd_text=job_description,
                 resume_text=resume_text
             )
-
-            # 질문 생성
-            for i, q_text in enumerate(questions_data):
-                validated_question = validate_question_data(
-                    q_text, 
-                    lengths_data[i] if i < len(lengths_data) else None
-                )
-                
-                new_question = Question(
-                    question=validated_question['question'],
-                    length=validated_question['length'],
-                    question_number=i + 1,  # 세션 내 질문 번호 (1, 2, 3...)
-                    session_id=new_session.id
-                )
-                new_session.questions.append(new_question)
 
             db.add(new_session)
             db.commit()
@@ -346,6 +289,68 @@ def register_routes(app):
             raise APIError(f"세션 생성에 실패했습니다: {str(e)}", status_code=500)
         finally:
             db.close()
+
+    @app.route('/api/v1/job-info', methods=['POST'])
+    def job_info():
+        """채용정보 직접 입력 API"""
+        try:
+            app.logger.info("채용정보 입력 요청 시작")
+            data = request.get_json()
+            
+            # 필수 필드 검증
+            required_fields = ['companyName', 'jobTitle', 'mainResponsibilities', 'requirements', 'preferredQualifications']
+            for field in required_fields:
+                if not data.get(field):
+                    raise APIError(f"필수 필드가 누락되었습니다: {field}", status_code=400)
+            
+            # 텍스트 길이 검증
+            if len(data['companyName'].strip()) < 2:
+                raise APIError("회사명은 최소 2자 이상이어야 합니다.", status_code=400)
+            
+            if len(data['jobTitle'].strip()) < 2:
+                raise APIError("직무는 최소 2자 이상이어야 합니다.", status_code=400)
+            
+            if len(data['mainResponsibilities'].strip()) < 10:
+                raise APIError("주요업무는 최소 10자 이상이어야 합니다.", status_code=400)
+            
+            if len(data['requirements'].strip()) < 10:
+                raise APIError("자격요건은 최소 10자 이상이어야 합니다.", status_code=400)
+            
+            # 우대사항은 선택사항이므로 빈 문자열도 허용
+            preferred_qualifications = data.get('preferredQualifications', '').strip()
+            
+            # 채용정보 텍스트 구성
+            job_description = f"""
+회사명: {data['companyName'].strip()}
+직무: {data['jobTitle'].strip()}
+
+주요업무:
+{data['mainResponsibilities'].strip()}
+
+자격요건:
+{data['requirements'].strip()}
+"""
+            
+            if preferred_qualifications:
+                job_description += f"""
+우대사항:
+{preferred_qualifications}
+"""
+            
+            app.logger.info(f"채용정보 구성 완료: {len(job_description)}자")
+            
+            return jsonify({
+                'success': True,
+                'jobDescription': job_description,
+                'message': '채용정보가 성공적으로 처리되었습니다.'
+            }), 200
+            
+        except APIError:
+            raise
+        except Exception as e:
+            app.logger.error(f"채용정보 입력 처리 중 오류: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            raise APIError(f"채용정보 입력에 실패했습니다: {str(e)}", status_code=500)
 
     @app.route('/api/v1/generate', methods=['POST'])
     def generate():
