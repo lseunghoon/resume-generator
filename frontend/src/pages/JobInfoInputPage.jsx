@@ -5,6 +5,39 @@ import NextButton from '../components/NextButton';
 import Input from '../components/Input';
 import './JobInfoInputPage.css';
 
+// Mock 데이터 (보이저엑스 서비스기획 인턴)
+const mockJobData = {
+  companyName: "보이저엑스",
+  jobTitle: "서비스기획",
+  mainResponsibilities: `보이저엑스의 서비스 기획 인턴은 다음과 같은 활동을 통해 사용자들이 보이저엑스의 여러 서비스들을 더욱 즐겁고 편리하게 사용할 수 있도록 합니다.
+
+**■ 주요 업무:**
+
+a. 문제의 발견: 정량적, 정성적인 방법으로 사용자가 겪고 있는 문제를 발견합니다.
+
+b. 문제의 정리: 발견한 문제를 논리적이고 체계적으로 잘 정리합니다.
+
+c. 문제의 공유: 정리된 문제를 여러가지 방법으로 잘 공유합니다.
+
+d. 해결책의 제시: 문제의 해결책을 제시합니다.
+
+**■ 추가 업무:**
+
+e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고 있는 모든 일의 보조`,
+  requirements: `**■  필수 요건:**
+
+1. 인턴 지원 자격에 해당하는 분
+2. 성실하고 꼼꼼한 분
+3. 정직하고 책임감이 강한 분
+4. 공감하고 경청할 수 있는 분
+5. 각종 소프트웨어를 잘 다루는 분
+6. 글을 잘 읽고 잘 쓸 수 있는 분
+7. 논리적이고 분석적인 분`,
+  preferredQualifications: `**■ 우대 사항:** 
+
+1. 영어 또는 일본어로 의사 소통이 가능한 분`
+};
+
 const JobInfoInputPage = () => {
   const [formData, setFormData] = useState({
     companyName: '',
@@ -18,10 +51,13 @@ const JobInfoInputPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 이전에 입력한 데이터가 있으면 복원
+  // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
     if (location.state?.jobInfo) {
       setFormData(location.state.jobInfo);
+    } else if (localStorage.getItem('useMockApi') === 'true' && localStorage.getItem('mockJobDataFilled') === 'true') {
+      // Mock API 모드이고 Mock 데이터 채우기 플래그가 설정되어 있을 때 자동으로 데이터 채우기
+      setFormData(mockJobData);
     }
   }, [location.state]);
 
@@ -98,6 +134,8 @@ const JobInfoInputPage = () => {
       handleSubmit();
     }
   };
+
+
 
   return (
     <div className="job-info-input-page">

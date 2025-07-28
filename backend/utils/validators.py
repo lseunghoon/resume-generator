@@ -47,10 +47,16 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
     if len(data['jobDescription'].strip()) < 50:
         raise ValidationError("채용공고 텍스트는 최소 50자 이상이어야 합니다.")
     
+    # 질문 필드 검증 (선택사항)
+    questions = data.get('questions', [])
+    if not isinstance(questions, list):
+        questions = []
+    
     # 텍스트 정제
     validated_data = {
         'resumeText': sanitize_text(data['resumeText']),
-        'jobDescription': sanitize_text(data['jobDescription'])
+        'jobDescription': sanitize_text(data['jobDescription']),
+        'questions': questions
     }
     
     return validated_data

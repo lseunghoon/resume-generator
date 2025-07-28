@@ -29,27 +29,7 @@ const apiCall = async (endpoint, options = {}) => {
   return response.json();
 };
 
-// 직무 정보 추출 (기존 크롤링 방식)
-export const extractJobInfo = async (url) => {
-  if (checkMockMode()) {
-    return mockApi.extractJobInfo(url);
-  }
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/extract-job-quick`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ jobPostingUrl: url }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || '직무 정보 추출에 실패했습니다.');
-  }
-
-  return response.json();
-};
 
 // 채용정보 직접 입력 (새로운 방식)
 export const submitJobInfo = async (jobInfo) => {
@@ -92,10 +72,7 @@ export const createSession = async (data) => {
   const jsonData = {
     jobDescription: data.jobDescription || '',
     resumeText: data.resumeText || '',
-    jobDescriptionUrl: data.jobPostingUrl, // 기존 호환성
-    selectedJob: data.selectedJob, // 기존 호환성
-    questions: data.questions, // 기존 호환성
-    contentId: data.contentId // 기존 호환성
+    questions: data.questions || []
   };
   
   formData.append('data', JSON.stringify(jsonData));
@@ -158,28 +135,7 @@ export const reviseAnswer = async (sessionId, questionIndex, revision) => {
   });
 };
 
-// 콘텐츠 프리로딩
-export const preloadContent = async (data) => {
-  if (checkMockMode()) {
-    return mockApi.preloadContent(data);
-  }
 
-  return apiCall(`/api/v1/preload-content`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-};
-
-// 저장된 프리로딩 콘텐츠 조회
-export const getPreloadedContent = async (contentId) => {
-  if (checkMockMode()) {
-    return mockApi.getPreloadedContent(contentId);
-  }
-
-  return apiCall(`/api/v1/get-preloaded-content/${contentId}`, {
-    method: 'GET',
-  });
-};
 
 // 세션 삭제
 export const deleteSession = async (sessionId) => {

@@ -238,9 +238,11 @@ def register_routes(app):
             # 사용자 직접 입력 채용정보 사용
             job_description = validated_data['jobDescription'].strip()
             resume_text = validated_data['resumeText'].strip()
+            questions = validated_data.get('questions', [])
             
             app.logger.info(f"채용정보 텍스트: {len(job_description)}자")
             app.logger.info(f"이력서 텍스트: {len(resume_text)}자")
+            app.logger.info(f"질문 개수: {len(questions)}개")
 
 
             # 파일 텍스트 추출 (파일이 있으면 파일에서 추출, 없으면 사용자 입력 사용)
@@ -292,6 +294,52 @@ def register_routes(app):
             db.refresh(new_session)
             
             app.logger.info(f"세션 생성 성공: {new_session.id}")
+            
+            # 질문이 있으면 자기소개서 생성
+            if questions:
+                app.logger.info("자기소개서 생성 요청 시작")
+                try:
+                    # AI 서비스를 사용하여 자기소개서 생성
+                    ai_service = app.get_ai_service()
+                    
+                    for i, question_text in enumerate(questions):
+                        if question_text and question_text.strip():
+                            app.logger.info(f"질문 {i+1} 처리 중: {question_text[:50]}...")
+                            
+                            # AI 서비스로 자기소개서 생성
+                            result = ai_service.generate_cover_letter(
+                                question=question_text,
+                                jd_text=job_description,
+                                resume_text=resume_text,
+                                company_name=company_name,
+                                job_title=job_title
+                            )
+                            
+                            # 튜플에서 답변과 회사 정보 추출
+                            answer, company_info = result
+                            
+                            # 질문과 답변을 데이터베이스에 저장
+                            new_question = Question(
+                                session_id=new_session.id,
+                                question=question_text.strip(),
+                                answer_history=json.dumps([answer]),
+                                current_version_index=0,
+                                length=len(answer),
+                                question_number=i+1  # 세션 내 질문 번호
+                            )
+                            
+                            db.add(new_question)
+                    
+                    db.commit()
+                    app.logger.info("자기소개서 생성 완료")
+                    
+                except Exception as e:
+                    app.logger.error(f"자기소개서 생성 중 오류: {str(e)}")
+                    # 자기소개서 생성 실패해도 세션은 성공으로 처리
+                    pass
+            else:
+                app.logger.info("질문이 없어서 자기소개서 생성 건너뜀")
+            
             return jsonify({
                 'sessionId': new_session.id,
                 'message': 'Files uploaded and session created successfully'
@@ -391,62 +439,12 @@ def register_routes(app):
 
     @app.route('/api/v1/generate', methods=['POST'])
     def generate():
-        """세션 ID를 받아 자기소개서 생성 (배치 처리)"""
-        db = next(get_db())
-        
-        try:
-            app.logger.info("자기소개서 생성 요청 시작")
-            data = request.get_json()
-            session_id = validate_session_id(data.get('sessionId'))
-
-            session = db.query(Session).filter(Session.id == session_id).first()
-            if not session:
-                raise APIError("세션을 찾을 수 없습니다.", status_code=404)
-
-            # 단일 처리
-            app.logger.info(f"자기소개서 생성 시작: {len(session.questions)}개 질문")
-            
-            # 각 질문에 대해 개별적으로 AI 답변 생성
-            # company_info = ""  # 첫 번째 질문에서 회사 정보를 가져와서 저장 (현재 비활성화)
-            for i, question in enumerate(session.questions):
-                answer, question_company_info = app.get_ai_service().generate_cover_letter(
-                    question=question.question,
-                    jd_text=session.jd_text,
-                    resume_text=session.resume_text,
-                    company_name=session.company_name or "",
-                    job_title=session.job_title or ""
-                )
-                
-                # 첫 번째 질문에서 회사 정보를 세션에 저장 (현재 비활성화)
-                # if i == 0 and question_company_info:
-                #     session.company_info = question_company_info
-                
-                if answer:
-                    question.answer_history = json.dumps([answer])
-                    question.current_version_index = 0
-                else:
-                    raise APIError(f"질문 '{question.question[:50]}...'에 대한 답변 생성에 실패했습니다.", status_code=500)
-            
-            db.commit()
-            app.logger.info("자기소개서 생성 완료")
-
-            questions_with_answers = [q.to_dict() for q in session.questions]
-            
-            return jsonify({
-                'questions': questions_with_answers,
-                'message': f'자기소개서 생성 완료 ({len(session.questions)}개 문항)'
-            }), 200
-
-        except (APIError, ValidationError):
-            db.rollback()
-            raise
-        except Exception as e:
-            db.rollback()
-            app.logger.error(f"자기소개서 생성 오류: {str(e)}")
-            app.logger.error(traceback.format_exc())
-            raise APIError(f"자기소개서 생성에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
+        """세션 ID를 받아 자기소개서 생성 (배치 처리) - 비활성화됨"""
+        # 이 엔드포인트는 더 이상 사용되지 않습니다.
+        # 자기소개서 생성은 /api/v1/upload에서 세션 생성과 함께 처리됩니다.
+        return jsonify({
+            'message': '이 엔드포인트는 더 이상 사용되지 않습니다. 자기소개서 생성은 세션 생성과 함께 처리됩니다.'
+        }), 410  # Gone
 
     @app.route('/api/v1/revise', methods=['POST'])
     def revise():
@@ -587,8 +585,9 @@ def register_routes(app):
 
             return jsonify({
                 'questions': questions_with_answers,
-                'jobDescriptionUrl': session.jd_url or '',
-                'selectedJob': selected_job,
+                'jobDescription': session.jd_text or '',
+                'companyName': session.company_name or '',
+                'jobTitle': session.job_title or '',
                 'message': '자기소개서 조회에 성공했습니다.'
             }), 200
 
@@ -635,11 +634,16 @@ def register_routes(app):
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
             
             # AI 답변 생성
-            generated_answer = app.get_ai_service().generate_cover_letter(
+            result = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=session.jd_text,
-                resume_text=session.resume_text
+                resume_text=session.resume_text,
+                company_name=session.company_name or "",
+                job_title=session.job_title or ""
             )
+            
+            # 튜플에서 답변과 회사 정보 추출
+            generated_answer, company_info = result
             
             if not generated_answer:
                 raise APIError("답변 생성에 실패했습니다.", status_code=500)
@@ -717,7 +721,9 @@ def register_routes(app):
             generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=session.jd_text,
-                resume_text=session.resume_text
+                resume_text=session.resume_text,
+                company_name=session.company_name or "",
+                job_title=session.job_title or ""
             )
             
             # 회사 정보가 있으면 세션에 저장 (현재 비활성화)

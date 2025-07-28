@@ -50,6 +50,29 @@
   text-decoration: underline;
 }
 
+.job-company {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.company-icon {
+  font-size: 18px;
+  color: #64748b;
+  width: 18px;
+  text-align: center;
+}
+
+.job-company span:last-child {
+  color: #374151;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
 .job-position {
   display: flex;
   align-items: center;
@@ -59,6 +82,8 @@
 .briefcase-icon {
   font-size: 18px;
   color: #64748b;
+  width: 18px;
+  text-align: center;
 }
 
 .job-position span:last-child {

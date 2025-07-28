@@ -9,12 +9,6 @@ const FileUploadPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]); // 다중 파일을 배열로 관리
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState('');
-  const [jobPostingUrl, setJobPostingUrl] = useState('');
-  const [selectedJob, setSelectedJob] = useState('');
-  const [extractedJobs, setExtractedJobs] = useState([]);
-  const [htmlContent, setHtmlContent] = useState(''); // htmlContent 추가
-  const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
-  const [contentId, setContentId] = useState(null); // contentId 추가
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -22,14 +16,6 @@ const FileUploadPage = () => {
 
   useEffect(() => {
     if (location.state) {
-      // 기존 크롤링 방식 데이터
-      setJobPostingUrl(location.state.jobPostingUrl || '');
-      setSelectedJob(location.state.selectedJob || '');
-      setExtractedJobs(location.state.extractedJobs || []);
-      setHtmlContent(location.state.htmlContent || '');
-      setPreloadedContent(location.state.preloadedContent || null);
-      setContentId(location.state.contentId || null);
-      
       // 새로운 채용정보 입력 방식 데이터
       setJobInfo(location.state.jobInfo || null);
       
@@ -155,13 +141,7 @@ const FileUploadPage = () => {
     
     navigate('/question', { 
       state: { 
-        jobPostingUrl, 
-        selectedJob,
         uploadedFiles: fileObjects, // 다중 파일 배열로 전달
-        extractedJobs,
-        htmlContent, // htmlContent 전달
-        preloadedContent, // 프리로딩된 콘텐츠 전달
-        contentId, // contentId 전달
         jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
         question: location.state?.question || '' // 이전에 입력한 질문 전달
       } 
@@ -171,13 +151,7 @@ const FileUploadPage = () => {
   const handleSkip = () => {
     navigate('/question', { 
       state: { 
-        jobPostingUrl, 
-        selectedJob,
         uploadedFiles: [], // 빈 배열
-        extractedJobs,
-        htmlContent, // htmlContent 전달
-        preloadedContent, // 프리로딩된 콘텐츠 전달
-        contentId, // contentId 전달
         jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
         question: location.state?.question || '' // 이전에 입력한 질문 전달
       } 
@@ -185,26 +159,12 @@ const FileUploadPage = () => {
   };
 
   const handleGoBack = () => {
-    // 새로운 채용정보 입력 방식인 경우
-    if (jobInfo) {
-      navigate('/', { 
-        state: { 
-          jobInfo: jobInfo
-        } 
-      });
-    } else {
-      // 기존 크롤링 방식인 경우
-      navigate('/job-select', { 
-        state: { 
-          jobPostingUrl,
-          selectedJob,
-          extractedJobs,
-          htmlContent,
-          preloadedContent,
-          contentId
-        } 
-      });
-    }
+    // 새로운 채용정보 입력 방식
+    navigate('/', { 
+      state: { 
+        jobInfo: jobInfo
+      } 
+    });
   };
 
   const handleGoForward = () => {

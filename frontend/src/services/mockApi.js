@@ -4,15 +4,48 @@ const MOCK_DELAY = 1000; // 1초 지연
 // 지연 함수
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Mock 직무 정보 (보이저엑스 서비스기획 인턴)
+const mockJobInfo = {
+  companyName: "보이저엑스",
+  jobTitle: "서비스기획",
+  mainResponsibilities: `보이저엑스의 서비스 기획 인턴은 다음과 같은 활동을 통해 사용자들이 보이저엑스의 여러 서비스들을 더욱 즐겁고 편리하게 사용할 수 있도록 합니다.
+
+**■ 주요 업무:**
+
+a. 문제의 발견: 정량적, 정성적인 방법으로 사용자가 겪고 있는 문제를 발견합니다.
+
+b. 문제의 정리: 발견한 문제를 논리적이고 체계적으로 잘 정리합니다.
+
+c. 문제의 공유: 정리된 문제를 여러가지 방법으로 잘 공유합니다.
+
+d. 해결책의 제시: 문제의 해결책을 제시합니다.
+
+**■ 추가 업무:**
+
+e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고 있는 모든 일의 보조`,
+  requirements: `**■  필수 요건:**
+
+1. 인턴 지원 자격에 해당하는 분
+2. 성실하고 꼼꼼한 분
+3. 정직하고 책임감이 강한 분
+4. 공감하고 경청할 수 있는 분
+5. 각종 소프트웨어를 잘 다루는 분
+6. 글을 잘 읽고 잘 쓸 수 있는 분
+7. 논리적이고 분석적인 분`,
+  preferredQualifications: `**■ 우대 사항:** 
+
+1. 영어 또는 일본어로 의사 소통이 가능한 분`
+};
+
 // Mock 직무 추출 응답
 const mockJobExtraction = {
   success: true,
   positions: [
-    "프론트엔드 개발자",
-    "백엔드 개발자", 
-    "풀스택 개발자"
+    "서비스기획",
+    "프로덕트 매니저",
+    "UX/UI 디자이너"
   ],
-  htmlContent: "<html><body><h1>Mock 채용공고</h1><p>카카오에서 함께 성장할 개발자를 모집합니다. React, Node.js, Python 등 다양한 기술 스택을 활용하여 혁신적인 서비스를 만들어갑니다.</p></body></html>"
+  htmlContent: "<html><body><h1>Mock 채용공고</h1><p>보이저엑스에서 서비스기획 인턴을 모집합니다.</p></body></html>"
 };
 
 // Mock 세션 생성 응답
@@ -40,25 +73,24 @@ const mockCoverLetterResponse = {
 let mockUserQuestion = "지원 동기는 무엇인가요?"; // 기본 질문
 
 export const mockApi = {
-  // 직무 정보 추출
-  extractJobInfo: async (url) => {
-    console.log('Mock: 직무 정보 추출 중...', url);
+  // 새로운 채용정보 입력 API
+  submitJobInfo: async (jobInfo) => {
+    console.log('Mock: 채용정보 입력 중...', jobInfo);
     await delay(MOCK_DELAY);
     
-    if (!url || url.trim() === '') {
-      throw new Error('URL을 입력해주세요.');
-    }
-    
-    if (!url.includes('http')) {
-      throw new Error('올바른 URL 형식을 입력해주세요.');
-    }
-    
-    return mockJobExtraction;
+    return {
+      success: true,
+      sessionId: "mock-job-info-session-" + Date.now(),
+      jobDescription: `회사명: ${jobInfo.companyName}\n직무: ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}`,
+      message: "채용정보가 성공적으로 저장되었습니다."
+    };
   },
 
-  // 세션 생성 (자기소개서 생성)
+
+
+  // 세션 생성 (파일 업로드 및 세션 생성)
   createSession: async (data) => {
-    console.log('Mock: 자기소개서 생성 중...', data);
+    console.log('Mock: 세션 생성 중...', data);
     await delay(MOCK_DELAY * 2); // 생성은 더 오래 걸림
     
     // 사용자가 입력한 질문 저장
@@ -67,7 +99,7 @@ export const mockApi = {
     }
     
     // Mock API에서는 세션 생성과 동시에 자기소개서도 생성됨
-    console.log('Mock: 자기소개서 생성 완료');
+    console.log('Mock: 세션 생성 완료');
     
     return mockSessionResponse;
   },
@@ -86,6 +118,7 @@ export const mockApi = {
   // 자기소개서 결과 조회
   getCoverLetter: async (sessionId) => {
     console.log('Mock: 자기소개서 조회 중...', sessionId);
+    console.log('Mock: 현재 mockUserQuestion:', mockUserQuestion);
     await delay(MOCK_DELAY);
     
     // Mock 응답에서 저장된 질문 사용
@@ -103,6 +136,7 @@ export const mockApi = {
       ]
     };
     
+    console.log('Mock: 반환할 응답:', mockResponse);
     return mockResponse;
   },
 

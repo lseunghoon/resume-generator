@@ -13,10 +13,11 @@ function ResultPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState(0);
-    const [jobPostingUrl, setJobPostingUrl] = useState('');
+  
     const [selectedJob, setSelectedJob] = useState('');
     const [jobDescription, setJobDescription] = useState('');
     const [userQuestion, setUserQuestion] = useState(''); // 사용자가 선택한 문항
+    const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식 데이터
     const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
@@ -98,7 +99,7 @@ function ResultPage() {
             
             // location.state에서 다른 데이터 가져오기
             if (location.state) {
-                setJobPostingUrl(location.state.jobPostingUrl || '');
+                setJobInfo(location.state.jobInfo || null);
                 setSelectedJob(location.state.selectedJob || '');
                 setJobDescription(location.state.jobDescription || '');
                 setUserQuestion(location.state.question || '');
@@ -123,9 +124,14 @@ function ResultPage() {
 
         setIsLoading(true);
         try {
+            console.log('ResultPage - fetchCoverLetter 호출, sessionId:', currentSessionId);
+            console.log('ResultPage - Mock API 활성화 상태:', localStorage.getItem('useMockApi'));
+            
             const response = await getCoverLetter(currentSessionId);
+            console.log('ResultPage - getCoverLetter 응답:', response);
             
             if (response.questions && response.questions.length > 0) {
+                console.log('ResultPage - questions 배열:', response.questions);
                 // 실제 API 응답 구조에 맞게 수정
                 const answers = response.questions.map((question, index) => ({
                     id: question.id || index + 1,
@@ -136,9 +142,11 @@ function ResultPage() {
                     has_redo: question.answer_history ? JSON.parse(question.answer_history).length > (question.current_version_index || 0) + 1 : false
                 }));
                 
+                console.log('ResultPage - 변환된 answers:', answers);
                 setAnswers(answers);
                 setActiveTab(0);
             } else {
+                console.error('ResultPage - questions 배열이 없거나 비어있음:', response);
                 setError('자기소개서 데이터를 불러올 수 없습니다.');
             }
         } catch (error) {
@@ -347,15 +355,13 @@ function ResultPage() {
                 <div className="content-wrapper">
                     {/* 채용공고 정보 섹션 */}
                     <div className="job-info-section">
-                        <div className="job-link">
-                            <span className="link-icon">🔗</span>
-                            <a href={jobPostingUrl} target="_blank" rel="noopener noreferrer">
-                                {jobPostingUrl}
-                            </a>
+                        <div className="job-company">
+                            <span className="company-icon">🏢</span>
+                            <span>{jobInfo ? jobInfo.companyName : '회사명'}</span>
                         </div>
                         <div className="job-position">
                             <span className="briefcase-icon">💼</span>
-                            <span>{selectedJob}</span>
+                            <span>{jobInfo ? jobInfo.jobTitle : selectedJob}</span>
                         </div>
                     </div>
 

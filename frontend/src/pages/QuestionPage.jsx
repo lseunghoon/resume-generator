@@ -5,31 +5,21 @@ import Navigation from '../components/Navigation';
 import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { createSession, generate } from '../services/api';
+import { createSession } from '../services/api';
 import './QuestionPage.css';
 
 const QuestionPage = () => {
   const [question, setQuestion] = useState(''); // 직접 입력 질문
   const [isGenerating, setIsGenerating] = useState(false);
-  const [jobPostingUrl, setJobPostingUrl] = useState('');
-  const [selectedJob, setSelectedJob] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [extractedJobs, setExtractedJobs] = useState([]);
-  const [htmlContent, setHtmlContent] = useState(''); // htmlContent 추가
-  const [preloadedContent, setPreloadedContent] = useState(null); // 프리로딩된 콘텐츠
-  const [contentId, setContentId] = useState(null); // contentId 추가
+  const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (location.state) {
-      setJobPostingUrl(location.state.jobPostingUrl || '');
-      setSelectedJob(location.state.selectedJob || '');
       setUploadedFiles(location.state.uploadedFiles || []);
-      setExtractedJobs(location.state.extractedJobs || []);
-      setHtmlContent(location.state.htmlContent || ''); // htmlContent 설정
-      setPreloadedContent(location.state.preloadedContent || null); // 프리로딩된 콘텐츠 설정
-      setContentId(location.state.contentId || null); // contentId 설정
+      setJobInfo(location.state.jobInfo || null);
       
       // 이전에 입력한 질문이 있으면 복원
       if (location.state.question) {
@@ -68,12 +58,10 @@ const QuestionPage = () => {
     try {
       // API 호출을 위한 데이터 준비
       const sessionData = {
-        jobPostingUrl,
-        selectedJob,
         uploadedFiles: uploadedFiles || [],
         questions: [question], // 사용자가 입력한 질문
-        contentId, // contentId 사용
-        preloadedContent // 프리로딩된 콘텐츠 추가
+        jobDescription: jobInfo ? `${jobInfo.companyName} - ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}` : '',
+        resumeText: uploadedFiles && uploadedFiles.length > 0 ? '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.' : '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.'
       };
       
       // 디버깅: FormData 크기 확인
@@ -90,22 +78,12 @@ const QuestionPage = () => {
       const response = await createSession(sessionData);
       console.log('QuestionPage - Session created:', response);
       
-      // 실제 API 사용 시 generate 함수 호출
-      const isMockEnabled = localStorage.getItem('useMockApi') === 'true';
-      if (!isMockEnabled) {
-        console.log('QuestionPage - 실제 API 사용, generate 함수 호출');
-        await generate({ sessionId: response.sessionId });
-      } else {
-        console.log('QuestionPage - Mock API 사용, generate 함수 건너뜀');
-      }
-      
       // 세션 ID를 사용하여 결과 페이지로 이동
       console.log('QuestionPage - Navigating to result with sessionId:', response.sessionId);
       navigate('/result', { 
         state: { 
           sessionId: response.sessionId,
-          jobPostingUrl,
-          selectedJob,
+          jobInfo: jobInfo,
           question // 입력한 질문도 함께 전달
         } 
       });
@@ -146,10 +124,8 @@ const QuestionPage = () => {
   const handleGoBack = () => {
     navigate('/file-upload', { 
       state: { 
-        jobPostingUrl, 
-        selectedJob,
-        extractedJobs,
         uploadedFiles, // 업로드된 파일들 전달
+        jobInfo, // 채용정보 전달
         question // 입력한 질문 전달
       } 
     });
