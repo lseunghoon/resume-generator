@@ -84,6 +84,9 @@ def validate_job_posting_url(url: str) -> bool:
     if not url or not isinstance(url, str):
         return False
     
+    # URL 앞뒤 공백 제거
+    url = url.strip()
+    
     # 기본 URL 형식 검증
     if not url.startswith(('http://', 'https://')):
         return False
@@ -356,7 +359,7 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValidationError(f"필수 필드가 누락되었습니다: {', '.join(missing_fields)}")
     
     # URL 검증
-    job_url = data.get('jobDescriptionUrl')
+    job_url = data.get('jobDescriptionUrl', '').strip()
     if not validate_job_posting_url(job_url):
         raise ValidationError(f"유효하지 않은 채용공고 URL입니다: {job_url}")
     

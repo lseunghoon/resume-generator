@@ -28,6 +28,8 @@ def check_robots_txt_permission(url: str) -> tuple[bool, int]:
         tuple[bool, int]: (크롤링 허용 여부, 권장 지연 시간(초))
     """
     try:
+        # URL 앞뒤 공백 제거
+        url = url.strip()
         parsed_url = urlparse(url)
         robots_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
         

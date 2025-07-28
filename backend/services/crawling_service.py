@@ -31,6 +31,8 @@ class CrawlingService(LoggerMixin):
         빠른 직무 추출. Selenium으로 페이지를 한번 로드하여
         직무 제목과 전체 페이지 HTML 소스를 반환합니다.
         """
+        # URL 앞뒤 공백 제거
+        url = url.strip()
         self.logger.info(f"빠른 직무 추출 및 페이지 소스 가져오기 시작: {url}")
         
         try:
@@ -109,6 +111,9 @@ class CrawlingService(LoggerMixin):
 
     def _load_dynamic_page(self, url: str) -> str:
         """1단계: Selenium을 사용한 동적 페이지 로드 (선-검증, 후-실행)"""
+        
+        # URL 앞뒤 공백 제거
+        url = url.strip()
         
         # === 핵심 수정: 크롤링 실행 전 검증 및 지연 ===
         can_crawl, delay = check_robots_txt_permission(url)

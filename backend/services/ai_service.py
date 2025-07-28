@@ -50,40 +50,19 @@ class AIService(LoggerMixin):
             return "알 수 없음"
     
     def search_company_info_ai(self, company_name: str) -> str:
-        """AI를 활용한 회사 정보 검색"""
-        try:
-            if company_name == "알 수 없음":
-                return "회사 정보를 찾을 수 없습니다."
-            
-            prompt = f"""
-            회사명: {company_name}
-            
-            이 회사에 대한 최신 정보를 검색하여 다음 항목들을 요약해주세요:
-            
-            1. 회사 개요 및 주요 사업
-            2. 최근 뉴스 및 동향 (최근 1년)
-            3. 회사 비전 및 문화
-            4. 시장에서의 위치 및 경쟁력
-            5. 주요 제품/서비스
-            
-            실제 검색을 통해 정확하고 최신 정보를 제공해주세요.
-            각 항목은 2-3문장으로 요약해주세요.
-            정보가 부족한 경우 "해당 정보를 찾을 수 없습니다"라고 표시해주세요.
-            """
-            
-            response = self.model.generate_content(prompt)
-            company_info = self._handle_response(response)
-            
-            # 검색 결과 전체 로깅
-            self.logger.info(f"회사 정보 검색 완료: {company_name}")
-            self.logger.info(f"검색 결과 전체:")
-            self.logger.info(f"{company_info}")
-            
-            return company_info
-            
-        except Exception as e:
-            self.logger.error(f"회사 정보 검색 실패: {e}")
-            return "회사 정보 검색에 실패했습니다."
+        """회사 정보 검색 (현재 비활성화)"""
+        # TODO: 추후 실제 웹 검색 기능 구현 예정
+        return f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
+    
+    def _search_company_web_info(self, company_name: str) -> str:
+        """실제 웹 검색을 통해 회사 정보 수집 (현재 비활성화)"""
+        # TODO: 추후 실제 웹 검색 기능 구현 예정
+        return f"{company_name}에 대한 웹 검색 기능이 현재 비활성화되어 있습니다."
+    
+    def _extract_relevant_info(self, text: str, company_name: str) -> str:
+        """텍스트에서 회사와 관련된 정보만 추출 (현재 비활성화)"""
+        # TODO: 추후 실제 정보 추출 기능 구현 예정
+        return ""
     
 
     
@@ -92,7 +71,7 @@ class AIService(LoggerMixin):
         question: str, 
         jd_text: str, 
         resume_text: str
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], str]:
         """
         단일 자기소개서 문항 답변 생성
         
@@ -102,7 +81,7 @@ class AIService(LoggerMixin):
             resume_text: 이력서 텍스트
             
         Returns:
-            Optional[str]: 생성된 답변 또는 None
+            tuple[Optional[str], str]: (생성된 답변 또는 None, 회사 정보)
         """
         try:
             self.logger.info(f"단일 자기소개서 생성 시작: {question[:50]}...")
@@ -114,9 +93,10 @@ class AIService(LoggerMixin):
             self.logger.info("회사명 추출 시작...")
             company_name = self.extract_company_name_from_jd(jd_text)
             
-            # 2단계: 회사 정보 검색
-            self.logger.info("회사 정보 검색 시작...")
-            company_info = self.search_company_info_ai(company_name)
+            # 2단계: 회사 정보 검색 (현재 비활성화)
+            # self.logger.info("회사 정보 검색 시작...")
+            # company_info = self.search_company_info_ai(company_name)
+            company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
             
             # 이력서 텍스트가 비어있을 때 처리
             resume_section = ""
@@ -181,11 +161,11 @@ class AIService(LoggerMixin):
             answer = self._handle_response(response)
             
             self.logger.info("단일 자기소개서 생성 완료")
-            return answer.strip()
+            return answer.strip(), company_info
             
         except Exception as e:
             self.logger.error(f"단일 자기소개서 생성 실패: {e}")
-            return None
+            return None, ""
     
     def revise_cover_letter(
         self,
@@ -193,7 +173,8 @@ class AIService(LoggerMixin):
         jd_text: str,
         resume_text: str,
         original_answer: str,
-        user_edit_prompt: str
+        user_edit_prompt: str,
+        company_info: str = ""
     ) -> Optional[str]:
         """
         자기소개서 답변 수정
@@ -204,6 +185,7 @@ class AIService(LoggerMixin):
             resume_text: 이력서 텍스트
             original_answer: 원래 답변
             user_edit_prompt: 사용자 수정 요청
+            company_info: 기존에 검색된 회사 정보 (최초 생성 시 검색 결과)
             
         Returns:
             Optional[str]: 수정된 답변 또는 None
@@ -211,13 +193,18 @@ class AIService(LoggerMixin):
         try:
             self.logger.info(f"자기소개서 수정 시작: {user_edit_prompt[:50]}...")
             
-            # 1단계: 회사명 추출
-            self.logger.info("회사명 추출 시작...")
-            company_name = self.extract_company_name_from_jd(jd_text)
+            # 회사 정보가 제공되지 않은 경우에만 검색 수행 (하위 호환성 유지)
+            # if not company_info:
+            #     self.logger.info("회사 정보가 제공되지 않아 검색을 수행합니다...")
+            #     company_name = self.extract_company_name_from_jd(jd_text)
+            #     # company_info = self.search_company_info_ai(company_name)  # 현재 비활성화
+            #     company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
+            # else:
+            #     self.logger.info("기존 회사 정보를 활용합니다.")
             
-            # 2단계: 회사 정보 검색
-            self.logger.info("회사 정보 검색 시작...")
-            company_info = self.search_company_info_ai(company_name)
+            # 회사 정보 검색 완전 비활성화
+            if not company_info:
+                company_info = "회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
             
             # 이력서 텍스트가 비어있을 때 처리
             resume_section = ""

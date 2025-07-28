@@ -41,6 +41,7 @@ class Session(Base):
     jd_url = Column(Text)
     jd_text = Column(Text)
     resume_text = Column(Text)
+    company_info = Column(Text)  # 회사 정보 저장 필드 추가
     
     # 관계 설정
     questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")
@@ -52,6 +53,7 @@ class Session(Base):
             'jd_url': self.jd_url,
             'jd_text': self.jd_text,
             'resume_text': self.resume_text,
+            'company_info': self.company_info,
             'questions': [q.to_dict() for q in self.questions]
         }
 

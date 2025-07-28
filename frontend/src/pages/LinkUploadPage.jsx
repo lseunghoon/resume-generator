@@ -33,7 +33,11 @@ const LinkUploadPage = () => {
 
   const validateUrl = (url) => {
     try {
-      const urlObj = new URL(url);
+      // URL 앞뒤 공백 제거
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) return false;
+      
+      const urlObj = new URL(trimmedUrl);
       // 유효한 URL인지 확인 (http 또는 https)
       return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
     } catch {
@@ -66,7 +70,7 @@ const LinkUploadPage = () => {
     setError('');
 
     try {
-      const response = await extractJobInfo(jobPostingUrl);
+      const response = await extractJobInfo(jobPostingUrl.trim());
       
       const extractedJobs = response.positions || [];
       const newHtmlContent = response.htmlContent || ''; // htmlContent 받기
@@ -75,7 +79,7 @@ const LinkUploadPage = () => {
       
       navigate('/job-select', { 
         state: { 
-          jobPostingUrl, 
+          jobPostingUrl: jobPostingUrl.trim(), 
           extractedJobs,
           htmlContent: newHtmlContent // 다음 페이지로 전달
         } 

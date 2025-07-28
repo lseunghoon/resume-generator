@@ -241,7 +241,7 @@ def register_routes(app):
             data = json.loads(data_str)
             validated_data = validate_session_data(data)
             
-            job_description_url = validated_data['jobDescriptionUrl']
+            job_description_url = validated_data['jobDescriptionUrl'].strip()
             questions_data = validated_data['questions']
             lengths_data = validated_data.get('lengths', [])
             html_content = validated_data.get('htmlContent') # 프론트에서 전달받을 HTML
@@ -372,12 +372,17 @@ def register_routes(app):
             app.logger.info(f"자기소개서 생성 시작: {len(session.questions)}개 질문")
             
             # 각 질문에 대해 개별적으로 AI 답변 생성
-            for question in session.questions:
-                answer = app.get_ai_service().generate_cover_letter(
+            # company_info = ""  # 첫 번째 질문에서 회사 정보를 가져와서 저장 (현재 비활성화)
+            for i, question in enumerate(session.questions):
+                answer, question_company_info = app.get_ai_service().generate_cover_letter(
                     question=question.question,
                     jd_text=session.jd_text,
                     resume_text=session.resume_text
                 )
+                
+                # 첫 번째 질문에서 회사 정보를 세션에 저장 (현재 비활성화)
+                # if i == 0 and question_company_info:
+                #     session.company_info = question_company_info
                 
                 if answer:
                     question.answer_history = json.dumps([answer])
@@ -445,7 +450,8 @@ def register_routes(app):
                     jd_text=session.jd_text,
                     resume_text=session.resume_text,
                     original_answer=history[question.current_version_index],
-                    user_edit_prompt=revision_request
+                    user_edit_prompt=revision_request,
+                    company_info=""  # 회사 정보 사용 비활성화
                 )
                 
                 history.append(revised_text)
@@ -565,7 +571,7 @@ def register_routes(app):
             if not data or 'jobPostingUrl' not in data:
                 raise APIError("jobPostingUrl이 필요합니다.", 400)
             
-            job_posting_url = data['jobPostingUrl']
+            job_posting_url = data['jobPostingUrl'].strip()
             
             # 책임감 있는 robots.txt 검증
             can_crawl, delay = check_robots_txt_permission(job_posting_url)
@@ -600,7 +606,7 @@ def register_routes(app):
             app.logger.info("콘텐츠 프리로딩 요청 시작")
             data = request.get_json()
             
-            job_description_url = data.get('jobPostingUrl')
+            job_description_url = data.get('jobPostingUrl', '').strip()
             html_content = data.get('htmlContent', '')
             
             # URL 유효성 검증
@@ -805,11 +811,15 @@ def register_routes(app):
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
             
             # AI 답변 생성
-            generated_answer = app.get_ai_service().generate_cover_letter(
+            generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=session.jd_text,
                 resume_text=session.resume_text
             )
+            
+            # 회사 정보가 있으면 세션에 저장 (현재 비활성화)
+            # if company_info and not session.company_info:
+            #     session.company_info = company_info
             
             if not generated_answer:
                 raise APIError("답변 생성에 실패했습니다.", status_code=500)
@@ -904,7 +914,8 @@ def register_routes(app):
                 jd_text=session.jd_text,
                 resume_text=session.resume_text or "",
                 original_answer=current_answer_text if 'current_answer_text' in locals() else "",
-                user_edit_prompt=revision_text
+                user_edit_prompt=revision_text,
+                company_info=""  # 회사 정보 사용 비활성화
             )
             
             # 새로운 답변을 히스토리에 추가

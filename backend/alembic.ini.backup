@@ -1,6 +1,6 @@
 [alembic]
 script_location = migrations
-sqlalchemy.url = sqlite:///resume_ai.db
+sqlalchemy.url = postgresql://leeseung@localhost:5432/resume_ai
 
 [loggers]
 keys = root,sqlalchemy,alembic
@@ -34,4 +34,4 @@ formatter = generic
 
 [formatter_generic]
 format = %(levelname)-5.5s [%(name)s] %(message)s
-datefmt = %H:%M:%S
+datefmt = %H:%M:%S 
