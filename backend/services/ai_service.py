@@ -70,7 +70,9 @@ class AIService(LoggerMixin):
         self, 
         question: str, 
         jd_text: str, 
-        resume_text: str
+        resume_text: str,
+        company_name: str = "",
+        job_title: str = ""
     ) -> tuple[Optional[str], str]:
         """
         단일 자기소개서 문항 답변 생성
@@ -89,9 +91,10 @@ class AIService(LoggerMixin):
             self.logger.info(f"이력서 텍스트 길이: {len(resume_text)}자")
             self.logger.info(f"채용공고 미리보기: {jd_text[:200]}...")
             
-            # 1단계: 회사명 추출
-            self.logger.info("회사명 추출 시작...")
-            company_name = self.extract_company_name_from_jd(jd_text)
+            # 1단계: 회사명 처리
+            self.logger.info("회사명 처리 시작...")
+            if not company_name:
+                company_name = self.extract_company_name_from_jd(jd_text)
             
             # 2단계: 회사 정보 검색 (현재 비활성화)
             # self.logger.info("회사 정보 검색 시작...")
@@ -174,7 +177,9 @@ class AIService(LoggerMixin):
         resume_text: str,
         original_answer: str,
         user_edit_prompt: str,
-        company_info: str = ""
+        company_info: str = "",
+        company_name: str = "",
+        job_title: str = ""
     ) -> Optional[str]:
         """
         자기소개서 답변 수정

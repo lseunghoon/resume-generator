@@ -412,7 +412,9 @@ def register_routes(app):
                 answer, question_company_info = app.get_ai_service().generate_cover_letter(
                     question=question.question,
                     jd_text=session.jd_text,
-                    resume_text=session.resume_text
+                    resume_text=session.resume_text,
+                    company_name=session.company_name or "",
+                    job_title=session.job_title or ""
                 )
                 
                 # 첫 번째 질문에서 회사 정보를 세션에 저장 (현재 비활성화)
@@ -486,7 +488,9 @@ def register_routes(app):
                     resume_text=session.resume_text,
                     original_answer=history[question.current_version_index],
                     user_edit_prompt=revision_request,
-                    company_info=""  # 회사 정보 사용 비활성화
+                    company_info="",  # 회사 정보 사용 비활성화
+                    company_name=session.company_name or "",
+                    job_title=session.job_title or ""
                 )
                 
                 history.append(revised_text)
@@ -814,7 +818,9 @@ def register_routes(app):
                 resume_text=session.resume_text or "",
                 original_answer=current_answer_text if 'current_answer_text' in locals() else "",
                 user_edit_prompt=revision_text,
-                company_info=""  # 회사 정보 사용 비활성화
+                company_info="",  # 회사 정보 사용 비활성화
+                company_name=session.company_name or "",
+                job_title=session.job_title or ""
             )
             
             # 새로운 답변을 히스토리에 추가

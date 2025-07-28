@@ -154,7 +154,7 @@ def parse_docx(file_stream):
 
 def extract_text_from_file(file_obj):
     """
-    파일 객체에서 텍스트 추출 (통합 함수)
+    파일 객체에서 텍스트 추출 (통합 함수, OCR 최적화)
     
     Args:
         file_obj: Flask 파일 객체
@@ -171,7 +171,7 @@ def extract_text_from_file(file_obj):
     # 파일 타입 검증
     validate_file_type(file_obj.filename)
     
-    # 파일 확장자에 따른 파싱
+    # 파일 확장자에 따른 파싱 (OCR 비용 최적화)
     filename = file_obj.filename.lower()
     
     if filename.endswith('.pdf'):

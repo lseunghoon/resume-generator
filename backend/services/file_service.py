@@ -27,7 +27,7 @@ class FileService(LoggerMixin):
     
     def process_uploaded_files(self, files: List[FileStorage]) -> Dict:
         """
-        업로드된 파일들을 처리하고 텍스트 추출
+        업로드된 파일들을 처리하고 텍스트 추출 (OCR 최적화)
         
         Args:
             files: 업로드된 파일 목록
@@ -41,7 +41,7 @@ class FileService(LoggerMixin):
             if not files or not any(f.filename for f in files):
                 raise FileProcessingError("유효한 파일이 없습니다.")
             
-            # 첫 번째 유효한 파일 사용
+            # 첫 번째 유효한 파일 사용 (비용 최적화)
             main_file = None
             for file in files:
                 if file.filename:
@@ -58,9 +58,13 @@ class FileService(LoggerMixin):
             # 파일 유효성 검사
             self._validate_file(file_info)
             
-            # 텍스트 추출
+            # 텍스트 추출 (OCR 비용 최적화)
             extracted_text = extract_text_from_file(main_file)
             self.logger.info(f"텍스트 추출 완료: {len(extracted_text)}자")
+            
+            # 텍스트 길이 검증 (너무 짧으면 경고)
+            if len(extracted_text.strip()) < 10:
+                self.logger.warning("추출된 텍스트가 너무 짧습니다. OCR 품질을 확인해주세요.")
             
             return {
                 'success': True,

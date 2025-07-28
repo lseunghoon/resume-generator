@@ -9,7 +9,6 @@ import requests
 from typing import List, Optional, Tuple
 from PIL import Image, ImageEnhance, ImageFilter, ImageFile
 from google.cloud import vision
-from urllib.parse import urljoin
 
 
 from utils.logger import LoggerMixin
