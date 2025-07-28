@@ -34,15 +34,8 @@ MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
 # AI 모델 설정
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash-001")
 
-# 크롤링 설정
-CRAWLING_TIMEOUT = int(os.getenv("CRAWLING_TIMEOUT", "10"))
+# OCR 설정 (파일 업로드용)
 OCR_TEXT_MIN_LENGTH = int(os.getenv("OCR_TEXT_MIN_LENGTH", "200"))
-MIN_REQUIRED_KEYWORDS = int(os.getenv("MIN_REQUIRED_KEYWORDS", "2"))
-
-# ChromeDriver 설정
-CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")  # 수동 경로 지정 옵션
-USE_CHROME_HEADLESS = os.getenv("USE_CHROME_HEADLESS", "true").lower() == "true"
-CHROME_FALLBACK_MODE = os.getenv("CHROME_FALLBACK_MODE", "true").lower() == "true"
 
 # 디렉토리 설정
 LOGS_DIR = "logs"
@@ -81,13 +74,8 @@ def get_file_config():
         'uploads_dir': UPLOADS_DIR
     }
 
-def get_crawling_config():
-    """크롤링 설정 반환"""
+def get_ocr_config():
+    """OCR 설정 반환 (파일 업로드용)"""
     return {
-        'timeout': CRAWLING_TIMEOUT,
-        'ocr_text_min_length': OCR_TEXT_MIN_LENGTH,
-        'min_required_keywords': MIN_REQUIRED_KEYWORDS,
-        'chrome_driver_path': CHROME_DRIVER_PATH,
-        'use_chrome_headless': USE_CHROME_HEADLESS,
-        'chrome_fallback_mode': CHROME_FALLBACK_MODE
+        'ocr_text_min_length': OCR_TEXT_MIN_LENGTH
     } 

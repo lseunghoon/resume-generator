@@ -5,11 +5,9 @@ iloveresume 백엔드 메인 애플리케이션 (리팩토링 버전)
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import uuid
 import traceback
 import json
 import werkzeug
-import time
 
 # 설정 및 유틸리티 모듈
 from config import get_cors_config, validate_settings
@@ -18,7 +16,7 @@ from utils import (
     setup_flask_logger, get_logger,
     validate_session_data, validate_question_data, validate_revision_request,
     validate_session_id, validate_question_index, ValidationError,
-    validate_job_posting_url, check_robots_txt_permission, FileProcessingError
+    FileProcessingError
 )
 # FileProcessingError는 이제 서비스에서 처리됨
 
@@ -26,10 +24,9 @@ from utils import (
 from models import Session, Question, get_db, init_db, _parse_answer_history
 
 # 새로운 서비스 모듈들
-from services import AIService, CrawlingService, OCRService, FileService
+from services import AIService, OCRService, FileService
 
-# 프리로딩된 콘텐츠 임시 저장소 (메모리 기반)
-preloaded_content_store = {}
+
 
 
 class APIError(Exception):
@@ -81,10 +78,7 @@ def create_app():
             app._ai_service = AIService()
         return app._ai_service
     
-    def get_crawling_service():
-        if not hasattr(app, '_crawling_service'):
-            app._crawling_service = CrawlingService()
-        return app._crawling_service
+
     
     def get_ocr_service():
         if not hasattr(app, '_ocr_service'):
@@ -98,7 +92,6 @@ def create_app():
     
     # 서비스 접근자 등록
     app.get_ai_service = get_ai_service
-    app.get_crawling_service = get_crawling_service
     app.get_ocr_service = get_ocr_service
     app.get_file_service = get_file_service
     
@@ -561,147 +554,11 @@ def register_routes(app):
         finally:
             db.close()
 
-    @app.route('/api/v1/extract-job-quick', methods=['POST'])
-    def extract_job_quick():
-        """
-        채용공고 URL에서 직무 제목과 전체 HTML 소스를 추출합니다.
-        """
-        try:
-            data = request.get_json()
-            if not data or 'jobPostingUrl' not in data:
-                raise APIError("jobPostingUrl이 필요합니다.", 400)
-            
-            job_posting_url = data['jobPostingUrl'].strip()
-            
-            # 책임감 있는 robots.txt 검증
-            can_crawl, delay = check_robots_txt_permission(job_posting_url)
-            if not can_crawl:
-                raise APIError("로봇이 읽지 못하는 링크입니다 :( 다른 채용공고를 입력해보세요.", 403)
-            
-            if not validate_job_posting_url(job_posting_url):
-                raise APIError("유효하지 않은 채용공고 URL입니다.", 400)
-            
-            crawling_service = app.get_crawling_service()
-            job_titles, html_content = crawling_service.extract_job_quick(job_posting_url)
-            
-            return jsonify({
-                'success': True,
-                'positions': job_titles,
-                'htmlContent': html_content  # 최종 콘텐츠 대신 HTML 소스 반환
-            })
-            
-        except ValueError as e:
-            raise APIError(str(e), 400)
-        except Exception as e:
-            app.logger.error(f"빠른 직무 정보 추출 실패: {str(e)}")
-            raise APIError("직무 정보 추출에 실패했습니다.", 500)
 
-    # @app.route('/api/v1/extract-job', methods=['POST'])
-    # def extract_job(): ... -> 이 엔드포인트는 이제 extract-job-quick으로 통합되어 삭제합니다.
 
-    @app.route('/api/v1/preload-content', methods=['POST'])
-    def preload_content():
-        """백그라운드에서 콘텐츠 프리로딩"""
-        try:
-            app.logger.info("콘텐츠 프리로딩 요청 시작")
-            data = request.get_json()
-            
-            job_description_url = data.get('jobPostingUrl', '').strip()
-            html_content = data.get('htmlContent', '')
-            
-            # URL 유효성 검증
-            if not validate_job_posting_url(job_description_url):
-                raise APIError("올바른 채용공고 URL이 아닙니다.", status_code=400)
-            
-            # 책임감 있는 robots.txt 검증
-            can_crawl, delay = check_robots_txt_permission(job_description_url)
-            if not can_crawl:
-                raise APIError("로봇이 읽지 못하는 링크입니다 :( 다른 채용공고를 입력해보세요.", status_code=403)
-            
-            app.logger.info("백그라운드 콘텐츠 추출 시작")
-            
-            if html_content:
-                # 미리 받아온 HTML 소스로 전체 콘텐츠 추출
-                app.logger.info("미리 받아온 HTML 소스로 전체 콘텐츠 추출 시작")
-                job_description = app.get_crawling_service().extract_content_from_html(
-                    html_content, job_description_url
-                )
-                app.logger.info("백그라운드 전체 콘텐츠 추출 완료")
-            else:
-                # htmlContent가 없는 경우 직접 크롤링 수행
-                app.logger.info("백그라운드 직접 크롤링 수행")
-                try:
-                    crawling_service = app.get_crawling_service()
-                    job_titles, html_content = crawling_service.extract_job_quick(job_description_url)
-                    job_description = crawling_service.extract_content_from_html(html_content, job_description_url)
-                    app.logger.info("백그라운드 직접 크롤링 완료")
-                except Exception as e:
-                    app.logger.error(f"백그라운드 크롤링 실패: {str(e)}")
-                    job_description = ""
-            
-            # 콘텐츠 크기 확인
-            content_size = len(job_description.encode('utf-8'))
-            app.logger.info(f"프리로딩된 콘텐츠 크기: {content_size} bytes ({content_size / 1024 / 1024:.2f} MB)")
-            if content_size > 1024 * 1024:  # 1MB 이상
-                app.logger.warning(f"프리로딩된 콘텐츠가 매우 큽니다: {content_size / 1024 / 1024:.2f} MB")
-            
-            # 콘텐츠가 너무 크면 임시 저장소에 저장하고 ID 반환
-            content_size = len(job_description.encode('utf-8'))
-            if content_size > 1 * 1024:  # 1KB 이상 (모든 프리로딩 콘텐츠를 contentId로 처리)
-                # 임시 저장소에 저장
-                content_id = str(uuid.uuid4())
-                preloaded_content_store[content_id] = {
-                    'content': job_description,
-                    'timestamp': time.time(),
-                    'url': job_description_url
-                }
-                app.logger.info(f"대용량 콘텐츠를 임시 저장소에 저장: {content_id}")
-                
-                return jsonify({
-                    'contentId': content_id,
-                    'contentSize': content_size,
-                    'message': '대용량 콘텐츠가 임시 저장되었습니다. contentId를 사용하여 세션 생성 시 참조하세요.'
-                }), 200
-            else:
-                # 작은 콘텐츠는 직접 반환
-                return jsonify({
-                    'jobDescription': job_description,
-                    'contentSize': content_size,
-                    'message': '콘텐츠 프리로딩 완료'
-                }), 200
-            
-        except (APIError, ValidationError):
-            raise
-        except Exception as e:
-            app.logger.error(f"프리로딩 처리 중 오류: {str(e)}")
-            app.logger.error(traceback.format_exc())
-            raise APIError(f"콘텐츠 프리로딩에 실패했습니다: {str(e)}", status_code=500)
 
-    @app.route('/api/v1/get-preloaded-content/<string:content_id>', methods=['GET'])
-    def get_preloaded_content(content_id):
-        """임시 저장된 프리로딩 콘텐츠 조회"""
-        try:
-            if content_id not in preloaded_content_store:
-                raise APIError("저장된 콘텐츠를 찾을 수 없습니다.", status_code=404)
-            
-            content_data = preloaded_content_store[content_id]
-            
-            # 30분 이상 된 콘텐츠는 자동 삭제
-            if time.time() - content_data['timestamp'] > 1800:  # 30분
-                del preloaded_content_store[content_id]
-                raise APIError("저장된 콘텐츠가 만료되었습니다.", status_code=410)
-            
-            return jsonify({
-                'jobDescription': content_data['content'],
-                'contentSize': len(content_data['content'].encode('utf-8')),
-                'message': '저장된 콘텐츠 조회 완료'
-            }), 200
-            
-        except APIError:
-            raise
-        except Exception as e:
-            app.logger.error(f"저장된 콘텐츠 조회 중 오류: {str(e)}")
-            raise APIError(f"콘텐츠 조회에 실패했습니다: {str(e)}", status_code=500)
+
+
 
     @app.route('/api/v1/add-question', methods=['POST'])
     def add_question():

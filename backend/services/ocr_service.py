@@ -11,7 +11,7 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageFile
 from google.cloud import vision
 from urllib.parse import urljoin
 
-from utils.chrome_driver import safe_create_chrome_driver
+
 from utils.logger import LoggerMixin
 
 # DecompressionBombWarning을 처리하기 위한 설정
