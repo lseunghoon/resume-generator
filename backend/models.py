@@ -38,10 +38,18 @@ class Session(Base):
     
     id = Column(String(36), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    jd_url = Column(Text)
-    jd_text = Column(Text)
-    resume_text = Column(Text)
-    company_info = Column(Text)  # 회사 정보 저장 필드 추가
+    
+    # 크롤링 관련 필드 제거 및 새로운 필드 추가
+    company_name = Column(String(255))  # 회사명
+    job_title = Column(String(255))     # 직무
+    main_responsibilities = Column(Text) # 주요업무
+    requirements = Column(Text)          # 자격요건
+    preferred_qualifications = Column(Text) # 우대사항
+    
+    # 기존 필드 유지 (호환성을 위해)
+    jd_text = Column(Text)              # 전체 채용정보 텍스트 (기존 호환성)
+    resume_text = Column(Text)          # 이력서 텍스트
+    company_info = Column(Text)         # 회사 정보 (기존 호환성)
     
     # 관계 설정
     questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")
@@ -50,7 +58,11 @@ class Session(Base):
         return {
             'id': self.id,
             'created_at': self.created_at.isoformat(),
-            'jd_url': self.jd_url,
+            'company_name': self.company_name,
+            'job_title': self.job_title,
+            'main_responsibilities': self.main_responsibilities,
+            'requirements': self.requirements,
+            'preferred_qualifications': self.preferred_qualifications,
             'jd_text': self.jd_text,
             'resume_text': self.resume_text,
             'company_info': self.company_info,

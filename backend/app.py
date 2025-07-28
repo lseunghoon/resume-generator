@@ -262,10 +262,28 @@ def register_routes(app):
             else:
                 app.logger.info("파일이 없어서 사용자 입력 텍스트만 사용")
 
-            # 세션 생성
+            # 세션 생성 (새로운 필드 구조 사용)
+            # 채용정보에서 회사명과 직무 추출 시도
+            company_name = ""
+            job_title = ""
+            
+            # 간단한 파싱 로직 (기본적인 형태만 지원)
+            lines = job_description.split('\n')
+            for line in lines:
+                line = line.strip()
+                if line.startswith('회사명:'):
+                    company_name = line.replace('회사명:', '').strip()
+                elif line.startswith('직무:'):
+                    job_title = line.replace('직무:', '').strip()
+            
             new_session = Session(
                 id=str(uuid.uuid4()),
-                jd_text=job_description,
+                company_name=company_name,
+                job_title=job_title,
+                main_responsibilities="",  # 추후 개선 가능
+                requirements="",           # 추후 개선 가능
+                preferred_qualifications="", # 추후 개선 가능
+                jd_text=job_description,  # 기존 호환성을 위해 유지
                 resume_text=resume_text
             )
 
@@ -339,10 +357,29 @@ def register_routes(app):
             
             app.logger.info(f"채용정보 구성 완료: {len(job_description)}자")
             
+            # 세션 생성 (새로운 필드 구조 사용)
+            new_session = Session(
+                id=str(uuid.uuid4()),
+                company_name=data['companyName'].strip(),
+                job_title=data['jobTitle'].strip(),
+                main_responsibilities=data['mainResponsibilities'].strip(),
+                requirements=data['requirements'].strip(),
+                preferred_qualifications=preferred_qualifications,
+                jd_text=job_description,  # 기존 호환성을 위해 유지
+                resume_text=""  # 이력서는 별도로 입력받음
+            )
+            
+            db = next(get_db())
+            db.add(new_session)
+            db.commit()
+            db.refresh(new_session)
+            db.close()
+            
             return jsonify({
                 'success': True,
+                'sessionId': new_session.id,
                 'jobDescription': job_description,
-                'message': '채용정보가 성공적으로 처리되었습니다.'
+                'message': '채용정보가 성공적으로 저장되었습니다.'
             }), 200
             
         except APIError:
