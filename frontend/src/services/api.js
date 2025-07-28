@@ -29,7 +29,7 @@ const apiCall = async (endpoint, options = {}) => {
   return response.json();
 };
 
-// 직무 정보 추출
+// 직무 정보 추출 (기존 크롤링 방식)
 export const extractJobInfo = async (url) => {
   if (checkMockMode()) {
     return mockApi.extractJobInfo(url);
@@ -51,6 +51,28 @@ export const extractJobInfo = async (url) => {
   return response.json();
 };
 
+// 채용정보 직접 입력 (새로운 방식)
+export const submitJobInfo = async (jobInfo) => {
+  if (checkMockMode()) {
+    return mockApi.submitJobInfo(jobInfo);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/job-info`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(jobInfo),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || '채용정보 입력에 실패했습니다.');
+  }
+
+  return response.json();
+};
+
 // 세션 생성 (자기소개서 생성)
 export const createSession = async (data) => {
   if (checkMockMode()) {
@@ -66,12 +88,14 @@ export const createSession = async (data) => {
     });
   }
 
-  // JSON 데이터 추가
+  // JSON 데이터 추가 (새로운 채용정보 입력 방식 지원)
   const jsonData = {
-    jobDescriptionUrl: data.jobPostingUrl,
-    selectedJob: data.selectedJob,
-    questions: data.questions,
-    contentId: data.contentId // contentId만 사용, htmlContent 제거
+    jobDescription: data.jobDescription || '',
+    resumeText: data.resumeText || '',
+    jobDescriptionUrl: data.jobPostingUrl, // 기존 호환성
+    selectedJob: data.selectedJob, // 기존 호환성
+    questions: data.questions, // 기존 호환성
+    contentId: data.contentId // 기존 호환성
   };
   
   formData.append('data', JSON.stringify(jsonData));

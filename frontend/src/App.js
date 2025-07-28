@@ -3,8 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 // Pages
-import LinkUploadPage from './pages/LinkUploadPage';
-import JobSelectPage from './pages/JobSelectPage';
+import JobInfoInputPage from './pages/JobInfoInputPage';
 import FileUploadPage from './pages/FileUploadPage';
 import QuestionPage from './pages/QuestionPage';
 import ResultPage from './pages/ResultPage';
@@ -38,9 +37,8 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<LinkUploadPage />} />
-          <Route path="/link-upload" element={<LinkUploadPage />} />
-          <Route path="/job-select" element={<JobSelectPage />} />
+          <Route path="/" element={<JobInfoInputPage />} />
+          <Route path="/job-info" element={<JobInfoInputPage />} />
           <Route path="/file-upload" element={<FileUploadPage />} />
           <Route path="/question" element={<QuestionPage />} />
           <Route path="/result" element={<ResultPage />} />
