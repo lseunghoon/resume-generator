@@ -81,8 +81,8 @@ def validate_question_data(question: str, length: int = None) -> Dict[str, Any]:
     
     question = question.strip()
     
-    if len(question) < 10:
-        raise ValidationError("질문은 최소 10자 이상이어야 합니다.")
+    if len(question) < 5:
+        raise ValidationError("질문은 최소 5자 이상이어야 합니다.")
     
     if length and len(question) > length:
         raise ValidationError(f"질문은 최대 {length}자까지 입력 가능합니다.")
