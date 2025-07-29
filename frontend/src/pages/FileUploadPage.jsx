@@ -19,7 +19,7 @@ const FileUploadPage = () => {
       // 새로운 채용정보 입력 방식 데이터
       setJobInfo(location.state.jobInfo || null);
       
-      // 이전에 업로드한 파일들이 있으면 복원
+      // 이전에 업로드한 파일들이 있으면 복원 (현재 세션에서만)
       if (location.state.uploadedFiles && location.state.uploadedFiles.length > 0) {
         const restoredFiles = location.state.uploadedFiles.map((file, index) => ({
           id: Date.now() + index + Math.random(),
@@ -41,18 +41,18 @@ const FileUploadPage = () => {
 
   const validateFile = (file) => {
     if (!allowedTypes.includes(file.type)) {
-      setError('PDF, DOC, DOCX 파일만 업로드 가능합니다.');
+      setError('PDF, DOC, DOCX 파일만 업로드 가능합니다');
       return false;
     }
     
     if (file.size > maxFileSize) {
-      setError('파일 크기는 50MB 이하여야 합니다.');
+      setError('파일 크기는 50MB 이하여야 합니다');
       return false;
     }
     
     // 중복 파일 검사
     if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
-      setError('이미 업로드된 파일입니다.');
+      setError('이미 업로드된 파일입니다');
       return false;
     }
     
@@ -162,7 +162,8 @@ const FileUploadPage = () => {
     // 새로운 채용정보 입력 방식
     navigate('/', { 
       state: { 
-        jobInfo: jobInfo
+        jobInfo: jobInfo,
+        fromFileUpload: true
       } 
     });
   };
@@ -207,7 +208,7 @@ const FileUploadPage = () => {
             <div className="form-content">
               <div className="form-header">
                 <h1>기존 자기소개서나 이력서를<br/>업로드해주세요</h1>
-                <p>더욱 개인화된 자기소개서 작성을 위해 건너뛰지 않는 것을 추천드립니다.<br/>
+                <p>더욱 개인화된 자기소개서 작성을 위해 건너뛰지 않는 것을 추천해요<br/>
                 </p>
               </div>
               
@@ -247,7 +248,7 @@ const FileUploadPage = () => {
                       onClick={handleFileInputClick}
                     >
                       <div className="upload-content-inner">
-                        <span className="upload-text">첨부 파일을 업로드해주세요.</span>
+                        <span className="upload-text">첨부 파일을 업로드해 주세요</span>
                       </div>
                       <div className="upload-icon">
                         <img 

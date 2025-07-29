@@ -5,7 +5,8 @@ import './Header.css';
 const Header = ({ 
   progress = 0, 
   showRestartButton = false, 
-  onRestart
+  onRestart,
+  currentStep = 0 // 현재 단계 정보 추가
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,14 +19,14 @@ const Header = ({
     if (location.pathname === '/link-upload') {
       console.log('Header - 홈으로 이동');
       navigate('/');
-    } else if (location.pathname === '/') {
-      // 홈페이지에서 로고 클릭 시 새로고침
-      console.log('Header - 새로고침 실행');
-      window.location.reload();
     } else {
-      // 다른 페이지에서는 홈으로 이동
-      console.log('Header - 홈으로 이동');
-      navigate('/');
+      // 모든 페이지에서 로고 클릭 시 홈으로 이동 후 새로고침
+      console.log('Header - 홈으로 이동 후 새로고침');
+      navigate('/', { replace: true });
+      // 약간의 지연 후 새로고침 실행
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 

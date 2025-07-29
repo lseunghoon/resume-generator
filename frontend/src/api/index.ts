@@ -62,9 +62,13 @@ export const generateCoverLetter = async (sessionId: string): Promise<GenerateRe
   }
 };
 
-export const reviseCoverLetter = async (answer: string, prompt: string): Promise<ReviseResponse> => {
+export const reviseCoverLetter = async (sessionId: string, questionIndex: number, revisionRequest: string): Promise<ReviseResponse> => {
   try {
-    const response = await api.post<ReviseResponse>('/revise', { answer, prompt });
+    const response = await api.post<ReviseResponse>('/revise', { 
+      sessionId, 
+      questionIndex, 
+      revisionRequest 
+    });
     console.log('Revision successful:', response.data);
     return response.data;
   } catch (error) {

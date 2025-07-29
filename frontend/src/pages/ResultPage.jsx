@@ -10,9 +10,14 @@ function ResultPage() {
     const navigate = useNavigate();
     const [sessionId, setSessionId] = useState('');
     const [answers, setAnswers] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
+
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState(0);
+    const [activeTab, setActiveTab] = useState(() => {
+        // localStorage에서 저장된 activeTab 복원
+        const savedActiveTab = localStorage.getItem('resultPageActiveTab');
+        return savedActiveTab ? parseInt(savedActiveTab, 10) : 0;
+    });
   
     const [selectedJob, setSelectedJob] = useState('');
     const [jobDescription, setJobDescription] = useState('');
@@ -23,7 +28,6 @@ function ResultPage() {
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
-    const [copiedIndex, setCopiedIndex] = useState(null);
     const [answerHistory, setAnswerHistory] = useState({}); // 각 문항별 히스토리: { questionIndex: [historyItems] }
     const [chatMessagesRef, setChatMessagesRef] = useState(null); // 스크롤을 위한 ref
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
@@ -43,8 +47,15 @@ function ResultPage() {
     // 다시 시작 함수
     const handleRestart = async () => {
         await handleDeleteSession();
+        // localStorage에서 activeTab 정보도 삭제
+        localStorage.removeItem('resultPageActiveTab');
         navigate('/');
     };
+
+    // activeTab 변경 시 localStorage에 저장
+    useEffect(() => {
+        localStorage.setItem('resultPageActiveTab', activeTab.toString());
+    }, [activeTab]);
 
     // 새로고침 시 세션 삭제 준비
     useEffect(() => {
@@ -105,7 +116,7 @@ function ResultPage() {
                 setUserQuestion(location.state.question || '');
             }
             
-            // 자기소개서 데이터 가져오기
+            // 항상 최신 데이터를 가져오기 위해 API 호출
             fetchCoverLetter(currentSessionId);
         } else {
             // 세션 ID가 없으면 홈으로 이동
@@ -117,12 +128,11 @@ function ResultPage() {
     const fetchCoverLetter = async (currentSessionId) => {
         if (!currentSessionId) {
             console.error('세션 ID가 없습니다.');
-            setError('세션 ID가 없습니다.');
+            setError('세션 ID가 없습니다');
             setIsLoading(false);
             return;
         }
 
-        setIsLoading(true);
         try {
             console.log('ResultPage - fetchCoverLetter 호출, sessionId:', currentSessionId);
             console.log('ResultPage - Mock API 활성화 상태:', localStorage.getItem('useMockApi'));
@@ -132,28 +142,63 @@ function ResultPage() {
             
             if (response.questions && response.questions.length > 0) {
                 console.log('ResultPage - questions 배열:', response.questions);
+                console.log('ResultPage - 첫 번째 question 객체:', response.questions[0]);
+                console.log('ResultPage - question 객체의 속성들:', {
+                    id: response.questions[0]?.id,
+                    question: response.questions[0]?.question,
+                    answer: response.questions[0]?.answer,
+                    answer_history: response.questions[0]?.answer_history,
+                    current_version_index: response.questions[0]?.current_version_index,
+                    length: response.questions[0]?.length
+                });
+                
                 // 실제 API 응답 구조에 맞게 수정
-                const answers = response.questions.map((question, index) => ({
-                    id: question.id || index + 1,
-                    question: question.question,
-                    answer: question.answer_history ? JSON.parse(question.answer_history)[question.current_version_index || 0] : question.answer || '',
-                    length: question.length || 500,
-                    has_undo: (question.current_version_index || 0) > 0,
-                    has_redo: question.answer_history ? JSON.parse(question.answer_history).length > (question.current_version_index || 0) + 1 : false
-                }));
+                const answers = response.questions.map((question, index) => {
+                    let answerHistory = [];
+                    let currentAnswer = question.answer || '';
+                    
+                    if (question.answer_history) {
+                        try {
+                            answerHistory = JSON.parse(question.answer_history);
+                            if (answerHistory.length > 0 && question.current_version_index !== undefined) {
+                                currentAnswer = answerHistory[question.current_version_index] || answerHistory[0] || '';
+                            }
+                        } catch (e) {
+                            console.error('답변 히스토리 파싱 오류:', e);
+                            currentAnswer = question.answer || '';
+                        }
+                    }
+                    
+                    return {
+                        id: question.id || index + 1,
+                        question: question.question,
+                        answer: currentAnswer,
+                        answer_history: answerHistory,
+                        current_version_index: question.current_version_index || 0,
+                        length: question.length || 500,
+                        has_undo: (question.current_version_index || 0) > 0,
+                        has_redo: answerHistory.length > (question.current_version_index || 0) + 1
+                    };
+                });
                 
                 console.log('ResultPage - 변환된 answers:', answers);
                 setAnswers(answers);
-                setActiveTab(0);
+                
+                // 저장된 activeTab이 유효한지 확인하고 설정
+                const savedActiveTab = parseInt(localStorage.getItem('resultPageActiveTab') || '0', 10);
+                const validActiveTab = savedActiveTab < answers.length ? savedActiveTab : 0;
+                setActiveTab(validActiveTab);
+                
+                setIsLoading(false); // 로딩 완료
             } else {
                 console.error('ResultPage - questions 배열이 없거나 비어있음:', response);
-                setError('자기소개서 데이터를 불러올 수 없습니다.');
+                setError('자기소개서 데이터를 불러올 수 없습니다');
+                setIsLoading(false); // 로딩 완료
             }
         } catch (error) {
             console.error('자기소개서 조회 오류:', error);
-            setError(error.message || '자기소개서를 불러오는데 실패했습니다.');
-        } finally {
-            setIsLoading(false);
+            setError(error.message || '자기소개서를 불러오는데 실패했습니다');
+            setIsLoading(false); // 로딩 완료
         }
     };
 
@@ -169,6 +214,14 @@ function ResultPage() {
 
     const handleRevisionRequestChange = (value) => {
         setRevisionRequest(value);
+        
+        // textarea 높이 자동 조절
+        setTimeout(() => {
+            if (inputRef) {
+                inputRef.style.height = 'auto';
+                inputRef.style.height = Math.min(inputRef.scrollHeight, 200) + 'px';
+            }
+        }, 0);
     };
 
     const handleSubmitRevision = async () => {
@@ -176,47 +229,33 @@ function ResultPage() {
         
         setIsRevising(true);
         try {
-            // 세션 내 질문 인덱스 사용 (0, 1, 2)
-            const questionIndex = activeTab;
+            // 세션 내 질문 인덱스 사용 (1, 2, 3으로 변환)
+            const questionIndex = activeTab + 1;
             console.log('수정 요청 - 현재 탭:', activeTab);
             console.log('수정 요청 - answers:', answers);
             console.log('수정 요청 - 선택된 질문:', answers[activeTab]);
             console.log('수정 요청 - 질문 인덱스:', questionIndex);
             
-            if (questionIndex < 0 || questionIndex >= answers.length) {
+            if (questionIndex < 1 || questionIndex > answers.length) {
                 console.error('유효하지 않은 질문 인덱스입니다.');
                 return;
             }
             
             const response = await reviseAnswer(sessionId, questionIndex, revisionRequest);
             
-            // mock API 응답 구조에 맞게 수정
-            const revisedAnswerText = response.revised_answer?.answer || response.revised_answer;
+            // API 응답 구조에 맞게 수정
+            const revisedAnswerText = response.revisedAnswer || response.answer;
             
             if (revisedAnswerText) {
-                // 현재 버전을 과거 버전으로 저장
-                const currentAnswer = answers[activeTab];
-                const newHistoryItem = {
-                    id: Date.now(),
-                    question: currentAnswer.question,
-                    answer: currentAnswer.answer,
-                    length: currentAnswer.length,
-                    timestamp: new Date().toLocaleString()
-                };
-                
-                setAnswerHistory(prev => ({
-                    ...prev,
-                    [activeTab]: [...(prev[activeTab] || []), newHistoryItem]
-                }));
-                
-                // 새로운 버전으로 업데이트
-                setAnswers(prev => prev.map((item, i) => 
-                    i === activeTab 
-                        ? { ...item, answer: revisedAnswerText, length: revisedAnswerText.length }
-                        : item
-                ));
+                // 수정 완료 후 최신 데이터를 다시 가져오기
+                await fetchCoverLetter(sessionId);
                 
                 setRevisionRequest('');
+                
+                // textarea 높이 초기화
+                if (inputRef) {
+                    inputRef.style.height = 'auto';
+                }
                 
                 // 새로운 메시지가 추가된 후 자동 스크롤
                 setTimeout(() => {
@@ -228,6 +267,10 @@ function ResultPage() {
             console.error('수정 요청 실패:', err);
         } finally {
             setIsRevising(false);
+            // 에러 발생 시에도 textarea 높이 초기화
+            if (inputRef) {
+                inputRef.style.height = 'auto';
+            }
         }
     };
     
@@ -235,14 +278,14 @@ function ResultPage() {
         try {
             let textToCopy;
             if (isHistory && historyIndex !== null) {
-                textToCopy = answerHistory[index] ? answerHistory[index][historyIndex].answer : answers[index].answer;
+                // 히스토리 버전 복사
+                textToCopy = answers[index].answer_history[historyIndex];
             } else {
+                // 현재 버전 복사
                 textToCopy = answers[index].answer;
             }
             
             await navigator.clipboard.writeText(textToCopy);
-            setCopiedIndex(isHistory ? `history-${historyIndex}` : index);
-            setTimeout(() => setCopiedIndex(null), 2000);
         } catch (err) {
             console.error('복사 실패:', err);
         }
@@ -284,45 +327,34 @@ function ResultPage() {
             const newAnswerData = response.new_answer || response;
             
             if (newAnswerData.question) {
-                const newAnswer = {
-                    id: newAnswerData.questionId || response.questionId || answers.length + 1,
-                    question: newAnswerData.question,
-                    length: newAnswerData.answer?.length || 0,
-                    answer: newAnswerData.answer,
-                    has_undo: false,
-                    has_redo: false
-                };
-                
-                const newIndex = answers.length;
-                
-                setAnswers(prev => [...prev, newAnswer]);
-                
-                // 새로 추가된 질문에 대한 히스토리 초기화
-                setAnswerHistory(prev => ({
-                    ...prev,
-                    [newIndex]: [] // 새로운 문항의 히스토리는 빈 배열로 초기화
-                }));
+                // 문항 추가 완료 후 최신 데이터를 다시 가져오기
+                await fetchCoverLetter(sessionId);
                 
                 // 새로 추가된 질문에 대한 상태 초기화
                 setRevisionRequest('');
                 setNewQuestion('');
                 setShowAddQuestionModal(false);
                 
-                // 새로 추가된 탭으로 이동
-                setActiveTab(newIndex);
+                // 새로 추가된 탭으로 이동 (answers 배열이 업데이트된 후)
+                setTimeout(() => {
+                    setActiveTab(answers.length);
+                }, 100);
                 
-                console.log('문항 추가 완료:', newAnswer);
+                console.log('문항 추가 완료');
             } else {
                 console.error('응답에 question이 없습니다:', response);
             }
         } catch (err) {
             console.error('질문 추가 실패:', err);
-            alert('문항 추가에 실패했습니다. 다시 시도해주세요.');
+            alert('문항 추가에 실패했습니다. 다시 시도해주세요');
         } finally {
             setIsAddingQuestion(false);
         }
     };
 
+
+
+    // 로딩 중일 때는 스피너 표시
     if (isLoading) {
         return (
             <div className="result-page">
@@ -335,12 +367,13 @@ function ResultPage() {
         );
     }
 
+    // 로딩이 완료되었지만 에러가 있거나 데이터가 없을 때
     if (error || answers.length === 0) {
         return (
             <div className="result-page">
                 <Header progress={100} />
                 <div className="error-container">
-                    <p>{error || '결과를 찾을 수 없습니다.'}</p>
+                    <p>{error || '결과를 찾을 수 없습니다'}</p>
                     <Button onClick={handleRestart}>다시 시작</Button>
                 </div>
             </div>
@@ -356,11 +389,11 @@ function ResultPage() {
                     {/* 채용공고 정보 섹션 */}
                     <div className="job-info-section">
                         <div className="job-company">
-                            <span className="company-icon">🏢</span>
+                            <img src="/assets/companyicon.svg" alt="회사" className="company-icon" />
                             <span>{jobInfo ? jobInfo.companyName : '회사명'}</span>
                         </div>
                         <div className="job-position">
-                            <span className="briefcase-icon">💼</span>
+                            <img src="/assets/jobicon.svg" alt="직무" className="briefcase-icon" />
                             <span>{jobInfo ? jobInfo.jobTitle : selectedJob}</span>
                         </div>
                     </div>
@@ -391,29 +424,27 @@ function ResultPage() {
                     {answers[activeTab] && (
                         <div className="chat-container">
                             {/* 과거 버전들 (가장 오래된 것부터) */}
-                            {answerHistory[activeTab] && answerHistory[activeTab].map((historyItem, historyIndex) => (
-                                <div key={historyItem.id} className="message-item history-message">
+                            {answers[activeTab].answer_history && answers[activeTab].answer_history.length > 0 && 
+                             answers[activeTab].current_version_index > 0 &&
+                             answers[activeTab].answer_history.slice(0, answers[activeTab].current_version_index).map((historyAnswer, historyIndex) => (
+                                <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
                                     <div className="message-content">
                                         <div className="message-text">
-                                            {removeMarkdownBold(historyItem.answer).split('\n').map((line, i) => (
+                                            {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
                                                 <p key={i}>{line}</p>
                                             ))}
                                         </div>
                                         <div className="message-meta">
-                                            <span className="message-character-count">공백포함 {calculateTextLength(historyItem.answer)}자</span>
+                                            <span className="message-character-count">공백포함 {calculateTextLength(historyAnswer)}자</span>
                                             <button 
                                                 className="message-copy-button"
                                                 onClick={() => handleCopy(activeTab, true, historyIndex)}
                                             >
-                                                {copiedIndex === `history-${historyIndex}` ? (
-                                                    <span>✅</span>
-                                                ) : (
-                                                    <img 
-                                                        src="/assets/content_copy.svg" 
-                                                        alt="복사" 
-                                                        className="copy-icon"
-                                                    />
-                                                )}
+                                                <img 
+                                                    src="/assets/content_copy.svg" 
+                                                    alt="복사" 
+                                                    className="copy-icon"
+                                                />
                                             </button>
                                         </div>
                                     </div>
@@ -434,15 +465,11 @@ function ResultPage() {
                                             className="message-copy-button"
                                             onClick={() => handleCopy(activeTab)}
                                         >
-                                            {copiedIndex === activeTab ? (
-                                                <span>✅</span>
-                                            ) : (
-                                                <img 
-                                                    src="/assets/content_copy.svg" 
-                                                    alt="복사" 
-                                                    className="copy-icon"
-                                                />
-                                            )}
+                                            <img 
+                                                src="/assets/content_copy.svg" 
+                                                alt="복사" 
+                                                className="copy-icon"
+                                            />
                                         </button>
                                     </div>
                                 </div>
@@ -453,13 +480,14 @@ function ResultPage() {
                     {/* 고정된 수정 입력창 */}
                     <div className="chat-input-section">
                         <div className="revision-input">
-                            <input
-                                type="text"
-                                placeholder="수정할 내용을 입력해주세요"
+                            <textarea
+                                placeholder="수정할 내용을 입력해 주세요"
                                 value={revisionRequest || ''}
                                 onChange={(e) => handleRevisionRequestChange(e.target.value)}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
+                                onInput={(e) => handleRevisionRequestChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
                                         handleSubmitRevision();
                                         // 엔터 키 후에도 포커스 유지
                                         setTimeout(() => {
@@ -469,13 +497,19 @@ function ResultPage() {
                                 }}
                                 disabled={isRevising}
                                 ref={setInputRef}
+                                rows={1}
+                                style={{ minHeight: '40px', maxHeight: '200px' }}
                             />
                             <button 
-                                className="send-revision"
+                                className={`send-revision ${isRevising ? 'processing' : ''}`}
                                 onClick={handleSubmitRevision}
                                 disabled={isRevising || !revisionRequest.trim()}
                             >
-                                {isRevising ? '⏳' : '→'}
+                                {isRevising ? (
+                                    <div className="spinner"></div>
+                                ) : (
+                                    '→'
+                                )}
                             </button>
                         </div>
                     </div>
@@ -486,7 +520,7 @@ function ResultPage() {
             {showAddQuestionModal && (
                 <div className="modal-overlay" onClick={() => setShowAddQuestionModal(false)}>
                     <div className="add-question-modal" onClick={(e) => e.stopPropagation()}>
-                        <h3>추가로 생성하고자 하는<br/>문항을 입력해주세요</h3>
+                        <h3>추가로 생성하고자 하는<br/>문항을 입력해 주세요</h3>
                         <p>자기소개서 문항은 최대 3개까지 추가 가능합니다.</p>
                         <input
                             type="text"

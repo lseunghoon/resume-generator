@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import './Input.css';
 
-const Input = ({ 
+const Input = forwardRef(({ 
   placeholder, 
   value, 
   onChange, 
@@ -12,12 +12,13 @@ const Input = ({
   iconType = 'send',
   onIconClick,
   className = ''
-}) => {
+}, ref) => {
   return (
     <div className={`input-container ${className}`}>
       <div className={`input-wrapper ${error ? 'input-error' : ''} ${disabled ? 'input-disabled' : ''}`}>
         <div className="input-content">
           <input
+            ref={ref}
             type="text"
             placeholder={placeholder}
             value={value}
@@ -40,6 +41,6 @@ const Input = ({
       {error && <div className="input-error-message">{error}</div>}
     </div>
   );
-};
+});
 
 export default Input; 

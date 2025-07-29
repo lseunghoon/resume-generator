@@ -47,7 +47,7 @@ export const submitJobInfo = async (jobInfo) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || '채용정보 입력에 실패했습니다.');
+          throw new Error(errorData.message || '채용정보 입력에 실패했습니다');
   }
 
   return response.json();
@@ -84,7 +84,7 @@ export const createSession = async (data) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || '자기소개서 생성에 실패했습니다.');
+          throw new Error(errorData.message || '자기소개서 생성에 실패했습니다');
   }
 
   return response.json();
@@ -96,7 +96,10 @@ export const getCoverLetter = async (sessionId) => {
     return mockApi.getCoverLetter(sessionId);
   }
 
-  return apiCall(`/api/v1/session/${sessionId}`);
+  console.log('API: getCoverLetter 호출 - sessionId:', sessionId);
+  const response = await apiCall(`/api/v1/session/${sessionId}`);
+  console.log('API: getCoverLetter 응답:', response);
+  return response;
 };
 
 // 자기소개서 생성 (AI 모델 호출)
@@ -129,9 +132,13 @@ export const reviseAnswer = async (sessionId, questionIndex, revision) => {
     return mockApi.reviseAnswer(sessionId, questionIndex, revision);
   }
 
-  return apiCall(`/api/v1/sessions/${sessionId}/questions/${questionIndex}/revise`, {
+  return apiCall(`/api/v1/revise`, {
     method: 'POST',
-    body: JSON.stringify({ revision }),
+    body: JSON.stringify({ 
+      sessionId, 
+      questionIndex, 
+      revisionRequest: revision 
+    }),
   });
 };
 
@@ -149,4 +156,4 @@ export const deleteSession = async (sessionId) => {
 };
 
 // Mock API 모드 제어 함수들
-export { useMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
+export { enableMockApi, disableMockApi, isMockApiEnabled } from './mockApi';

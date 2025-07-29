@@ -16,8 +16,8 @@ const NextButton = ({
       >
         {loading ? (
           <>
-            <div className="spinner"></div>
-            <span>처리 중...</span>
+            <div className="next-button-spinner"></div>
+            <span>생성 중...</span>
           </>
         ) : (
           text

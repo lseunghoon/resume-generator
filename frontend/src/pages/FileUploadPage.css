@@ -134,6 +134,8 @@
   margin-left: 8px;
 }
 
+
+
 .file-count-label {
   font-size: 16px;
   color: #1a1d29;
@@ -466,6 +468,13 @@
 
 .file-upload-page .next-button:active {
   transform: translateY(1px) !important;
+}
+
+.file-upload-page .next-button:disabled {
+  background: #f0f0f2 !important;
+  color: #a6a6a7 !important;
+  cursor: not-allowed;
+  pointer-events: none;
 } 
 
  

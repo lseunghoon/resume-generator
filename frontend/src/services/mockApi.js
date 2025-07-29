@@ -54,8 +54,11 @@ const mockSessionResponse = {
   message: "자기소개서 생성이 완료되었습니다."
 };
 
-// Mock 자기소개서 응답
-const mockCoverLetterResponse = {
+// Mock 세션 ID 저장 변수
+let currentMockSessionId = "mock-session-123";
+
+// Mock 자기소개서 데이터 저장
+let mockCoverLetterData = {
   session_id: "mock-session-123",
   questions: [
     {
@@ -98,10 +101,16 @@ export const mockApi = {
       mockUserQuestion = data.questions[0];
     }
     
-    // Mock API에서는 세션 생성과 동시에 자기소개서도 생성됨
-    console.log('Mock: 세션 생성 완료');
+    // 새로운 세션 ID 생성
+    currentMockSessionId = "mock-session-" + Date.now();
     
-    return mockSessionResponse;
+    // Mock API에서는 세션 생성 후 약간의 지연을 두고 자기소개서 생성
+    console.log('Mock: 세션 생성 완료, 자기소개서 생성 시작');
+    
+    return {
+      sessionId: currentMockSessionId,
+      message: "자기소개서 생성이 시작되었습니다."
+    };
   },
 
   // 자기소개서 생성 (AI 모델 호출) - Mock에서는 이미 생성됨
@@ -121,20 +130,16 @@ export const mockApi = {
     console.log('Mock: 현재 mockUserQuestion:', mockUserQuestion);
     await delay(MOCK_DELAY);
     
-    // Mock 응답에서 저장된 질문 사용
+    // 저장된 데이터 반환
     const mockResponse = {
-      session_id: "mock-session-123",
-      questions: [
-        {
-          id: 1,
-          question: mockUserQuestion, // 사용자가 입력한 질문 사용
-          answer: "저는 어린 시절부터 컴퓨터에 관심이 많았습니다. 중학교 때 처음 프로그래밍을 접하게 되었고, 그때부터 개발자의 꿈을 키워왔습니다. 고등학교에서는 정보올림피아드에 참가하여 전국 대회에서 입상하는 성과를 거두었고, 대학교에서는 컴퓨터공학을 전공하며 더욱 깊이 있는 지식을 쌓았습니다. 특히 웹 개발에 관심을 가지고 React, Node.js 등의 기술을 학습하며 실무 프로젝트에도 참여했습니다. 이러한 경험들을 통해 저는 지속적인 학습과 도전 정신의 중요성을 깨달았고, 이를 바탕으로 더 나은 개발자가 되기 위해 노력하고 있습니다.",
-          answer_history: JSON.stringify(["저는 어린 시절부터 컴퓨터에 관심이 많았습니다. 중학교 때 처음 프로그래밍을 접하게 되었고, 그때부터 개발자의 꿈을 키워왔습니다. 고등학교에서는 정보올림피아드에 참가하여 전국 대회에서 입상하는 성과를 거두었고, 대학교에서는 컴퓨터공학을 전공하며 더욱 깊이 있는 지식을 쌓았습니다. 특히 웹 개발에 관심을 가지고 React, Node.js 등의 기술을 학습하며 실무 프로젝트에도 참여했습니다. 이러한 경험들을 통해 저는 지속적인 학습과 도전 정신의 중요성을 깨달았고, 이를 바탕으로 더 나은 개발자가 되기 위해 노력하고 있습니다."]),
-          current_version_index: 0,
-          length: 500
-        }
-      ]
+      session_id: sessionId,
+      questions: mockCoverLetterData.questions
     };
+    
+    // 질문이 설정되어 있으면 업데이트
+    if (mockUserQuestion && mockResponse.questions.length > 0) {
+      mockResponse.questions[0].question = mockUserQuestion;
+    }
     
     console.log('Mock: 반환할 응답:', mockResponse);
     return mockResponse;
@@ -160,13 +165,37 @@ export const mockApi = {
     console.log('Mock: 답변 수정 중...', { sessionId, questionIndex, revision });
     await delay(MOCK_DELAY);
     
-    return {
-      sessionId: sessionId,
-      message: "답변이 수정되었습니다.",
-      revised_answer: {
-        question: "수정된 문항",
-        answer: `수정 요청: "${revision}"에 따라 수정된 답변입니다. 이는 Mock 데이터로 생성된 예시 답변입니다.`
+    // 수정된 답변 생성
+    const revisedAnswer = `수정 요청: "${revision}"에 따라 수정된 답변입니다. 이는 Mock 데이터로 생성된 예시 답변입니다. 실제로는 AI 모델이 수정 요청을 분석하여 개선된 자기소개서를 생성합니다.`;
+    
+    // 저장된 데이터 업데이트
+    if (mockCoverLetterData.questions.length > 0) {
+      const question = mockCoverLetterData.questions[0];
+      const currentAnswer = question.answer;
+      
+      // 히스토리에 현재 답변 추가
+      let history = [];
+      try {
+        history = JSON.parse(question.answer_history);
+      } catch (e) {
+        history = [currentAnswer];
       }
+      
+      // 수정된 답변을 히스토리에 추가
+      history.push(revisedAnswer);
+      
+      // 데이터 업데이트
+      question.answer = revisedAnswer;
+      question.answer_history = JSON.stringify(history);
+      question.current_version_index = history.length - 1;
+      question.length = revisedAnswer.length;
+      
+      console.log('Mock: 수정된 자기소개서 저장 완료');
+    }
+    
+    return {
+      revisedAnswer: revisedAnswer,
+      message: "자기소개서가 성공적으로 수정되었습니다."
     };
   },
 
@@ -180,7 +209,7 @@ export const mockApi = {
       return {
         contentId: 'mock-content-id-' + Date.now(),
         contentSize: 1024 * 1024, // 1MB
-        message: '대용량 콘텐츠가 임시 저장되었습니다. contentId를 사용하여 세션 생성 시 참조하세요.'
+        message: '대용량 콘텐츠가 임시 저장되었습니다. contentId를 사용하여 세션 생성 시 참조하세요'
       };
     } else {
       // 작은 콘텐츠 시뮬레이션 (직접 반환)
@@ -211,13 +240,13 @@ export const mockApi = {
     
     return {
       success: true,
-      message: '세션이 성공적으로 삭제되었습니다.'
+      message: '세션이 성공적으로 삭제되었습니다'
     };
   }
 };
 
 // Mock API 사용을 위한 설정
-export const useMockApi = () => {
+export const enableMockApi = () => {
   // localStorage에 mock 모드 저장
   localStorage.setItem('useMockApi', 'true');
   console.log('Mock API 모드가 활성화되었습니다.');

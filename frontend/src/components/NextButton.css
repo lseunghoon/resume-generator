@@ -39,6 +39,7 @@
 .next-button.disabled {
   cursor: not-allowed;
   opacity: 0.6;
+  pointer-events: none;
 }
 
 /* 활성화된 다음 버튼 스타일 */
@@ -51,15 +52,15 @@
   background-color: #1670e6;
 }
 
-/* 로딩 스피너 스타일 */
-.spinner {
+/* NextButton 전용 스피너 스타일 */
+.next-button-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #ffffff;
+  border: 2px solid #1e82ff;
   border-top: 2px solid transparent;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-right: 8px;
+  margin-right: 12px;
 }
 
 @keyframes spin {

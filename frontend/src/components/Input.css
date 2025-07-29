@@ -46,7 +46,7 @@
 }
 
 .input-field::placeholder {
-  color: #9ca3af;
+  color: #d1d5db;
 }
 
 .input-field:disabled {
@@ -91,7 +91,20 @@
   font-size: 14px;
   line-height: 1.4;
   margin-top: 8px;
-  padding-left: 20px;
+  animation: shake 0.3s ease-in-out;
+}
+
+/* 에러 메시지 떨림 애니메이션 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 /* 모바일 반응형 */

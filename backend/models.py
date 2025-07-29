@@ -93,10 +93,13 @@ class Question(Base):
         current_answer = history[self.current_version_index] if history and 0 <= self.current_version_index < len(history) else None
         
         return {
+            'id': self.id,
             'question_number': self.question_number,  # 전역 ID 대신 세션 내 번호 사용
             'question': self.question,
             'length': self.length,
             'answer': current_answer,
+            'answer_history': self.answer_history,
+            'current_version_index': self.current_version_index,
             'has_undo': self.current_version_index > 0,
             'has_redo': self.current_version_index < len(history) - 1
         }

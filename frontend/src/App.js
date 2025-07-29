@@ -15,23 +15,7 @@ import DevTools from './components/DevTools';
 import { deleteSession } from './services/api';
 
 function App() {
-  // 앱 시작 시 이전 세션 정리
-  useEffect(() => {
-    const pendingSessionDelete = localStorage.getItem('pendingSessionDelete');
-    if (pendingSessionDelete) {
-      console.log('앱 시작 시 이전 세션 정리 중:', pendingSessionDelete);
-      deleteSession(pendingSessionDelete)
-        .then(() => {
-          console.log('이전 세션 정리 완료');
-        })
-        .catch(error => {
-          console.error('이전 세션 정리 실패:', error);
-        })
-        .finally(() => {
-          localStorage.removeItem('pendingSessionDelete');
-        });
-    }
-  }, []);
+  // 앱 시작 시 이전 세션 정리 로직 제거 (새로고침 시 세션 삭제 방지)
 
   return (
     <Router>

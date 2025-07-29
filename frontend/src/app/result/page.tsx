@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generateCoverLetter, reviseCoverLetter, deleteSession } from '@/api';
+import { generateCoverLetter, reviseCoverLetter, deleteSession } from '../../api';
 
 export default function ResultPage() {
   const searchParams = useSearchParams();
@@ -11,7 +11,7 @@ export default function ResultPage() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [revisionPrompt, setRevisionPrompt] = useState('');
+  const [revisionPrompts, setRevisionPrompts] = useState<string[]>([]);
   const [revisingIndex, setRevisingIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export default function ResultPage() {
         const response = await generateCoverLetter(sessionId);
         console.log('Generation response:', response);
         setAnswers(response.answers);
+        setRevisionPrompts(new Array(response.answers.length).fill(''));
       } catch (err) {
         console.error('Generation error:', err);
         setError(err instanceof Error ? err.message : '자기소개서 생성 중 오류가 발생했습니다.');
@@ -38,8 +39,13 @@ export default function ResultPage() {
   }, [sessionId]);
 
   const handleRevise = async (index: number) => {
-    if (!revisionPrompt.trim()) {
+    if (!revisionPrompts[index]?.trim()) {
       setError('수정 요청을 입력해주세요.');
+      return;
+    }
+
+    if (!sessionId) {
+      setError('세션 ID가 없습니다.');
       return;
     }
 
@@ -47,13 +53,16 @@ export default function ResultPage() {
     setError(null);
 
     try {
-      const response = await reviseCoverLetter(answers[index], revisionPrompt);
+      const response = await reviseCoverLetter(sessionId, index, revisionPrompts[index]);
       console.log('Revision response:', response);
       
       const newAnswers = [...answers];
       newAnswers[index] = response.revisedAnswer;
       setAnswers(newAnswers);
-      setRevisionPrompt('');
+      
+      const newPrompts = [...revisionPrompts];
+      newPrompts[index] = '';
+      setRevisionPrompts(newPrompts);
     } catch (err) {
       console.error('Revision error:', err);
       setError(err instanceof Error ? err.message : '자기소개서 수정 중 오류가 발생했습니다.');
@@ -140,8 +149,12 @@ export default function ResultPage() {
 
             <div className="mt-4">
               <textarea
-                value={revisionPrompt}
-                onChange={(e) => setRevisionPrompt(e.target.value)}
+                value={revisionPrompts[index] || ''}
+                onChange={(e) => {
+                  const newPrompts = [...revisionPrompts];
+                  newPrompts[index] = e.target.value;
+                  setRevisionPrompts(newPrompts);
+                }}
                 placeholder="수정 요청을 입력하세요..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
                 rows={3}
@@ -149,13 +162,20 @@ export default function ResultPage() {
               <button
                 onClick={() => handleRevise(index)}
                 disabled={revisingIndex === index}
-                className={`px-4 py-2 text-white rounded-md ${
+                className={`px-4 py-2 text-white rounded-md flex items-center justify-center ${
                   revisingIndex === index
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {revisingIndex === index ? '수정 중...' : '수정하기'}
+                {revisingIndex === index ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    수정 중...
+                  </>
+                ) : (
+                  '수정하기'
+                )}
               </button>
             </div>
           </div>

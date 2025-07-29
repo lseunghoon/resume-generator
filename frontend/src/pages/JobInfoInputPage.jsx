@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
-import NextButton from '../components/NextButton';
 import Input from '../components/Input';
+import Navigation from '../components/Navigation';
 import './JobInfoInputPage.css';
 
 // Mock 데이터 (보이저엑스 서비스기획 인턴)
@@ -38,6 +38,33 @@ e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고
 1. 영어 또는 일본어로 의사 소통이 가능한 분`
 };
 
+// 단계별 설정
+const STEPS = [
+  { id: 'companyName', title: '지원하고자 하는 회사 이름을 입력해 주세요', placeholder: '예시) 삼성디스플레이, 아토머스, 보이저엑스' },
+  { id: 'jobTitle', title: '직무를 입력해 주세요', placeholder: '예시) 사업개발, 서비스기획자' },
+      { id: 'mainResponsibilities', title: '주요 업무를 입력해 주세요', placeholder: `예시)
+
+■ 주요 업무:
+a. 문제의 발견: 정량적, 정성적인 방법으로 사용자가 겪고 있는 문제를 발견합니다.
+b. 문제의 정리: 발견한 문제를 논리적이고 체계적으로 잘 정리합니다.
+c. 문제의 공유: 정리된 문제를 여러가지 방법으로 잘 공유합니다.
+d. 해결책의 제시: 문제의 해결책을 제시합니다.
+
+■ 추가 업무:
+e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고 있는 모든 일의 보조` },
+    { id: 'requirements', title: '자격요건을 입력해 주세요', placeholder: `예시)
+      
+■  필수 요건:
+1. 인턴 지원 자격에 해당하는 분
+2. 성실하고 꼼꼼한 분
+3. 정직하고 책임감이 강한 분
+4. 공감하고 경청할 수 있는 분
+5. 각종 소프트웨어를 잘 다루는 분
+6. 글을 잘 읽고 잘 쓸 수 있는 분
+7. 논리적이고 분석적인 분` },
+  { id: 'preferredQualifications', title: '우대사항을 입력해 주세요', placeholder: '예시) 영어 가능자, 일본어 가능자' }
+];
+
 const JobInfoInputPage = () => {
   const [formData, setFormData] = useState({
     companyName: '',
@@ -46,72 +73,233 @@ const JobInfoInputPage = () => {
     requirements: '',
     preferredQualifications: ''
   });
+  const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // 각 입력 필드에 대한 ref 생성
+  const inputRefs = {
+    companyName: useRef(null),
+    jobTitle: useRef(null),
+    mainResponsibilities: useRef(null),
+    requirements: useRef(null),
+    preferredQualifications: useRef(null)
+  };
 
   // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
     if (location.state?.jobInfo) {
       setFormData(location.state.jobInfo);
+      // 파일업로드 페이지에서 뒤로가기로 돌아온 경우 마지막 단계로 이동
+      if (location.state?.fromFileUpload) {
+        setCurrentStep(STEPS.length - 1);
+      }
     } else if (localStorage.getItem('useMockApi') === 'true' && localStorage.getItem('mockJobDataFilled') === 'true') {
       // Mock API 모드이고 Mock 데이터 채우기 플래그가 설정되어 있을 때 자동으로 데이터 채우기
       setFormData(mockJobData);
     }
   }, [location.state]);
 
-  const validateForm = () => {
+  // 현재 단계의 입력 필드에 자동 포커스
+  useEffect(() => {
+    const currentField = STEPS[currentStep].id;
+    const currentRef = inputRefs[currentField];
+    
+    // 페이지 로드 시나 단계 변경 시 해당 입력 필드에 포커스
+    setTimeout(() => {
+      if (currentRef && currentRef.current) {
+        currentRef.current.focus();
+      }
+    }, 100);
+  }, [currentStep]); // currentStep이 변경될 때마다 실행
+
+  const currentStepData = STEPS[currentStep];
+  const isLastStep = false; // 항상 다음 단계(파일업로드)가 있으므로 false
+  const isRequirementsStep = currentStepData.id === 'requirements';
+  const isPreferredQualificationsStep = currentStepData.id === 'preferredQualifications';
+  
+  // 현재 단계의 필수 입력값 확인
+  const isCurrentStepValid = () => {
+    const currentField = currentStepData.id;
+    const currentValue = formData[currentField];
+    
+    // 자격요건과 우대사항은 선택항목이므로 항상 유효
+    if (isRequirementsStep || isPreferredQualificationsStep) {
+      return true;
+    }
+    
+    // 모든 단계들은 버튼 클릭 시 검증하므로 항상 true 반환
+    return true;
+  };
+
+
+
+  const validateCurrentStep = () => {
     const newErrors = {};
+    const currentField = currentStepData.id;
+    const currentValue = formData[currentField];
     
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = '회사명을 입력해주세요.';
-    } else if (formData.companyName.trim().length < 2) {
-      newErrors.companyName = '회사명은 최소 2자 이상이어야 합니다.';
+    // 자격요건과 우대사항은 선택항목이므로 검증하지 않음
+    if (isRequirementsStep || isPreferredQualificationsStep) {
+      return true;
     }
     
-    if (!formData.jobTitle.trim()) {
-      newErrors.jobTitle = '직무를 입력해주세요.';
-    } else if (formData.jobTitle.trim().length < 2) {
-      newErrors.jobTitle = '직무는 최소 2자 이상이어야 합니다.';
-    }
-    
-    if (!formData.mainResponsibilities.trim()) {
-      newErrors.mainResponsibilities = '주요업무를 입력해주세요.';
-    } else if (formData.mainResponsibilities.trim().length < 10) {
-      newErrors.mainResponsibilities = '주요업무는 최소 10자 이상이어야 합니다.';
-    }
-    
-    if (!formData.requirements.trim()) {
-      newErrors.requirements = '자격요건을 입력해주세요.';
-    } else if (formData.requirements.trim().length < 10) {
-      newErrors.requirements = '자격요건은 최소 10자 이상이어야 합니다.';
+    if (!currentValue.trim()) {
+      // 빈 값일 때
+      if (currentField === 'companyName') {
+        newErrors[currentField] = '회사명을 입력해 주세요';
+      } else if (currentField === 'jobTitle') {
+        newErrors[currentField] = '직무를 입력해 주세요';
+      } else if (currentField === 'mainResponsibilities') {
+        newErrors[currentField] = '주요 업무를 입력해 주세요';
+      }
+    } else if (currentValue.trim().length < 2) {
+      // 2자 미만일 때
+      if (currentField === 'companyName') {
+        newErrors[currentField] = '회사명은 최소 2자 이상으로 입력해야 합니다';
+      } else if (currentField === 'jobTitle') {
+        newErrors[currentField] = '직무는 최소 2자 이상으로 입력해야 합니다';
+      }
+    } else if (currentField === 'mainResponsibilities' && currentValue.trim().length < 10) {
+      // 주요 업무가 10자 미만일 때
+      newErrors[currentField] = '주요 업무는 최소 10자 이상으로 입력해야 합니다';
     }
     
     setErrors(newErrors);
+    
+    // 에러가 있으면 애니메이션을 위한 key 업데이트
+    if (Object.keys(newErrors).length > 0) {
+      setErrorKey(prev => prev + 1);
+      
+      // 에러가 발생한 필드에 포커스 이동
+      setTimeout(() => {
+        const currentRef = inputRefs[currentField];
+        if (currentRef && currentRef.current) {
+          currentRef.current.focus();
+        }
+      }, 100); // 애니메이션이 시작된 후 포커스 이동
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (value) => {
+    const currentField = currentStepData.id;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [currentField]: value
     }));
     
     // 실시간 유효성 검사 (에러가 있는 경우에만)
-    if (errors[field]) {
+    if (errors[currentField]) {
       setErrors(prev => ({
         ...prev,
-        [field]: ''
+        [currentField]: ''
       }));
     }
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
+  const handleNext = () => {
+    const currentField = currentStepData.id;
+    const currentValue = formData[currentField];
+    
+    // 모든 단계들은 버튼 클릭 시 검증
+    const newErrors = {};
+    
+    if (!currentValue.trim()) {
+      if (currentField === 'companyName') {
+        newErrors[currentField] = '회사명을 입력해 주세요';
+      } else if (currentField === 'jobTitle') {
+        newErrors[currentField] = '직무를 입력해 주세요';
+      } else if (currentField === 'mainResponsibilities') {
+        newErrors[currentField] = '주요 업무를 입력해 주세요';
+      }
+    } else if (currentField === 'mainResponsibilities' && currentValue.trim().length < 10) {
+      // 주요업무는 10자 이상 검증
+      newErrors[currentField] = '주요 업무는 최소 10자 이상으로 입력해야 합니다';
+    } else if (currentValue.trim().length < 2) {
+      // 회사명과 직무는 2자 이상 검증
+      if (currentField === 'companyName') {
+        newErrors[currentField] = '회사명은 최소 2자 이상으로 입력해야 합니다';
+      } else if (currentField === 'jobTitle') {
+        newErrors[currentField] = '직무는 최소 2자 이상으로 입력해야 합니다';
+      }
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setErrorKey(prev => prev + 1);
+      
+      // 에러가 발생한 필드에 포커스 이동
+      setTimeout(() => {
+        const currentRef = inputRefs[currentField];
+        if (currentRef && currentRef.current) {
+          currentRef.current.focus();
+        }
+      }, 100);
       return;
     }
 
+    if (currentStep === STEPS.length - 1) {
+      // 마지막 단계(우대사항)에서 다음을 누르면 파일업로드 페이지로 이동
+      handleSubmit();
+    } else {
+      setCurrentStep(prev => prev + 1);
+      setErrors({});
+      
+      // 다음 단계로 이동한 후 해당 입력 필드에 포커스
+      setTimeout(() => {
+        const nextField = STEPS[currentStep + 1].id;
+        const nextRef = inputRefs[nextField];
+        if (nextRef && nextRef.current) {
+          nextRef.current.focus();
+        }
+      }, 100); // 상태 업데이트 후 포커스 이동
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      setErrors({});
+      
+      // 이전 단계로 이동한 후 해당 입력 필드에 포커스
+      setTimeout(() => {
+        const prevField = STEPS[currentStep - 1].id;
+        const prevRef = inputRefs[prevField];
+        if (prevRef && prevRef.current) {
+          prevRef.current.focus();
+        }
+      }, 100); // 상태 업데이트 후 포커스 이동
+    } else {
+      // 첫 번째 단계에서 뒤로가기를 누르면 이전 페이지로 이동
+      navigate(-1);
+    }
+  };
+
+  const handleSkip = () => {
+    // 건너뛰기 시 다음 단계로 이동
+    if (currentStep === STEPS.length - 1) {
+      handleSubmit();
+    } else {
+      setCurrentStep(prev => prev + 1);
+      setErrors({});
+      
+      // 다음 단계로 이동한 후 해당 입력 필드에 포커스
+      setTimeout(() => {
+        const nextField = STEPS[currentStep + 1].id;
+        const nextRef = inputRefs[nextField];
+        if (nextRef && nextRef.current) {
+          nextRef.current.focus();
+        }
+      }, 100); // 상태 업데이트 후 포커스 이동
+    }
+  };
+
+  const handleSubmit = async () => {
     setIsSubmitting(true);
 
     try {
@@ -123,99 +311,85 @@ const JobInfoInputPage = () => {
       });
     } catch (error) {
       console.error('채용정보 처리 오류:', error);
-      setErrors({ general: '채용정보 처리에 실패했습니다.' });
+      setErrors({ general: '채용정보 처리에 실패했습니다' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !isSubmitting) {
-      handleSubmit();
+    const currentField = currentStepData.id;
+    const isTextarea = currentField === 'mainResponsibilities' || currentField === 'requirements' || currentField === 'preferredQualifications';
+    
+    // textarea가 아닌 경우에만 엔터 키로 다음 단계 이동
+    if (e.key === 'Enter' && !isSubmitting && !isTextarea) {
+      handleNext();
     }
   };
 
+  const renderInput = () => {
+    const currentField = currentStepData.id;
+    const currentValue = formData[currentField];
+    const isTextarea = currentField === 'mainResponsibilities' || currentField === 'requirements' || currentField === 'preferredQualifications';
 
+    if (isTextarea) {
+      return (
+        <div className="textarea-container">
+          <textarea
+            ref={inputRefs[currentField]}
+            placeholder={currentStepData.placeholder}
+            value={currentValue}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isSubmitting}
+            className={errors[currentField] ? 'error' : ''}
+            rows={8}
+          />
+          {errors[currentField] && (
+            <div key={`error-${currentField}-${errorKey}`} className="input-error-message">{errors[currentField]}</div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Input
+        key={`input-${currentField}-${errorKey}`}
+        ref={inputRefs[currentField]}
+        placeholder={currentStepData.placeholder}
+        value={currentValue}
+        onChange={(e) => handleInputChange(e.target.value)}
+        onKeyPress={handleKeyPress}
+        error={errors[currentField]}
+        hasIcon={false}
+        disabled={isSubmitting}
+        className="job-info-input"
+      />
+    );
+  };
 
   return (
     <div className="job-info-input-page">
-      <Header progress={25} />
+      <Header progress={((currentStep + 1) / STEPS.length) * 62.5} />
       
       <div className="page-content">
+        <Navigation 
+          canGoBack={currentStep > 0}
+          onGoBack={handlePrevious}
+        />
+        
         <div className="content-wrapper">
           <div className="form-section">
             <div className="form-content">
+              
               <div className="form-header">
-                <h1>지원하고자 하는 직무 정보를 입력해주세요</h1>
-                <p>채용 공고의 정보를 직접 입력해주시면, 정확한 자기소개서를 도와드려요.</p>
+                <h1>{currentStepData.title}</h1>
+                <p>자세히 입력할수록 완성도 높은 자기소개서를 작성할 수 있어요</p>
               </div>
               
               <div className="form-inputs">
-                <div className="input-group">
-                  <label>회사명 *</label>
-                  <Input
-                    placeholder="예: 네이버, 카카오, 토스"
-                    value={formData.companyName}
-                    onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    error={errors.companyName}
-                    hasIcon={false}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="input-group">
-                  <label>직무 *</label>
-                  <Input
-                    placeholder="예: 프론트엔드 개발자, 백엔드 개발자, 데이터 분석가"
-                    value={formData.jobTitle}
-                    onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    error={errors.jobTitle}
-                    hasIcon={false}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="input-group">
-                  <label>주요업무 *</label>
-                  <textarea
-                    placeholder="담당하게 될 주요 업무 내용을 입력해주세요."
-                    value={formData.mainResponsibilities}
-                    onChange={(e) => handleInputChange('mainResponsibilities', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isSubmitting}
-                    className={errors.mainResponsibilities ? 'error' : ''}
-                  />
-                  {errors.mainResponsibilities && (
-                    <div className="error-message">{errors.mainResponsibilities}</div>
-                  )}
-                </div>
-
-                <div className="input-group">
-                  <label>자격요건 *</label>
-                  <textarea
-                    placeholder="지원자격, 필수 경력, 기술 스택 등을 입력해주세요."
-                    value={formData.requirements}
-                    onChange={(e) => handleInputChange('requirements', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isSubmitting}
-                    className={errors.requirements ? 'error' : ''}
-                  />
-                  {errors.requirements && (
-                    <div className="error-message">{errors.requirements}</div>
-                  )}
-                </div>
-
-                <div className="input-group">
-                  <label>우대사항 (선택)</label>
-                  <textarea
-                    placeholder="우대사항이 있다면 입력해주세요."
-                    value={formData.preferredQualifications}
-                    onChange={(e) => handleInputChange('preferredQualifications', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isSubmitting}
-                  />
+                <div className="input-container">
+                  {renderInput()}
                 </div>
 
                 {errors.general && (
@@ -227,12 +401,24 @@ const JobInfoInputPage = () => {
         </div>
       </div>
 
-      <NextButton
-        text="다음"
-        disabled={isSubmitting}
-        loading={isSubmitting}
-        onClick={handleSubmit}
-      />
+      <div className="button-container">
+        {(isRequirementsStep || isPreferredQualificationsStep) && (
+          <button 
+            className="skip-button"
+            onClick={handleSkip}
+            disabled={isSubmitting}
+          >
+            건너뛰기
+          </button>
+        )}
+        <button 
+          className={`next-button ${isCurrentStepValid() ? 'active' : 'disabled'}`}
+          onClick={handleNext}
+          disabled={isSubmitting || !isCurrentStepValid()}
+        >
+          다음
+        </button>
+      </div>
     </div>
   );
 };

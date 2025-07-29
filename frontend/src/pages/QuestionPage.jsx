@@ -5,7 +5,7 @@ import Navigation from '../components/Navigation';
 import NextButton from '../components/NextButton';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { createSession } from '../services/api';
+import { createSession, getCoverLetter } from '../services/api';
 import './QuestionPage.css';
 
 const QuestionPage = () => {
@@ -13,6 +13,8 @@ const QuestionPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
+  const [error, setError] = useState(''); // 에러 메시지
+  const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,25 +35,54 @@ const QuestionPage = () => {
 
   // 추천 질문 chip 버튼들 (Figma 디자인 기준)
   const recommendedQuestions = [
-    '성격의 장단점은 무엇인가요?',
-    '입사 후 포부는 무엇인가요?',
+    '성격의 장단점은 무엇인가요',
+    '입사 후 포부는 무엇인가요',
     '직무와 관련된 경험을 설명해주세요',
-    '실패 경험과 극복 과정에 대해 말해주세요'
+    '실패 경험과 극복 과정에 대해 말해주세요',
+    '지원 동기는 무엇인가요',
   ];
 
   const handleQuestionChange = (e) => {
     setQuestion(e.target.value);
+    // 에러가 있으면 초기화
+    if (error) {
+      setError('');
+    }
   };
 
   const handleChipClick = (chipQuestion) => {
-    setQuestion(chipQuestion); // chip 클릭 시 입력창에 해당 질문 설정
+    // 이미 선택된 chip을 다시 클릭하면 해제
+    if (question === chipQuestion) {
+      setQuestion(''); // 입력창 비우기
+    } else {
+      setQuestion(chipQuestion); // chip 클릭 시 입력창에 해당 질문 설정
+    }
+    // 에러가 있으면 초기화
+    if (error) {
+      setError('');
+    }
+  };
+
+  // 현재 선택된 chip인지 확인하는 함수
+  const isChipSelected = (chipQuestion) => {
+    return question === chipQuestion;
   };
 
   const handleGenerate = async () => {
     if (!question.trim()) {
-      alert('질문을 입력해주세요.');
+      setError('문항을 입력해 주세요');
+      setErrorKey(prev => prev + 1);
       return;
     }
+
+    if (question.trim().length < 5) {
+      setError('문항은 최소 5자 이상 입력해 주세요');
+      setErrorKey(prev => prev + 1);
+      return;
+    }
+
+    // 에러가 있으면 초기화
+    setError('');
 
     setIsGenerating(true);
 
@@ -78,18 +109,84 @@ const QuestionPage = () => {
       const response = await createSession(sessionData);
       console.log('QuestionPage - Session created:', response);
       
-      // 세션 ID를 사용하여 결과 페이지로 이동
-      console.log('QuestionPage - Navigating to result with sessionId:', response.sessionId);
-      navigate('/result', { 
-        state: { 
-          sessionId: response.sessionId,
-          jobInfo: jobInfo,
-          question // 입력한 질문도 함께 전달
-        } 
-      });
+      // 모든 모드에서 폴링을 통해 생성 완료를 기다림
+      const sessionId = response.sessionId;
+      let attempts = 0;
+      const maxAttempts = 60; // 최대 2분 대기 (실제 API는 더 오래 걸릴 수 있음)
+      
+      while (attempts < maxAttempts) {
+        try {
+          console.log(`QuestionPage - Polling attempt ${attempts + 1}/${maxAttempts}`);
+          const coverLetterResponse = await getCoverLetter(sessionId);
+          console.log('QuestionPage - Polling response:', coverLetterResponse);
+          console.log('QuestionPage - Response structure:', {
+            hasQuestions: !!coverLetterResponse.questions,
+            questionsLength: coverLetterResponse.questions?.length,
+            questionsType: typeof coverLetterResponse.questions,
+            fullResponse: coverLetterResponse
+          });
+          
+          // questions 배열의 실제 내용 확인
+          if (coverLetterResponse.questions && coverLetterResponse.questions.length > 0) {
+            console.log('QuestionPage - 첫 번째 question 객체:', coverLetterResponse.questions[0]);
+            console.log('QuestionPage - question 객체의 속성들:', {
+              id: coverLetterResponse.questions[0]?.id,
+              question: coverLetterResponse.questions[0]?.question,
+              answer: coverLetterResponse.questions[0]?.answer,
+              answer_history: coverLetterResponse.questions[0]?.answer_history,
+              current_version_index: coverLetterResponse.questions[0]?.current_version_index,
+              length: coverLetterResponse.questions[0]?.length
+            });
+          }
+          
+          // 더 유연한 조건으로 생성 완료 확인
+          const isCompleted = (
+            // 백엔드에서 status 필드를 제공하는 경우
+            (coverLetterResponse.status === 'completed' || coverLetterResponse.is_completed === true) ||
+            // 또는 questions 배열에 실제 답변이 있는 경우
+            (coverLetterResponse.questions && 
+             Array.isArray(coverLetterResponse.questions) && 
+             coverLetterResponse.questions.length > 0 &&
+             coverLetterResponse.questions[0].answer && 
+             coverLetterResponse.questions[0].answer.trim().length > 0)
+          );
+          
+          if (isCompleted) {
+            console.log('QuestionPage - Cover letter generation completed');
+            // 자소서 생성이 완료되면 결과 페이지로 이동 (완성된 데이터와 함께)
+            navigate('/result', { 
+              state: { 
+                sessionId: sessionId,
+                jobInfo: jobInfo,
+                question, // 입력한 질문도 함께 전달
+                completedData: coverLetterResponse // 완성된 데이터도 함께 전달
+              } 
+            });
+            return;
+          } else {
+            console.log('QuestionPage - Questions not ready yet:', {
+              hasQuestions: !!coverLetterResponse.questions,
+              questionsLength: coverLetterResponse.questions?.length,
+              hasAnswer: coverLetterResponse.questions?.[0]?.answer
+            });
+          }
+        } catch (pollError) {
+          console.log('QuestionPage - Polling error (expected during generation):', pollError.message);
+          console.log('QuestionPage - Error details:', pollError);
+        }
+        
+        // 2초 대기 후 다시 시도 (더 긴 간격)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        attempts++;
+      }
+      
+      // 최대 시도 횟수를 초과한 경우
+      console.error('QuestionPage - Cover letter generation timeout');
+      alert('자기소개서 생성에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요');
+      
     } catch (error) {
       console.error('자기소개서 생성 오류:', error);
-      alert(error.message || '자기소개서 생성에 실패했습니다.');
+      alert(error.message || '자기소개서 생성에 실패했습니다');
     } finally {
       setIsGenerating(false);
     }
@@ -139,7 +236,7 @@ const QuestionPage = () => {
 
   return (
     <div className="question-page">
-      <Header progress={90} />
+      <Header progress={87.5} />
 
       <div className="page-content">
         <Navigation
@@ -152,19 +249,23 @@ const QuestionPage = () => {
             {/* 질문 입력 섹션 - Figma 디자인 기준 */}
             <div className="question-input-section">
               <div className="form-header">
-                <h1>생성하고자 하는 문항을<br/>선택하거나 직접 입력해주세요</h1>
-                <p>자기소개서 문항 중 하나를 골라 입력해보세요.</p>
+                <h1>자기소개서 문항을 선택하거나<br/> 직접 입력해 주세요</h1>
+                <p>자주 쓰는 문항 중 하나를 골라 입력해보세요.</p>
               </div>
 
               {/* 질문 직접 입력 */}
               <div className="question-input">
                 <Input
-                  placeholder="지원 동기는 무엇인가요?"
+                  placeholder="예시) 직무 역량을 쌓기 위해 어떤 노력을 했나요"
                   value={question}
                   onChange={handleQuestionChange}
                   onKeyPress={handleKeyPress}
                   disabled={isGenerating}
                 />
+                {/* 에러 메시지 */}
+                {error && (
+                  <div key={`error-${errorKey}`} className="input-error-message">{error}</div>
+                )}
               </div>
 
               {/* 추천 질문 chips */}
@@ -172,7 +273,7 @@ const QuestionPage = () => {
                 {recommendedQuestions.map((chipQuestion, index) => (
                   <button
                     key={index}
-                    className="recommendation-chip"
+                    className={`recommendation-chip ${isChipSelected(chipQuestion) ? 'selected' : ''}`}
                     onClick={() => handleChipClick(chipQuestion)}
                     disabled={isGenerating}
                   >
@@ -187,7 +288,6 @@ const QuestionPage = () => {
 
       <NextButton
         text="자기소개서 생성하기"
-        disabled={!question.trim()}
         loading={isGenerating}
         onClick={handleGenerate}
       />

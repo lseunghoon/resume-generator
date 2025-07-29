@@ -460,10 +460,11 @@ def register_routes(app):
             action = data.get('action', 'revise')
             
             session = db.query(Session).filter(Session.id == session_id).first()
-            if not session or question_index >= len(session.questions):
+            if not session or question_index > len(session.questions):
                 raise APIError("세션 또는 질문을 찾을 수 없습니다.", status_code=404)
 
-            question = session.questions[question_index]
+            # question_index는 1부터 시작하므로 0부터 시작하는 배열 인덱스로 변환
+            question = session.questions[question_index - 1]
             history = _parse_answer_history(question.answer_history)
             
             if action == 'undo':
@@ -502,7 +503,8 @@ def register_routes(app):
             db.refresh(question)
             
             return jsonify({
-                'revised_answer': question.to_dict()['answer']
+                'revisedAnswer': question.to_dict()['answer'],
+                'message': '자기소개서가 성공적으로 수정되었습니다.'
             }), 200
 
         except (APIError, ValidationError):

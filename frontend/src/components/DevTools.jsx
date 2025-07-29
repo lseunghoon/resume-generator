@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMockApi, disableMockApi, isMockApiEnabled } from '../services/mockApi';
+import { enableMockApi, disableMockApi, isMockApiEnabled } from '../services/mockApi';
 import './DevTools.css';
 
 // Mock 데이터 (보이저엑스 서비스기획 인턴)
@@ -50,7 +50,7 @@ const DevTools = () => {
       // Mock 모드 비활성화 시 localStorage에서 Mock 데이터 관련 정보 제거
       localStorage.removeItem('mockJobDataFilled');
     } else {
-      useMockApi();
+      enableMockApi();
       setIsMockEnabled(true);
       // Mock 모드 활성화 시 Mock 데이터 자동 채우기 플래그 설정
       localStorage.setItem('mockJobDataFilled', 'true');
