@@ -1,71 +1,196 @@
-"""
-AI 서비스 - Vertex AI 기반 자기소개서 생성 및 수정 서비스
-"""
-
 import logging
-from typing import List, Optional
-from vertex_client import model
+from typing import Dict, Any, Optional, Tuple
+
+# 1. 의미 기반 유사도 측정을 위한 라이브러리 임포트
+from sentence_transformers import SentenceTransformer, util
+
+# 2. 프로젝트 유틸리티 및 모델 임포트
 from utils.logger import LoggerMixin
+from vertex_client import model # << 실제 운영 시, 이 줄의 주석을 해제하세요.
+
+# --- 개발 및 테스트를 위한 Mock(가짜) 객체 ---
+# 로컬에서 비용/시간 없이 테스트하려면 아래 MockModel 관련 코드의 주석을 해제하고,
+# 실제 model 임포트 라인(from vertex_client...)을 주석 처리하세요.
+
+class MockResponse:
+    def __init__(self, text): self.text = text
+
+class MockModel:
+    def generate_content(self, prompt: str) -> MockResponse:
+        guideline_start = prompt.find("### 맞춤형 작성 가이드")
+        guideline_end = prompt.find("### 최종 결과물 지침")
+        guideline_text = prompt[guideline_start:guideline_end]
+        return MockResponse(f"--- Mock Response ---\n질문 유형에 맞는 가이드가 주입되었습니다:\n{guideline_text}\n--- (실제 AI라면 여기에 답변이 생성됩니다) ---")
+
+# model = MockModel() # << 로컬 테스트 시, 이 줄의 주석을 해제하여 사용하세요.
+# --- Mock 객체 끝 ---
 
 logger = logging.getLogger(__name__)
 
-
 class AIService(LoggerMixin):
-    """AI 기반 자기소개서 생성 및 수정 서비스"""
-    
+    """
+    AI 기반 자기소개서 생성 및 수정 서비스
+    (분류 방식: 의미 기반 유사도 측정)
+    """
+
     def __init__(self):
-        """AI 서비스 초기화"""
+        """
+        AI 서비스 초기화 시, 필요한 모든 모델을 로드하고 데이터 구조를 미리 계산합니다.
+        이 과정은 서버 시작 시 1회만 실행되어 사용자 응답 시간에는 영향을 주지 않습니다.
+        """
+        self.logger.info("AI 서비스 초기화 시작...")
+        
+        # 자기소개서 '생성'을 위한 LLM 모델 (Vertex AI 또는 Mock)
         self.model = model
-        self.logger.info("AI 서비스 초기화 완료")
-    
-    def _handle_response(self, response):
+
+        # 질문 '분류'를 위한 임베딩 모델 로드
+        try:
+            self.embedding_model = SentenceTransformer('jhgan/ko-sroberta-multitask')
+            self.logger.info("의미 유사도 측정을 위한 임베딩 모델 로드 완료.")
+        except Exception as e:
+            self.logger.error(f"임베딩 모델 로드 실패: {e}. 이 모델 없이는 질문 분류가 불가능합니다.")
+            raise
+
+        # 질문 유형별 가이드라인과 대표 질문 벡터를 미리 계산
+        self.QUESTION_GUIDELINES, self.guideline_vectors = self._precompute_guidelines_and_vectors()
+        self.logger.info("질문 유형별 가이드라인 및 벡터 계산 완료.")
+        self.logger.info("AI 서비스 초기화 완료.")
+
+    def _precompute_guidelines_and_vectors(self) -> Tuple[Dict, Dict]:
+        """
+        각 질문 유형의 가이드라인과, 분류에 사용할 대표 질문(canonical_question)을 정의하고 벡터화합니다.
+        """
+        guidelines = {
+            'personality': {
+                'canonical_question': "당신의 성격의 장단점은 무엇인가요?",
+                'guide': """- **전체 구조:** 이 질문에 대한 답변은 **'장점 문단'과 '단점 문단'이라는 두 개의 분리된 문단**으로 구성하세요. 각 문단은 독립적인 두괄식 구조를 가져야 합니다.
+- **장점 문단 작성법:**
+    1.  **(장점 두괄식 제시):** 문단의 첫 문장에서 "저의 장점은 [장점]입니다." 와 같이 장점을 명확하게 먼저 밝히세요.
+    2.  **(구체적 사례):** 그 장점을 가장 잘 보여주는 **하나의 구체적인 경험(에피소드)**을 선택하여, 상황-행동-결과를 이야기하듯 서술하세요. (여러 경험 나열 금지)
+    3.  **(기여 방안):** 마지막으로, 이 장점이 지원한 회사와 직무에 어떻게 긍정적으로 기여할 수 있는지 연결하며 문단을 마무리하세요.
+- **단점 문단 작성법:**
+    1.  **(단점 두괄식 제시):** 문단의 첫 문장에서 "반면, [단점]이라는 단점이 있습니다." 와 같이 단점을 솔직하게 인정하세요.
+    2.  **(개선 노력):** 그 단점을 인지하고 있으며, 이를 개선하고 극복하기 위해 **현재 어떤 구체적인 노력**을 하고 있는지 구체적으로 서술하세요. (예: 스터디 참여, 계획 수립 습관 등)
+"""
+            },
+            'career_goals': {
+                'canonical_question': "입사 후 포부나 미래 계획, 목표에 대해 말해주세요.",
+                'guide': """- **핵심 원칙:** 모든 계획은 **채용공고(정보 3)에 언급된 회사, 직무, 그리고 회사의 핵심 서비스/제품과 구체적으로 연결**되어야 합니다. 추상적인 포부가 아닌, 실질적인 기여 방안을 보여주는 것이 중요합니다.
+1.  **궁극적 목표 제시:** 입사 후 **[회사명]의 [핵심 서비스/제품명]을 어떻게 성장시키고 싶은지**, 또는 회사의 비전에 어떻게 기여하고 싶은지 당신의 최종 목표를 두괄식으로 제시하세요.
+2.  **단기 계획 (초기):** 입사 초기에는 **[회사명]의 핵심 서비스와 기술 스택, 비즈니스 모델을 완벽하게 이해하기 위해** 어떤 노력을 할 것인지 서술하세요. (예: 'X 서비스의 사용자 데이터 흐름을 분석하여 주요 지표를 파악하겠습니다.')
+3.  **중기 계획 (성장기):** 입사 1~3년 후에는 학습한 내용을 바탕으로, **[직무명]으로서 [핵심 서비스/제품명]의 어떤 부분을 구체적으로 개선하거나 성장**시키고 싶은지 서술하세요. (예: 'Y 기능의 사용자 이탈률을 5% 감소시키는 프로젝트를 주도하겠습니다.')
+4.  **장기 계획 (전문가):** 입사 5년 후에는 **[회사명]의 [특정 사업 분야] 전문가**로 성장하여, 회사의 미래 성장을 위해 어떤 새로운 기회를 만들거나 기여하고 싶은지 장기적인 비전을 제시하세요. (예: 'Z 기술을 도입하여 새로운 수익 모델을 발굴하겠습니다.')
+"""
+            },
+            'challenge_experience': {
+                'canonical_question': "실패하거나 도전했던 어려운 경험에 대해 말해주세요.",
+                'guide': """- **핵심:** 실패 그 자체가 아니라 **'실패를 통해 무엇을 배웠는가'**가 핵심입니다.
+- **구조:** [상황 제시] -> [실패 또는 어려움 발생] -> [원인 분석 및 해결 노력] -> **[결과 및 배운 점]** -> [기여 다짐] 순서로 작성하세요.
+- **Action:** 실패의 원인을 객관적으로 분석하고, 문제를 해결하기 위해 어떤 노력을 했는지 구체적으로 서술하세요. 남 탓을 하거나 변명하는 뉘앙스는 절대 피하세요.
+- **마무리:** 이 경험을 통해 얻은 교훈이나 역량(예: 위기관리 능력)을 강조하고, 이것이 회사에 어떻게 긍정적으로 작용할지 어필하세요."""
+            },
+            'job_experience': {
+                 'canonical_question': "직무와 관련된 경험에 대해 알려주세요.",
+                 'guide': """- **핵심 구조:** 이 질문에는 **STAR 기법(Situation, Task, Action, Result)**을 사용하는 것이 가장 효과적입니다.
+- **경험 선택:** 지원자의 자료에서 가장 관련성 높은 경험 1~2개를 선택하세요.
+- **STAR 서술:** 각 경험을 STAR 구조에 맞춰 구체적으로 서술하세요.
+    - **Situation (상황):** 어떤 프로젝트/업무 상황이었나요?
+    - **Task (과제):** 주어진 구체적인 목표나 과제는 무엇이었나요?
+    - **Action (행동):** 그 과제를 해결하기 위해 **직접 수행한 행동**은 무엇이었나요? (가장 중요)
+    - **Result (결과):** 당신의 행동으로 인해 어떤 긍정적인 결과(정량적/정성적 성과)가 있었나요?
+- **마무리:** 이 경험을 통해 얻은 역량이 지원한 직무에 어떻게 기여할 수 있는지 연결하며 마무리하세요."""
+            },
+            'teamwork_experience': {
+                'canonical_question': "팀워크나 협업 경험에 대해 말해주세요.",
+                'guide': """- **핵심:** 단순히 "협력을 잘했다"가 아니라, 공동의 목표 달성을 위해 **'내가 어떤 역할을 수행했는가'**를 보여주는 것이 중요합니다.
+- **구조:** [공동의 목표 및 상황 설명] -> [나의 구체적인 역할과 기여] -> [팀 내의 어려움(선택 사항)] -> [소통/협력을 통한 해결 과정] -> [최종 성과] 순서로 작성하세요.
+- **Action:** 팀 내에서 맡았던 역할(예: 리더, 중재자, 데이터 분석가)을 명시하고, 나의 어떤 행동이 팀의 목표 달성에 기여했는지 구체적으로 서술하세요."""
+            },
+            'core_values': {
+                'canonical_question': "자신의 가치관, 성장과정, 직업 선택 기준은 무엇인가요?",
+                'guide': """- **핵심:** 나의 가치관이 **'회사의 비전/인재상과 어떻게 부합하는지'**를 연결하는 것이 가장 중요합니다.
+- **구조:** [나의 핵심 가치관/신념 제시] -> [그 가치관이 형성된 계기나 경험] -> **[나의 가치관과 회사의 비전/핵심가치의 연결점]** -> [입사 후 기여 다짐] 순서로 작성하세요.
+- **Action:** 추상적인 가치관(예: 도전, 성장)을 제시한 후, 반드시 그것을 뒷받침하는 짧고 구체적인 경험을 덧붙여 신뢰도를 높이세요."""
+            },
+            'default': {
+            'canonical_question': "",
+            'guide': """
+- **[1단계: 질문 핵심 파악]** 이 질문이 하나의 주제를 묻고 있는지, 여러 주제를 함께 묻고 있는지 먼저 분석하세요.
+- **[2단계: 답변 계획 수립]**
+    - **만약 여러 주제가 섞여 있다면 (예: 지원동기 + 입사 후 포부),** 답변할 순서를 정하고 각 주제에 맞는 소제목을 마음속으로 정하세요. (예: 1. 지원 동기, 2. 입사 후 목표)
+    - **만약 하나의 주제라면,** 그 주제에 가장 설득력 있는 구조(예: 두괄식, STAR)를 설계하세요.
+- **[3단계: 근거 자료 찾기]** 수립한 계획에 맞춰, 각 주장을 뒷받침할 구체적인 경험과 역량을 제출 자료에서 찾으세요.
+- **[4단계: 종합 답변 작성]** 위 계획에 따라, 각 부분을 논리적으로 연결하여 하나의 완성된 답변을 작성하세요. **질문이 담고 있는 모든 요구사항을 빠짐없이 충족시키는 것이 가장 중요합니다.**
+"""
+        }
+        }
+        
+        vectors = {}
+        for type_name, data in guidelines.items():
+            if data['canonical_question']:
+                vectors[type_name] = self.embedding_model.encode(data['canonical_question'], convert_to_tensor=True)
+        
+        return guidelines, vectors
+
+    def _classify_question_by_similarity(self, question: str) -> str:
+        """
+        사용자 질문의 의미를 분석하여 가장 유사한 질문 유형으로 분류합니다.
+        (신규 로직: 최고 점수와 2등 점수의 차이가 작으면 'default'로 처리)
+        """
+        try:
+            user_vector = self.embedding_model.encode(question, convert_to_tensor=True)
+            
+            similarities = {}
+            for type_name, vector in self.guideline_vectors.items():
+                score = util.cos_sim(user_vector, vector).item()
+                similarities[type_name] = score
+
+            if not similarities: return 'default'
+
+            # 1. 모든 점수를 내림차순으로 정렬합니다.
+            scores = sorted(similarities.values(), reverse=True)
+
+            # 2. 점수가 2개 미만이면 비교할 수 없으므로, 이전 로직을 그대로 따릅니다.
+            if len(scores) < 2:
+                best_type = max(similarities, key=similarities.get)
+                if scores[0] > 0.65:
+                    self.logger.info(f"질문 유형이 '{best_type}'으로 분류되었습니다 (유사도: {scores[0]:.2f}).")
+                    return best_type
+                else:
+                    return 'default'
+
+            # 3. 최고 점수와 2등 점수를 가져옵니다.
+            best_score = scores[0]
+            second_best_score = scores[1]
+            
+            # 4. (핵심 로직) 모호함을 판단할 임계값을 설정합니다. (튜닝 가능)
+            AMBIGUITY_THRESHOLD = 0.15
+
+            # 5. 최고 점수가 임계치(0.6)를 넘었는지, 그리고 1-2등 점수 차이가 충분히 큰지 확인합니다.
+            if best_score > 0.6 and (best_score - second_best_score) > AMBIGUITY_THRESHOLD:
+                # 점수 차이가 충분히 커서 명확할 경우에만 해당 유형으로 분류
+                best_type = max(similarities, key=similarities.get)
+                self.logger.info(f"질문이 명확하여 '{best_type}'으로 분류되었습니다 (유사도: {best_score:.2f}, 2등과 차이: {(best_score - second_best_score):.2f}).")
+                return best_type
+            else:
+                # 점수 차이가 임계치보다 작으면, 복합 질문으로 간주하고 'default'로 분류
+                self.logger.info(f"질문이 모호하여(1등: {best_score:.2f}, 2등: {second_best_score:.2f}) 'default'로 분류되었습니다.")
+                return 'default'
+
+        except Exception as e:
+            self.logger.error(f"유사도 기반 질문 분류 실패: {e}")
+            return 'default'
+
+    def _handle_response(self, response) -> str:
         """generate_content 응답 처리 헬퍼"""
         try:
-            return response.text
-        except Exception:
-            try:
-                return response.candidates[0].content.parts[0].text
-            except (IndexError, AttributeError) as e:
-                self.logger.error(f"응답 구문 분석 실패: {e}, 응답: {response}")
-                raise ValueError("모델 응답의 형식이 예상과 다릅니다.")
-    
-    def extract_company_name_from_jd(self, jd_text: str) -> str:
-        """채용공고에서 회사명 추출"""
-        try:
-            prompt = f"""
-            다음 채용공고에서 회사명을 추출해주세요:
-            
-            {jd_text[:1000]}...
-            
-            회사명만 간단히 답변해주세요. 회사명이 명확하지 않으면 "알 수 없음"이라고 답변해주세요.
-            """
-            
-            response = self.model.generate_content(prompt)
-            company_name = self._handle_response(response).strip()
-            self.logger.info(f"추출된 회사명: {company_name}")
-            return company_name
-            
+            return response.text.strip()
+        except AttributeError:
+             return "응답 객체에 'text' 속성이 없습니다."
         except Exception as e:
-            self.logger.error(f"회사명 추출 실패: {e}")
-            return "알 수 없음"
-    
-    def search_company_info_ai(self, company_name: str) -> str:
-        """회사 정보 검색 (현재 비활성화)"""
-        # TODO: 추후 실제 웹 검색 기능 구현 예정
-        return f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
-    
-    def _search_company_web_info(self, company_name: str) -> str:
-        """실제 웹 검색을 통해 회사 정보 수집 (현재 비활성화)"""
-        # TODO: 추후 실제 웹 검색 기능 구현 예정
-        return f"{company_name}에 대한 웹 검색 기능이 현재 비활성화되어 있습니다."
-    
-    def _extract_relevant_info(self, text: str, company_name: str) -> str:
-        """텍스트에서 회사와 관련된 정보만 추출 (현재 비활성화)"""
-        # TODO: 추후 실제 정보 추출 기능 구현 예정
-        return ""
-    
+            self.logger.error(f"응답 처리 중 예외 발생: {e}")
+            return ""
 
-    
     def generate_cover_letter(
         self, 
         question: str, 
@@ -73,99 +198,63 @@ class AIService(LoggerMixin):
         resume_text: str,
         company_name: str = "",
         job_title: str = ""
-    ) -> tuple[Optional[str], str]:
+    ) -> Tuple[Optional[str], str]:
         """
-        단일 자기소개서 문항 답변 생성
-        
-        Args:
-            question: 자기소개서 질문
-            jd_text: 채용공고 텍스트
-            resume_text: 이력서 텍스트
-            
-        Returns:
-            tuple[Optional[str], str]: (생성된 답변 또는 None, 회사 정보)
+        단일 자기소개서 문항 답변을 생성합니다.
+        (1. 질문 분류 -> 2. 맞춤형 프롬프트 생성 -> 3. AI 호출)
         """
         try:
             self.logger.info(f"단일 자기소개서 생성 시작: {question[:50]}...")
-            self.logger.info(f"채용공고 텍스트 길이: {len(jd_text)}자")
-            self.logger.info(f"이력서 텍스트 길이: {len(resume_text)}자")
-            self.logger.info(f"채용공고 미리보기: {jd_text[:200]}...")
             
-            # 1단계: 회사명 처리
-            self.logger.info("회사명 처리 시작...")
-            if not company_name:
-                company_name = self.extract_company_name_from_jd(jd_text)
+            question_type = self._classify_question_by_similarity(question)
+            custom_guideline = self.QUESTION_GUIDELINES[question_type]['guide']
             
-            # 2단계: 회사 정보 검색 (현재 비활성화)
-            # self.logger.info("회사 정보 검색 시작...")
-            # company_info = self.search_company_info_ai(company_name)
             company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
             
-            # 이력서 텍스트가 비어있을 때 처리
-            resume_section = ""
+            submitted_data_section = ""
             if resume_text and resume_text.strip():
-                resume_section = f"""### 정보 2: 지원자 이력서
---- 이력서 시작 ---
+                submitted_data_section = f"""### 정보 2: 지원자 제출 자료 (이력서, 자기소개서, 포트폴리오 등)
+--- 자료 시작 ---
 {resume_text}
---- 이력서 끝 ---"""
+--- 자료 끝 ---"""
             else:
-                resume_section = """### 정보 2: 지원자 이력서
-이력서 정보가 제공되지 않았습니다. 채용공고 정보를 바탕으로 일반적인 경험과 역량을 중심으로 답변을 작성해주세요."""
+                submitted_data_section = """### 정보 2: 지원자 제출 자료
+자료가 제공되지 않았습니다."""
 
             prompt = f"""<|system|>
-당신은 대한민국 최고의 자기소개서 작성 전문가입니다. 당신의 **핵심 임무**는 **주어진 자기소개서 문항(정보 1)에 대해 심도 있게 답변**하는 것입니다. 답변을 작성할 때는 채용공고(정보 3)를 반드시 참고하고, 이력서(정보 2)가 제공된 경우 이를 활용하며, 회사 추가 정보(정보 4)를 참고하여 자기소개서를 생성해주세요.
+당신은 대한민국 최고의 자기소개서 작성 전문가입니다. 당신의 임무는 주어진 '맞춤형 작성 가이드'에 따라, 지원자의 자료를 분석하여 최고의 답변을 생성하는 것입니다.
 |>
-
 <|user|>
 ### 정보 1: 자기소개서 문항
 "{question}"
-
-{resume_section}
-
+{submitted_data_section}
 ### 정보 3: 채용공고
 --- 채용공고 시작 ---
 {jd_text}
 --- 채용공고 끝 ---
-
-### 정보 4: 회사 추가 정보 (AI 검색 결과)
+### 정보 4: 회사 추가 정보
 --- 회사 정보 시작 ---
 {company_info}
 --- 회사 정보 끝 ---
+### 맞춤형 작성 가이드
+아래 가이드는 당신이 답변을 생성하기 위해 **머릿속으로 따라야 할 생각의 흐름**입니다. 이 가이드라인을 완벽하게 준수하여 답변의 품질을 높이세요.
+---
+{custom_guideline}
+---
+### 최종 결과물 지침
+- **절대, 절대, 절대** '맞춤형 작성 가이드'나 당신의 분석 과정을 답변에 노출하지 마세요.
+- 최종 결과물은 제목, 헤더, 불릿(*, -) 없이 **오직 완성된 한국어 자기소개서 본문만** 작성해주세요.
+- '채용공고에서 요구하는', '제출 자료에 따르면' 같은 직접적인 문구는 사용하지 마세요.
 
-### 작성 지침
-1. **가장 중요한 목표**: '정보 1: 자기소개서 문항'에 대한 답변을 중심으로 글을 구성하세요.
-2. **채용공고 필수 활용**: 반드시 채용공고(정보 3)의 다음 요소들을 답변에 포함하세요:
-   - 회사명, 직무명, 업무내용
-   - 요구되는 자격요건, 우대사항
-   - 회사의 비전, 문화, 성장 과정
-3. **회사 정보 활용**: 회사 추가 정보(정보 4)를 참고하여 최신 뉴스, 회사 동향, 시장 위치 등을 답변에 반영하세요. 이를 통해 더욱 구체적이고 시의적절한 답변을 작성하세요.
-4. **이력서 연계**: 이력서(정보 2)가 제공된 경우, 이력서의 경험과 채용공고의 요구사항을 연결하여 구체적인 사례를 제시하세요. 이력서가 없는 경우에는 일반적인 경험과 역량을 중심으로 작성하세요.
-5. **사실 기반**: 채용공고와 회사 정보에 없는 내용은 추가하지 마세요. 이력서가 없는 경우에도 허구의 경험을 만들지 마세요.
-6. **회사명 주의**: 이력서의 회사명은 '과거' 경력일 뿐이므로, 현재 지원하는 회사와 혼동하지 마세요.
-7. **어조 및 형식**:
-   - 격식 있고 전문적인 톤을 유지하세요.
-   - 제목·헤더 없이 **오직 본문만** 작성하세요.
-   - 구체적인 수치와 성과를 포함하세요.
-   - **언어 제한**: 오직 한국어와 영어만 사용하세요. 러시아어, 중국어, 일본어 등 다른 언어는 절대 사용하지 마세요.
-   - **형식 금지**: 불릿 형태(•, -, *)를 사용하지 마세요. 연속된 문장으로 작성하세요.
-   - **문구 금지**: '채용공고에서 요구하는', '채용공고의 요구사항' 등의 문구를 사용하지 마세요.
-
-### 채용공고 분석 요구사항
-답변 작성 전에 다음 사항을 반드시 확인하세요:
-- 지원하는 회사와 직무가 무엇인지
-- 해당 직무에서 요구하는 핵심 역량은 무엇인지
-- 내 이력서의 어떤 경험이 이 직무와 연결되는지
-- 회사의 비전과 내 경험이 어떻게 맞는지
-
-위 지침을 모두 준수하여, **채용공고 정보를 충실히 반영한 구체적이고 설득력 있는 답변**을 작성하세요.
+이제, 위 모든 지침을 준수하여 **'정보 1: 자기소개서 문항'에 대한 최고의 답변**을 작성하세요.
 |>"""
-
+            
             response = self.model.generate_content(prompt)
             answer = self._handle_response(response)
             
             self.logger.info("단일 자기소개서 생성 완료")
-            return answer.strip(), company_info
-            
+            return answer, company_info
+
         except Exception as e:
             self.logger.error(f"단일 자기소개서 생성 실패: {e}")
             return None, ""
@@ -181,113 +270,60 @@ class AIService(LoggerMixin):
         company_name: str = "",
         job_title: str = ""
     ) -> Optional[str]:
-        """
-        자기소개서 답변 수정
-        
-        Args:
-            question: 원래 질문
-            jd_text: 채용공고 텍스트
-            resume_text: 이력서 텍스트
-            original_answer: 원래 답변
-            user_edit_prompt: 사용자 수정 요청
-            company_info: 기존에 검색된 회사 정보 (최초 생성 시 검색 결과)
-            
-        Returns:
-            Optional[str]: 수정된 답변 또는 None
-        """
+        # (기존 코드와 동일)
         try:
             self.logger.info(f"자기소개서 수정 시작: {user_edit_prompt[:50]}...")
             
-            # 회사 정보가 제공되지 않은 경우에만 검색 수행 (하위 호환성 유지)
-            # if not company_info:
-            #     self.logger.info("회사 정보가 제공되지 않아 검색을 수행합니다...")
-            #     company_name = self.extract_company_name_from_jd(jd_text)
-            #     # company_info = self.search_company_info_ai(company_name)  # 현재 비활성화
-            #     company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
-            # else:
-            #     self.logger.info("기존 회사 정보를 활용합니다.")
-            
-            # 회사 정보 검색 완전 비활성화
-            if not company_info:
-                company_info = "회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
-            
-            # 이력서 텍스트가 비어있을 때 처리
-            resume_section = ""
+            if not company_info and company_name:
+                company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
+            elif not company_info:
+                company_info = "회사 정보가 제공되지 않았습니다."
+
+            submitted_data_section = ""
             if resume_text and resume_text.strip():
-                resume_section = f"""### 정보 2: 지원자 이력서
---- 이력서 시작 ---
+                submitted_data_section = f"""### 정보 2: 지원자 제출 자료 (이력서, 자기소개서, 포트폴리오 등)
+--- 자료 시작 ---
 {resume_text}
---- 이력서 끝 ---"""
+--- 자료 끝 ---"""
             else:
-                resume_section = """### 정보 2: 지원자 이력서
-이력서 정보가 제공되지 않았습니다. 채용공고 정보를 바탕으로 일반적인 경험과 역량을 중심으로 답변을 작성해주세요."""
+                submitted_data_section = """### 정보 2: 지원자 제출 자료
+자료가 제공되지 않았습니다."""
 
             prompt = f"""<|system|>
-당신은 전문 자기소개서 교정자이자 채용 리뷰어입니다. 당신의 핵심 임무는 **원본 자기소개서가 '정보 1: 자기소개서 문항'의 의도를 더 잘 반영**하고, **사용자의 '수정 요청 사항'을 완벽하게 적용**하도록 수정하는 것입니다. 모든 수정은 제공된 자료(채용공고, 이력서, 회사 정보)를 참고하여 수행해야 합니다.
+당신은 전문 자기소개서 교정자이자 채용 리뷰어입니다. 당신의 핵심 임무는 **원본 자기소개서가 '정보 1: 자기소개서 문항'의 의도를 더 잘 반영**하고, **사용자의 '수정 요청 사항'을 완벽하게 적용**하도록 수정하는 것입니다. 모든 수정은 제공된 자료(채용공고, 지원자 제출 자료, 회사 정보)를 참고하여 수행해야 합니다.
 |>
-
 <|user|>
 ### 정보 1: 자기소개서 문항
 "{question}"
-
-{resume_section}
-
+{submitted_data_section}
 ### 정보 3: 채용공고
 --- 채용공고 시작 ---
 {jd_text}
 --- 채용공고 끝 ---
-
 ### 정보 4: 회사 추가 정보 (AI 검색 결과)
 --- 회사 정보 시작 ---
 {company_info}
 --- 회사 정보 끝 ---
-
 ### 정보 5: 원본 자기소개서
 --- 원본 답변 시작 ---
 {original_answer}
 --- 원본 답변 끝 ---
-
 ### 수정 요청 사항
 "{user_edit_prompt}"
-
 ### 수정 지침
 1. **최우선 과제**: 사용자의 '수정 요청 사항'과 '자기소개서 문항'의 의도를 정확히 파악하고 반영하세요.
-2. **참고 자료 활용**: 채용공고(정보 3)를 반드시 참고하고, 이력서(정보 2)가 제공된 경우 이를 활용하며, 회사 추가 정보(정보 4)를 참고하여 수정하세요.
-3. **회사 정보 활용**: 회사 추가 정보(정보 4)를 참고하여 최신 뉴스, 회사 동향, 시장 위치 등을 수정된 답변에 반영하세요.
-4. **사실성 유지**: 채용공고와 회사 정보에 없는 내용은 절대 추가하지 마세요. 이력서가 없는 경우에도 허구의 경험을 만들지 마세요.
-5. **회사명 주의**: 이력서의 과거 회사명을 현재 지원하는 회사와 혼동하여 사용하지 마세요.
-6. **형식 준수**:
+2. **참고 자료 활용**: 채용공고(정보 3)를 반드시 참고하고, 지원자 제출 자료(정보 2)가 제공된 경우 이를 활용하며, 회사 추가 정보(정보 4)를 참고하여 수정하세요.
+3. **사실성 유지**: 제공된 자료에 없는 내용은 절대 추가하지 마세요. 허구의 경험을 만들지 마세요.
+4. **형식 준수**:
    - 전문적 톤을 유지하세요.
    - 제목·헤더 없이 **수정 완료된 본문만** 작성하세요.
-   - **언어 제한**: 오직 한국어와 영어만 사용하세요. 러시아어, 중국어, 일본어 등 다른 언어는 절대 사용하지 마세요.
-   - **형식 금지**: 불릿 형태(•, -, *)를 사용하지 마세요. 연속된 문장으로 작성하세요.
-   - **문구 금지**: '채용공고에서 요구하는', '채용공고의 요구사항' 등의 문구를 사용하지 마세요.
-
+   - 불릿 형태(•, -, *)를 사용하지 마세요. 연속된 문장으로 작성하세요.
 위 지침에 따라, 원본 답변을 수정하여 **'자기소개서 문항'에 더욱 충실하고 사용자의 '수정 요청'이 완벽히 반영된** 최종 결과물을 작성하세요.
 |>"""
-
             response = self.model.generate_content(prompt)
             revised_answer = self._handle_response(response)
-            
             self.logger.info("자기소개서 수정 완료")
-            return revised_answer.strip()
-            
+            return revised_answer
         except Exception as e:
             self.logger.error(f"자기소개서 수정 실패: {e}")
             return None
-    
-    def test_ai_connection(self) -> tuple[bool, str]:
-        """AI 모델 연결 테스트"""
-        try:
-            response = self.model.generate_content("안녕하세요. 연결 테스트입니다.")
-            result = self._handle_response(response)
-            
-            if result:
-                self.logger.info("AI 모델 연결 테스트 성공")
-                return True, "AI 모델이 정상적으로 작동합니다."
-            else:
-                return False, "AI 모델 응답이 비어있습니다."
-                
-        except Exception as e:
-            self.logger.error(f"AI 모델 연결 테스트 실패: {e}")
-            return False, f"AI 모델 연결 실패: {str(e)}" 
