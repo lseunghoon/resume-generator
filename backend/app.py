@@ -252,6 +252,10 @@ def register_routes(app):
                     raise APIError(file_result['message'], status_code=400)
                 
                 file_resume_text = file_result['extracted_text']
+                file_count = file_result.get('file_count', 1)
+                total_text_length = file_result.get('text_length', len(file_resume_text))
+                
+                app.logger.info(f"파일 처리 완료: {file_count}개 파일에서 총 {total_text_length}자 추출")
                 app.logger.info(f"파일에서 이력서 텍스트 추출 완료: {len(file_resume_text)}자")
                 
                 # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합
@@ -489,7 +493,8 @@ def register_routes(app):
                     user_edit_prompt=revision_request,
                     company_info="",  # 회사 정보 사용 비활성화
                     company_name=session.company_name or "",
-                    job_title=session.job_title or ""
+                    job_title=session.job_title or "",
+                    answer_history=history
                 )
                 
                 history.append(revised_text)
@@ -828,7 +833,8 @@ def register_routes(app):
                 user_edit_prompt=revision_text,
                 company_info="",  # 회사 정보 사용 비활성화
                 company_name=session.company_name or "",
-                job_title=session.job_title or ""
+                job_title=session.job_title or "",
+                answer_history=history_list
             )
             
             # 새로운 답변을 히스토리에 추가

@@ -27,7 +27,7 @@ class FileService(LoggerMixin):
     
     def process_uploaded_files(self, files: List[FileStorage]) -> Dict:
         """
-        업로드된 파일들을 처리하고 텍스트 추출 (OCR 최적화)
+        업로드된 파일들을 처리하고 텍스트 추출 (모든 파일 활용)
         
         Args:
             files: 업로드된 파일 목록
@@ -41,37 +41,54 @@ class FileService(LoggerMixin):
             if not files or not any(f.filename for f in files):
                 raise FileProcessingError("유효한 파일이 없습니다.")
             
-            # 첫 번째 유효한 파일 사용 (비용 최적화)
-            main_file = None
-            for file in files:
-                if file.filename:
-                    main_file = file
-                    break
-            
-            if not main_file:
+            # 모든 유효한 파일 처리
+            valid_files = [f for f in files if f.filename]
+            if not valid_files:
                 raise FileProcessingError("유효한 파일이 없습니다.")
             
-            # 파일 정보 확인
-            file_info = get_file_info(main_file)
-            self.logger.info(f"파일 정보: {file_info}")
+            self.logger.info(f"유효한 파일 {len(valid_files)}개 발견")
             
-            # 파일 유효성 검사
-            self._validate_file(file_info)
+            all_extracted_texts = []
+            all_file_infos = []
+            total_text_length = 0
             
-            # 텍스트 추출 (OCR 비용 최적화)
-            extracted_text = extract_text_from_file(main_file)
-            self.logger.info(f"텍스트 추출 완료: {len(extracted_text)}자")
+            for i, file in enumerate(valid_files, 1):
+                self.logger.info(f"파일 {i}/{len(valid_files)} 처리 중: {file.filename}")
+                
+                # 파일 정보 확인
+                file_info = get_file_info(file)
+                self.logger.info(f"파일 {i} 정보: {file_info}")
+                
+                # 파일 유효성 검사
+                self._validate_file(file_info)
+                
+                # 텍스트 추출
+                extracted_text = extract_text_from_file(file)
+                text_length = len(extracted_text)
+                total_text_length += text_length
+                
+                self.logger.info(f"파일 {i} 텍스트 추출 완료: {text_length}자")
+                
+                # 텍스트 길이 검증 (너무 짧으면 경고)
+                if text_length < 10:
+                    self.logger.warning(f"파일 {i}의 추출된 텍스트가 너무 짧습니다: {text_length}자")
+                
+                all_extracted_texts.append(extracted_text)
+                all_file_infos.append(file_info)
             
-            # 텍스트 길이 검증 (너무 짧으면 경고)
-            if len(extracted_text.strip()) < 10:
-                self.logger.warning("추출된 텍스트가 너무 짧습니다. OCR 품질을 확인해주세요.")
+            # 모든 텍스트를 결합
+            combined_text = "\n\n--- 파일 구분선 ---\n\n".join(all_extracted_texts)
+            
+            self.logger.info(f"전체 텍스트 결합 완료: {total_text_length}자")
             
             return {
                 'success': True,
-                'file_info': file_info,
-                'extracted_text': extracted_text,
-                'text_length': len(extracted_text),
-                'message': '파일 처리가 성공적으로 완료되었습니다.'
+                'file_info': all_file_infos[0],  # 첫 번째 파일 정보를 대표로 사용
+                'all_file_infos': all_file_infos,  # 모든 파일 정보
+                'extracted_text': combined_text,
+                'text_length': total_text_length,
+                'file_count': len(valid_files),
+                'message': f'{len(valid_files)}개 파일 처리가 성공적으로 완료되었습니다.'
             }
             
         except FileProcessingError as e:
