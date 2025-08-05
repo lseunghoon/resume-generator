@@ -9,6 +9,11 @@ import traceback
 import json
 import werkzeug
 import uuid
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 # 설정 및 유틸리티 모듈
 from config import get_cors_config, validate_settings
@@ -21,11 +26,10 @@ from utils import (
 )
 # FileProcessingError는 이제 서비스에서 처리됨
 
-# 기존 모듈들
-from models import Session, Question, get_db, init_db, _parse_answer_history
-
 # 새로운 서비스 모듈들
 from services import AIService, OCRService, FileService
+from services.auth_service import AuthService
+from supabase_models import get_session_model, get_question_model, get_user_model
 
 
 
@@ -70,9 +74,6 @@ def create_app():
     # CORS 설정
     CORS(app, resources=get_cors_config())
     
-    # 데이터베이스 초기화
-    init_db()
-    
     # 서비스 초기화 (Lazy Loading 방식)
     def get_ai_service():
         if not hasattr(app, '_ai_service'):
@@ -91,10 +92,16 @@ def create_app():
             app._file_service = FileService()
         return app._file_service
     
+    def get_auth_service():
+        if not hasattr(app, '_auth_service'):
+            app._auth_service = AuthService()
+        return app._auth_service
+    
     # 서비스 접근자 등록
     app.get_ai_service = get_ai_service
     app.get_ocr_service = get_ocr_service
     app.get_file_service = get_file_service
+    app.get_auth_service = get_auth_service
     
     # API 라우트 등록
     register_routes(app)
@@ -161,7 +168,24 @@ def register_routes(app):
     def upload():
         """파일 업로드 및 세션 생성"""
         app.logger.info("===== /upload 요청 시작 =====")
-        db = next(get_db())
+        
+        # 인증 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            raise APIError("인증 토큰이 필요합니다.", status_code=401)
+        
+        access_token = auth_header.split(' ')[1]
+        auth_service = app.get_auth_service()
+        user = auth_service.get_user(access_token)
+        
+        if not user:
+            raise APIError("유효하지 않은 토큰입니다.", status_code=401)
+        
+        app.logger.info(f"인증된 사용자: {user['email']}")
+        
+        # Supabase 모델 가져오기
+        session_model = get_session_model()
+        question_model = get_question_model()
         
         try:
             # 413 오류를 가장 먼저 처리
@@ -268,36 +292,111 @@ def register_routes(app):
             else:
                 app.logger.info("파일이 없어서 사용자 입력 텍스트만 사용")
 
-            # 세션 생성 (새로운 필드 구조 사용)
+            # 세션 생성 (Supabase 사용)
             # 채용정보에서 회사명과 직무 추출 시도
             company_name = ""
             job_title = ""
             
-            # 간단한 파싱 로직 (기본적인 형태만 지원)
-            lines = job_description.split('\n')
-            for line in lines:
-                line = line.strip()
-                if line.startswith('회사명:'):
-                    company_name = line.replace('회사명:', '').strip()
-                elif line.startswith('직무:'):
-                    job_title = line.replace('직무:', '').strip()
+            # 개선된 파싱 로직
+            company_name = ""
+            job_title = ""
+            main_responsibilities = ""
+            requirements = ""
+            preferred_qualifications = ""
             
-            new_session = Session(
-                id=str(uuid.uuid4()),
-                company_name=company_name,
-                job_title=job_title,
-                main_responsibilities="",  # 추후 개선 가능
-                requirements="",           # 추후 개선 가능
-                preferred_qualifications="", # 추후 개선 가능
-                jd_text=job_description,  # 기존 호환성을 위해 유지
-                resume_text=resume_text
-            )
-
-            db.add(new_session)
-            db.commit()
-            db.refresh(new_session)
+            # 전체 텍스트를 한 줄로 처리
+            full_text = job_description.replace('\n', ' ').strip()
             
-            app.logger.info(f"세션 생성 성공: {new_session.id}")
+            # 회사명과 직무 추출 (예: "김나라테크 - 제조 엔지니어")
+            if ' - ' in full_text:
+                parts = full_text.split(' - ', 1)
+                company_name = parts[0].strip()
+                remaining_text = parts[1].strip()
+                
+                # 직무 추출 (첫 번째 공백까지)
+                if ' ' in remaining_text:
+                    job_title = remaining_text.split(' ', 1)[0].strip()
+                    remaining_text = remaining_text.split(' ', 1)[1].strip()
+                else:
+                    job_title = remaining_text
+                    remaining_text = ""
+            else:
+                remaining_text = full_text
+            
+            # 섹션별 내용 파싱
+            current_section = None
+            current_content = ""
+            
+            # 주요업무, 자격요건, 우대사항 섹션 찾기
+            sections = {
+                'main_responsibilities': ['주요업무:', '담당업무:', '업무내용:'],
+                'requirements': ['자격요건:', '요구사항:', '필수요건:'],
+                'preferred_qualifications': ['우대사항:', '선호사항:', '가산점:']
+            }
+            
+            # 각 섹션의 시작 위치 찾기
+            section_positions = {}
+            for section_name, keywords in sections.items():
+                for keyword in keywords:
+                    pos = remaining_text.find(keyword)
+                    if pos != -1:
+                        section_positions[section_name] = pos
+                        break
+            
+            # 섹션별로 내용 추출
+            if section_positions:
+                # 섹션을 위치 순으로 정렬
+                sorted_sections = sorted(section_positions.items(), key=lambda x: x[1])
+                
+                for i, (section_name, start_pos) in enumerate(sorted_sections):
+                    # 다음 섹션의 시작 위치 찾기
+                    if i + 1 < len(sorted_sections):
+                        end_pos = sorted_sections[i + 1][1]
+                    else:
+                        end_pos = len(remaining_text)
+                    
+                    # 섹션 내용 추출
+                    section_content = remaining_text[start_pos:end_pos].strip()
+                    
+                    # 키워드 제거하고 내용만 추출
+                    for keyword in sections[section_name]:
+                        if keyword in section_content:
+                            section_content = section_content.replace(keyword, '').strip()
+                            break
+                    
+                    # 해당 섹션에 내용 할당
+                    if section_name == 'main_responsibilities':
+                        main_responsibilities = section_content
+                    elif section_name == 'requirements':
+                        requirements = section_content
+                    elif section_name == 'preferred_qualifications':
+                        preferred_qualifications = section_content
+            else:
+                # 섹션 구분이 없는 경우 전체를 주요업무로 처리
+                main_responsibilities = remaining_text
+            
+            # 디버깅을 위한 로그 추가
+            app.logger.info(f"파싱 결과:")
+            app.logger.info(f"  - 회사명: '{company_name}'")
+            app.logger.info(f"  - 직무: '{job_title}'")
+            app.logger.info(f"  - 주요업무: '{main_responsibilities}'")
+            app.logger.info(f"  - 자격요건: '{requirements}'")
+            app.logger.info(f"  - 우대사항: '{preferred_qualifications}'")
+            
+            # Supabase에 세션 생성
+            session_data = {
+                'company_name': company_name,
+                'job_title': job_title,
+                'main_responsibilities': main_responsibilities,
+                'requirements': requirements,
+                'preferred_qualifications': preferred_qualifications,
+                'jd_text': job_description,  # 기존 호환성을 위해 유지
+                'resume_text': resume_text
+            }
+            
+            new_session = session_model.create_session(user['id'], session_data)
+            
+            app.logger.info(f"세션 생성 성공: {new_session['id']}")
             
             # 질문이 있으면 자기소개서 생성
             if questions:
@@ -322,19 +421,18 @@ def register_routes(app):
                             # 튜플에서 답변과 회사 정보 추출
                             answer, company_info = result
                             
-                            # 질문과 답변을 데이터베이스에 저장
-                            new_question = Question(
-                                session_id=new_session.id,
-                                question=question_text.strip(),
-                                answer_history=json.dumps([answer]),
-                                current_version_index=0,
-                                length=len(answer),
-                                question_number=i+1  # 세션 내 질문 번호
-                            )
+                            # 질문과 답변을 Supabase에 저장
+                            question_data = {
+                                'question_number': i+1,  # 세션 내 질문 번호
+                                'question': question_text.strip(),
+                                'answer_history': [answer],
+                                'current_version_index': 0,
+                                'length': len(answer)
+                            }
                             
-                            db.add(new_question)
+                            question_model.create_question(new_session['id'], question_data)
                     
-                    db.commit()
+                    app.logger.info("질문 저장 완료")
                     app.logger.info("자기소개서 생성 완료")
                     
                 except Exception as e:
@@ -345,25 +443,33 @@ def register_routes(app):
                 app.logger.info("질문이 없어서 자기소개서 생성 건너뜀")
             
             return jsonify({
-                'sessionId': new_session.id,
+                'sessionId': new_session['id'],
                 'message': 'Files uploaded and session created successfully'
             }), 201
 
         except (APIError, ValidationError, FileProcessingError):
-            db.rollback()
             raise
         except Exception as e:
-            db.rollback()
             app.logger.error(f"업로드 처리 중 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"세션 생성에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
     @app.route('/api/v1/job-info', methods=['POST'])
     def job_info():
         """채용정보 직접 입력 API"""
         try:
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
+            
             app.logger.info("채용정보 입력 요청 시작")
             data = request.get_json()
             
@@ -409,27 +515,23 @@ def register_routes(app):
             
             app.logger.info(f"채용정보 구성 완료: {len(job_description)}자")
             
-            # 세션 생성 (새로운 필드 구조 사용)
-            new_session = Session(
-                id=str(uuid.uuid4()),
-                company_name=data['companyName'].strip(),
-                job_title=data['jobTitle'].strip(),
-                main_responsibilities=data['mainResponsibilities'].strip(),
-                requirements=data['requirements'].strip(),
-                preferred_qualifications=preferred_qualifications,
-                jd_text=job_description,  # 기존 호환성을 위해 유지
-                resume_text=""  # 이력서는 별도로 입력받음
-            )
+            # Supabase에 세션 생성
+            session_model = get_session_model()
+            session_data = {
+                'company_name': data['companyName'].strip(),
+                'job_title': data['jobTitle'].strip(),
+                'main_responsibilities': data['mainResponsibilities'].strip(),
+                'requirements': data['requirements'].strip(),
+                'preferred_qualifications': preferred_qualifications,
+                'jd_text': job_description,
+                'resume_text': ""
+            }
             
-            db = next(get_db())
-            db.add(new_session)
-            db.commit()
-            db.refresh(new_session)
-            db.close()
+            session = session_model.create_session(user['id'], session_data)
             
             return jsonify({
                 'success': True,
-                'sessionId': new_session.id,
+                'sessionId': session['id'],
                 'jobDescription': job_description,
                 'message': '채용정보가 성공적으로 저장되었습니다.'
             }), 200
@@ -576,25 +678,49 @@ def register_routes(app):
     @app.route('/api/v1/session/<string:id>', methods=['GET'])
     def get_session(id):
         """세션 조회"""
-        db = next(get_db())
-        
         try:
             session_id = validate_session_id(id)
-            session = db.query(Session).filter(Session.id == session_id).first()
+            
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
+            
+            # Supabase에서 세션 조회
+            session_model = get_session_model()
+            session = session_model.get_session(session_id, user['id'])
             
             if not session:
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
-
-            questions_with_answers = [q.to_dict() for q in session.questions]
             
-            # 직무 정보는 이제 프론트엔드에서 직접 전달받으므로, 여기서 추출할 필요가 없습니다.
-            selected_job = ''
+            # Supabase에서 질문 조회
+            question_model = get_question_model()
+            questions = question_model.get_session_questions(session_id)
+            
+            questions_with_answers = []
+            for question in questions:
+                questions_with_answers.append({
+                    'id': question['id'],
+                    'question': question['question'],
+                    'answer': question['answer_history'][question['current_version_index']] if question['answer_history'] else '',
+                    'answer_history': question['answer_history'],
+                    'current_version_index': question['current_version_index'],
+                    'length': question['length'],
+                    'question_number': question['question_number']
+                })
 
             return jsonify({
                 'questions': questions_with_answers,
-                'jobDescription': session.jd_text or '',
-                'companyName': session.company_name or '',
-                'jobTitle': session.job_title or '',
+                'jobDescription': session['jd_text'] or '',
+                'companyName': session['company_name'] or '',
+                'jobTitle': session['job_title'] or '',
                 'message': '자기소개서 조회에 성공했습니다.'
             }), 200
 
@@ -603,8 +729,6 @@ def register_routes(app):
         except Exception as e:
             app.logger.error(f"세션 조회 오류: {str(e)}")
             raise APIError(f"세션 조회에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
 
 
@@ -615,10 +739,20 @@ def register_routes(app):
     @app.route('/api/v1/add-question', methods=['POST'])
     def add_question():
         """기존 세션에 새로운 질문 추가"""
-        db = next(get_db())
-        
         try:
             app.logger.info("새 질문 추가 요청 시작")
+            
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
             
             data = request.get_json()
             session_id = validate_session_id(data.get('sessionId'))
@@ -627,26 +761,31 @@ def register_routes(app):
             # 질문 검증
             validated_question = validate_question_data(question_text)
             
-            # 세션 조회
-            session = db.query(Session).filter(Session.id == session_id).first()
+            # Supabase에서 세션 조회
+            session_model = get_session_model()
+            session = session_model.get_session(session_id, user['id'])
             if not session:
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
+            # Supabase에서 기존 질문 수 확인
+            question_model = get_question_model()
+            existing_questions = question_model.get_session_questions(session_id)
+            
             # 최대 질문 수 제한
-            if len(session.questions) >= 3:
+            if len(existing_questions) >= 3:
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
             # 데이터 유효성 검증
-            if not session.resume_text or not session.jd_text:
+            if not session['resume_text'] or not session['jd_text']:
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
             
             # AI 답변 생성
             result = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
-                jd_text=session.jd_text,
-                resume_text=session.resume_text,
-                company_name=session.company_name or "",
-                job_title=session.job_title or ""
+                jd_text=session['jd_text'],
+                resume_text=session['resume_text'],
+                company_name=session['company_name'] or "",
+                job_title=session['job_title'] or ""
             )
             
             # 튜플에서 답변과 회사 정보 추출
@@ -656,27 +795,23 @@ def register_routes(app):
                 raise APIError("답변 생성에 실패했습니다.", status_code=500)
             
             # 세션 내 질문 번호 계산
-            existing_questions_count = len(session.questions)
-            question_number = existing_questions_count + 1
+            question_number = len(existing_questions) + 1
             
-            # 새 질문 저장
-            new_question_obj = Question(
-                question=validated_question['question'],
-                length=len(generated_answer),
-                question_number=question_number,
-                answer_history=json.dumps([generated_answer]),
-                current_version_index=0,
-                session_id=session_id
-            )
+            # Supabase에 새 질문 저장
+            question_data = {
+                'question_number': question_number,
+                'question': validated_question['question'],
+                'answer_history': [generated_answer],
+                'current_version_index': 0,
+                'length': len(generated_answer)
+            }
             
-            db.add(new_question_obj)
-            db.commit()
-            db.refresh(new_question_obj)
+            new_question = question_model.create_question(session_id, question_data)
             
-            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {new_question_obj.question_number}")
+            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {question_number}")
             
             return jsonify({
-                'questionId': new_question_obj.id,
+                'questionId': new_question['id'],
                 'question': validated_question['question'],
                 'answer': generated_answer,
                 'length': len(generated_answer),
@@ -684,15 +819,11 @@ def register_routes(app):
             }), 200
             
         except (APIError, ValidationError):
-            db.rollback()
             raise
         except Exception as e:
-            db.rollback()
             app.logger.error(f"새 질문 추가 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"새 질문 추가에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
     @app.route('/api/v1/sessions/<string:session_id>/questions', methods=['POST'])
     def add_question_to_session(session_id):
@@ -778,6 +909,155 @@ def register_routes(app):
             raise APIError(f"새 질문 추가에 실패했습니다: {str(e)}", status_code=500)
         finally:
             db.close()
+
+    # 인증 관련 API 엔드포인트
+    @app.route('/api/v1/auth/google/url', methods=['GET'])
+    def get_google_auth_url():
+        """Google OAuth URL 생성"""
+        try:
+            print("Google OAuth URL 요청 받음")
+            auth_service = app.get_auth_service()
+            print(f"AuthService 객체 생성됨: {type(auth_service)}")
+            print(f"AuthService 메서드들: {dir(auth_service)}")
+            auth_url = auth_service.get_google_auth_url()
+            print(f"생성된 auth_url: {auth_url}")
+            return jsonify({"success": True, "auth_url": auth_url})
+        except Exception as e:
+            print(f"Google OAuth URL 생성 오류: {str(e)}")
+            print(f"오류 타입: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"success": False, "message": f"Google OAuth URL 생성 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/auth/google/callback', methods=['POST'])
+    def handle_google_callback():
+        """Google OAuth 콜백 처리"""
+        try:
+            data = request.get_json()
+            code = data.get('code')
+            
+            if not code:
+                raise APIError("인증 코드가 필요합니다.")
+            
+            auth_service = app.get_auth_service()
+            result = auth_service.handle_google_callback(code)
+            
+            return jsonify(result)
+            
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Google OAuth 콜백 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/auth/signout', methods=['POST'])
+    def signout():
+        """로그아웃"""
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.")
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            result = auth_service.sign_out(access_token)
+            
+            return jsonify(result)
+            
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"로그아웃 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/auth/user', methods=['GET'])
+    def get_user():
+        """현재 사용자 정보 조회"""
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.")
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if user:
+                return jsonify({"success": True, "user": user})
+            else:
+                return jsonify({"success": False, "message": "사용자 정보를 찾을 수 없습니다."}), 404
+                
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"사용자 정보 조회 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/user/sessions', methods=['GET'])
+    def get_user_sessions():
+        """사용자별 자기소개서 세션 목록 조회"""
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.")
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("사용자 정보를 찾을 수 없습니다.")
+            
+            # 사용자의 세션 목록 조회
+            session_model = get_session_model()
+            sessions = session_model.get_user_sessions(user['id'])
+            
+            return jsonify({
+                "success": True, 
+                "sessions": sessions
+            })
+                
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"세션 목록 조회 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/auth/refresh', methods=['POST'])
+    def refresh_token():
+        """토큰 갱신"""
+        try:
+            data = request.get_json()
+            refresh_token = data.get('refresh_token')
+            
+            if not refresh_token:
+                raise APIError("리프레시 토큰이 필요합니다.")
+            
+            auth_service = app.get_auth_service()
+            result = auth_service.refresh_token(refresh_token)
+            
+            return jsonify(result)
+            
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"토큰 갱신 오류: {str(e)}"}), 500
+
+    @app.route('/api/v1/auth/reset-password', methods=['POST'])
+    def reset_password():
+        """비밀번호 재설정"""
+        try:
+            data = request.get_json()
+            email = data.get('email')
+            
+            if not email:
+                raise APIError("이메일을 입력해주세요.")
+            
+            auth_service = app.get_auth_service()
+            result = auth_service.reset_password(email)
+            
+            return jsonify(result)
+            
+        except APIError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+        except Exception as e:
+            return jsonify({"success": False, "message": f"비밀번호 재설정 오류: {str(e)}"}), 500
 
     @app.route('/api/v1/sessions/<string:session_id>/questions/<int:question_index>/revise', methods=['POST'])
     def revise_answer(session_id, question_index):

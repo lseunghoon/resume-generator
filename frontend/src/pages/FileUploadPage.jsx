@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
 import Navigation from '../components/Navigation';
-import Button from '../components/Button';
 import './FileUploadPage.css';
 
 const FileUploadPage = () => {
@@ -168,9 +166,7 @@ const FileUploadPage = () => {
     });
   };
 
-  const handleGoForward = () => {
-    handleNext();
-  };
+  // handleGoForward 함수는 사용되지 않으므로 제거
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -194,8 +190,6 @@ const FileUploadPage = () => {
 
   return (
     <div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
-      <Header progress={75} />
-      
       <div className="page-content">
         <Navigation
           canGoBack={true}

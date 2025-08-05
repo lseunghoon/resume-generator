@@ -10,6 +10,6 @@ def get_cors_config():
         r"/api/*": {
             "origins": CORS_ORIGINS,
             "methods": ["GET", "POST", "DELETE"],
-            "allow_headers": ["Content-Type"]
+            "allow_headers": ["Content-Type", "Authorization"]
         }
     } 

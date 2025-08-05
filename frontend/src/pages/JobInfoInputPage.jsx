@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
+import LoginModal from '../components/LoginModal';
+import { getAuthToken } from '../services/api';
 import './JobInfoInputPage.css';
 
 // Mock 데이터 (보이저엑스 서비스기획 인턴)
@@ -65,7 +66,7 @@ e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고
   { id: 'preferredQualifications', title: '우대사항을 입력해 주세요', placeholder: '예시) 영어 가능자, 일본어 가능자' }
 ];
 
-const JobInfoInputPage = () => {
+const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     jobTitle: '',
@@ -77,6 +78,7 @@ const JobInfoInputPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
+  // showLoginModal은 props로 받아옴
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -88,6 +90,28 @@ const JobInfoInputPage = () => {
     requirements: useRef(null),
     preferredQualifications: useRef(null)
   };
+
+  // 인증 상태 확인
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      // 로그인되지 않은 경우 모달 표시
+      onShowLoginModal();
+    }
+  }, [onShowLoginModal, showLoginModal]);
+
+  // 모달이 열려있을 때 배경 클릭 방지
+  useEffect(() => {
+    if (showLoginModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showLoginModal]);
 
   // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
@@ -117,15 +141,11 @@ const JobInfoInputPage = () => {
   }, [currentStep]); // currentStep이 변경될 때마다 실행
 
   const currentStepData = STEPS[currentStep];
-  const isLastStep = false; // 항상 다음 단계(파일업로드)가 있으므로 false
   const isRequirementsStep = currentStepData.id === 'requirements';
   const isPreferredQualificationsStep = currentStepData.id === 'preferredQualifications';
   
   // 현재 단계의 필수 입력값 확인
   const isCurrentStepValid = () => {
-    const currentField = currentStepData.id;
-    const currentValue = formData[currentField];
-    
     // 자격요건과 우대사항은 선택항목이므로 항상 유효
     if (isRequirementsStep || isPreferredQualificationsStep) {
       return true;
@@ -137,54 +157,7 @@ const JobInfoInputPage = () => {
 
 
 
-  const validateCurrentStep = () => {
-    const newErrors = {};
-    const currentField = currentStepData.id;
-    const currentValue = formData[currentField];
-    
-    // 자격요건과 우대사항은 선택항목이므로 검증하지 않음
-    if (isRequirementsStep || isPreferredQualificationsStep) {
-      return true;
-    }
-    
-    if (!currentValue.trim()) {
-      // 빈 값일 때
-      if (currentField === 'companyName') {
-        newErrors[currentField] = '회사명을 입력해 주세요';
-      } else if (currentField === 'jobTitle') {
-        newErrors[currentField] = '직무를 입력해 주세요';
-      } else if (currentField === 'mainResponsibilities') {
-        newErrors[currentField] = '주요 업무를 입력해 주세요';
-      }
-    } else if (currentValue.trim().length < 2) {
-      // 2자 미만일 때
-      if (currentField === 'companyName') {
-        newErrors[currentField] = '회사명은 최소 2자 이상으로 입력해야 합니다';
-      } else if (currentField === 'jobTitle') {
-        newErrors[currentField] = '직무는 최소 2자 이상으로 입력해야 합니다';
-      }
-    } else if (currentField === 'mainResponsibilities' && currentValue.trim().length < 10) {
-      // 주요 업무가 10자 미만일 때
-      newErrors[currentField] = '주요 업무는 최소 10자 이상으로 입력해야 합니다';
-    }
-    
-    setErrors(newErrors);
-    
-    // 에러가 있으면 애니메이션을 위한 key 업데이트
-    if (Object.keys(newErrors).length > 0) {
-      setErrorKey(prev => prev + 1);
-      
-      // 에러가 발생한 필드에 포커스 이동
-      setTimeout(() => {
-        const currentRef = inputRefs[currentField];
-        if (currentRef && currentRef.current) {
-          currentRef.current.focus();
-        }
-      }, 100); // 애니메이션이 시작된 후 포커스 이동
-    }
-    
-    return Object.keys(newErrors).length === 0;
-  };
+  // validateCurrentStep 함수는 사용되지 않으므로 제거
 
   const handleInputChange = (value) => {
     const currentField = currentStepData.id;
@@ -369,9 +342,7 @@ const JobInfoInputPage = () => {
   };
 
   return (
-    <div className="job-info-input-page">
-      <Header progress={((currentStep + 1) / STEPS.length) * 62.5} />
-      
+    <div className={`job-info-input-page ${showLoginModal ? 'modal-open' : ''}`}>
       <div className="page-content">
         <Navigation 
           canGoBack={currentStep > 0}
@@ -419,6 +390,11 @@ const JobInfoInputPage = () => {
           다음
         </button>
       </div>
+
+              {/* 로그인 모달 */}
+        {showLoginModal && (
+          <LoginModal onClose={onCloseLoginModal} />
+        )}
     </div>
   );
 };

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
 import Navigation from '../components/Navigation';
 import NextButton from '../components/NextButton';
-import Button from '../components/Button';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
 import './QuestionPage.css';
@@ -192,9 +190,7 @@ const QuestionPage = () => {
     }
   };
 
-  const handleRestart = () => {
-    navigate('/');
-  };
+  // handleRestart 함수는 사용되지 않으므로 제거
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !isGenerating && question.trim()) {
@@ -228,16 +224,10 @@ const QuestionPage = () => {
     });
   };
 
-  const handleGoForward = () => {
-    if (question.trim()) {
-      handleGenerate();
-    }
-  };
+  // handleGoForward 함수는 사용되지 않으므로 제거
 
   return (
     <div className="question-page">
-      <Header progress={87.5} />
-
       <div className="page-content">
         <Navigation
           canGoBack={true}

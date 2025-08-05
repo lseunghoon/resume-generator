@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
 import Button from '../components/Button';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
 import './ResultPage.css';
@@ -20,16 +19,12 @@ function ResultPage() {
     });
   
     const [selectedJob, setSelectedJob] = useState('');
-    const [jobDescription, setJobDescription] = useState('');
-    const [userQuestion, setUserQuestion] = useState(''); // 사용자가 선택한 문항
     const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식 데이터
     const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
-    const [answerHistory, setAnswerHistory] = useState({}); // 각 문항별 히스토리: { questionIndex: [historyItems] }
-    const [chatMessagesRef, setChatMessagesRef] = useState(null); // 스크롤을 위한 ref
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
 
     // 세션 삭제 함수
@@ -112,8 +107,6 @@ function ResultPage() {
             if (location.state) {
                 setJobInfo(location.state.jobInfo || null);
                 setSelectedJob(location.state.selectedJob || '');
-                setJobDescription(location.state.jobDescription || '');
-                setUserQuestion(location.state.question || '');
             }
             
             // 항상 최신 데이터를 가져오기 위해 API 호출
@@ -123,7 +116,7 @@ function ResultPage() {
             console.log('ResultPage - No sessionId found, redirecting to home');
             navigate('/');
         }
-    }, [location.state, location.search, navigate]);
+    }, [location.state, location.search, location.pathname, navigate]);
 
     const fetchCoverLetter = async (currentSessionId) => {
         if (!currentSessionId) {
@@ -159,13 +152,26 @@ function ResultPage() {
                     
                     if (question.answer_history) {
                         try {
-                            answerHistory = JSON.parse(question.answer_history);
+                            // answer_history가 문자열인 경우 JSON 파싱 시도
+                            if (typeof question.answer_history === 'string') {
+                                answerHistory = JSON.parse(question.answer_history);
+                            } else if (Array.isArray(question.answer_history)) {
+                                // 이미 배열인 경우 그대로 사용
+                                answerHistory = question.answer_history;
+                            } else {
+                                // 기타 경우 빈 배열로 초기화
+                                answerHistory = [];
+                            }
+                            
                             if (answerHistory.length > 0 && question.current_version_index !== undefined) {
                                 currentAnswer = answerHistory[question.current_version_index] || answerHistory[0] || '';
                             }
                         } catch (e) {
                             console.error('답변 히스토리 파싱 오류:', e);
+                            console.error('파싱 실패한 데이터:', question.answer_history);
+                            // 파싱 실패 시 현재 답변을 히스토리의 첫 번째 항목으로 설정
                             currentAnswer = question.answer || '';
+                            answerHistory = [currentAnswer];
                         }
                     }
                     
@@ -358,7 +364,6 @@ function ResultPage() {
     if (isLoading) {
         return (
             <div className="result-page">
-                <Header progress={100} />
                 <div className="loading-container">
                     <div className="loading-spinner"></div>
                     <p>결과를 불러오고 있습니다...</p>
@@ -371,7 +376,6 @@ function ResultPage() {
     if (error || answers.length === 0) {
         return (
             <div className="result-page">
-                <Header progress={100} />
                 <div className="error-container">
                     <p>{error || '결과를 찾을 수 없습니다'}</p>
                     <Button onClick={handleRestart}>다시 시작</Button>
@@ -382,7 +386,6 @@ function ResultPage() {
 
     return (
         <div className="result-page">
-            <Header progress={100} showRestartButton={true} onRestart={handleRestart} />
             
             <div className="page-content">
                 <div className="content-wrapper">
