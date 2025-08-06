@@ -2,11 +2,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Header.css';
 
-const Header = ({ user, onLogout }) => {
+const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onLogoClick }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 단계별 인디케이터 계산
+  const getProgressWidth = () => {
+    const path = location.pathname;
+    const search = location.search;
+    
+    // 단계별 진행률 계산 (7단계)
+    if (path === '/') {
+      // 회사명, 직무, 주요업무, 자격요건, 우대사항 입력 페이지 (5단계)
+      if (currentStep !== undefined) {
+        return `${((currentStep + 1) / 7) * 100}%`;
+      }
+      return '14.28%'; // 기본값 (1/7 단계)
+    } else if (path === '/file-upload') {
+      return '85.71%'; // 6/7 단계 (파일 업로드)
+    } else if (path === '/question') {
+      return '100%'; // 7/7 단계 (문항 입력)
+    } else if (path === '/result') {
+      return '100%'; // 완료
+    }
+    
+    return '0%';
+  };
 
   console.log('Header 컴포넌트 렌더링됨, 사용자:', user?.email);
 
@@ -28,14 +51,16 @@ const Header = ({ user, onLogout }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleSessionListClick = () => {
-    setIsDropdownOpen(false);
-    navigate('/');
-  };
+
 
   const handleLogoClick = () => {
     console.log('로고 클릭됨!');
     console.log('현재 경로:', location.pathname);
+    
+    // App.js의 currentStep 초기화 함수 호출
+    if (onLogoClick) {
+      onLogoClick();
+    }
     
     // 현재 경로가 / 이면 새로고침, 아니면 홈으로 이동
     if (location.pathname === '/') {
@@ -43,7 +68,8 @@ const Header = ({ user, onLogout }) => {
       window.location.reload();
     } else {
       console.log('다른 페이지에서 홈으로 이동');
-      navigate('/', { replace: true });
+      // location.state를 초기화하여 첫 번째 단계로 이동
+      navigate('/', { replace: true, state: null });
     }
   };
 
@@ -65,48 +91,60 @@ const Header = ({ user, onLogout }) => {
             alt="로고" 
             className="logo-image"
           />
-          <div className="active-indicator"></div>
         </div>
         
         {user && (
-          <div className="profile-section" ref={dropdownRef}>
-            <div 
-              className="profile-icon"
-              onClick={handleProfileClick}
-            >
-              {user.picture ? (
-                <img 
-                  src={user.picture} 
-                  alt="프로필" 
-                  className="profile-image"
-                />
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
-                  <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
-                </svg>
+          <div className="header-right-section">
+            {/* 사이드바 토글 버튼 */}
+            <button className="header-sidebar-toggle-btn" onClick={onSidebarToggle}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
+            {/* 프로필 섹션 */}
+            <div className="profile-section" ref={dropdownRef}>
+              <div 
+                className="profile-icon"
+                onClick={handleProfileClick}
+              >
+                {user.picture ? (
+                  <img 
+                    src={user.picture} 
+                    alt="프로필" 
+                    className="profile-image"
+                  />
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
+                    <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
+                  </svg>
+                )}
+              </div>
+              
+              {isDropdownOpen && (
+                <div className="dropdown-menu">
+                  <div 
+                    className="dropdown-item"
+                    onClick={handleLogoutClick}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    로그아웃
+                  </div>
+                </div>
               )}
             </div>
-            
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                <div 
-                  className="dropdown-item"
-                  onClick={handleSessionListClick}
-                >
-                  자기소개서 목록
-                </div>
-                <div 
-                  className="dropdown-item"
-                  onClick={handleLogoutClick}
-                >
-                  로그아웃
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
+      <div 
+        className="active-indicator" 
+        style={{ width: getProgressWidth() }}
+      ></div>
     </header>
   );
 };

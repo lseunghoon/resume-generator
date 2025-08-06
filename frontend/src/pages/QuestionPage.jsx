@@ -4,9 +4,10 @@ import Navigation from '../components/Navigation';
 import NextButton from '../components/NextButton';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
+import { createSessionUrl } from '../utils/sessionUtils';
 import './QuestionPage.css';
 
-const QuestionPage = () => {
+const QuestionPage = ({ onSidebarRefresh }) => {
   const [question, setQuestion] = useState(''); // 직접 입력 질문
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -152,7 +153,7 @@ const QuestionPage = () => {
           if (isCompleted) {
             console.log('QuestionPage - Cover letter generation completed');
             // 자소서 생성이 완료되면 결과 페이지로 이동 (완성된 데이터와 함께)
-            navigate('/result', { 
+            navigate(createSessionUrl(sessionId), { 
               state: { 
                 sessionId: sessionId,
                 jobInfo: jobInfo,
@@ -160,6 +161,11 @@ const QuestionPage = () => {
                 completedData: coverLetterResponse // 완성된 데이터도 함께 전달
               } 
             });
+            
+            // 사이드바 목록 새로고침
+            if (onSidebarRefresh) {
+              onSidebarRefresh();
+            }
             return;
           } else {
             console.log('QuestionPage - Questions not ready yet:', {

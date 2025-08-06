@@ -62,33 +62,26 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return validated_data
 
 
-def validate_question_data(question: str, length: int = None) -> Dict[str, Any]:
+def validate_question_data(question: str) -> Dict[str, Any]:
     """
     질문 데이터 검증
     
     Args:
         question (str): 검증할 질문 텍스트
-        length (int, optional): 질문 길이 제한
-        
+    
     Returns:
         Dict[str, Any]: 검증된 질문 데이터
         
     Raises:
-        ValidationError: 질문이 유효하지 않은 경우
+        ValidationError: 검증 실패 시
     """
-    if not question or not isinstance(question, str):
-        raise ValidationError("질문 텍스트가 필요합니다.")
+    if not question or not question.strip():
+        raise ValidationError("질문을 입력해주세요.")
     
-    question = question.strip()
+    validated_question = question.strip()
     
-    if len(question) < 5:
-        raise ValidationError("질문은 최소 5자 이상이어야 합니다.")
-    
-    if length and len(question) > length:
-        raise ValidationError(f"질문은 최대 {length}자까지 입력 가능합니다.")
-    
-    # 텍스트 정제
-    validated_question = sanitize_text(question)
+    if len(validated_question) > 2000:
+        raise ValidationError("질문은 최대 2000자까지 입력 가능합니다.")
     
     return {
         'question': validated_question,
@@ -166,10 +159,26 @@ def validate_session_id(session_id: str) -> str:
     
     session_id = session_id.strip()
     
-    # UUID 형식 검증 (간단한 패턴)
+    # 길이 검증 (UUID는 36자)
+    if len(session_id) != 36:
+        raise ValidationError("세션 ID 길이가 올바르지 않습니다.")
+    
+    # UUID 형식 검증 (정확한 패턴)
     uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     if not re.match(uuid_pattern, session_id, re.IGNORECASE):
         raise ValidationError("유효하지 않은 세션 ID 형식입니다.")
+    
+    # 특수 문자나 위험한 패턴 검증
+    dangerous_patterns = [
+        r'\.\.',  # 경로 순회 공격 방지
+        r'[<>"\']',  # XSS 방지
+        r'javascript:',  # JavaScript 인젝션 방지
+        r'data:',  # Data URL 방지
+    ]
+    
+    for pattern in dangerous_patterns:
+        if re.search(pattern, session_id, re.IGNORECASE):
+            raise ValidationError("세션 ID에 허용되지 않는 문자가 포함되어 있습니다.")
     
     return session_id
 

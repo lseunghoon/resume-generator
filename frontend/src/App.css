@@ -38,12 +38,77 @@ input, textarea, [contenteditable] {
   flex-direction: column;
 }
 
+/* 메인 콘텐츠 영역 */
+.main-content {
+  flex: 1;
+  transition: margin-right 0.3s ease;
+  min-height: calc(100vh - 80px); /* 헤더 높이 제외 */
+}
+
+.main-content.sidebar-open {
+  margin-right: 280px; /* 사이드바 너비만큼 여백 */
+}
+
+.main-content.sidebar-closed {
+  margin-right: 0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .main-content.sidebar-open {
+    margin-right: 0; /* 모바일에서는 사이드바가 오버레이로 표시 */
+  }
+  
+  /* 모바일에서 토글 버튼 - 헤더로 이동됨 */
+}
+
+/* 버튼 컨테이너 사이드바 반응형 스타일 */
+.button-container {
+  transition: margin-right 0.3s ease;
+}
+
+.main-content.sidebar-open .button-container {
+  margin-right: 280px;
+}
+
+.main-content.sidebar-closed .button-container {
+  margin-right: 0;
+}
+
+/* 모바일에서는 버튼 컨테이너 이동 안함 */
+@media (max-width: 768px) {
+  .main-content.sidebar-open .button-container {
+    margin-right: 0;
+  }
+}
+
+/* chat-input-section 영역 사이드바 반응형 스타일 */
+.chat-input-section {
+  transition: left 0.3s ease;
+}
+
+.main-content.sidebar-open .chat-input-section {
+  left: calc(50% - 140px);
+}
+
+.main-content.sidebar-closed .chat-input-section {
+  left: 50%;
+}
+
+/* 모바일에서는 chat-input-section 영역 이동 안함 */
+@media (max-width: 768px) {
+  .main-content.sidebar-open .chat-input-section {
+    left: 50%;
+  }
+}
+
 /* 페이지 공통 스타일 */
 .page-layout {
   min-height: 100vh;
   background-color: #f8f9fa;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .page-content {

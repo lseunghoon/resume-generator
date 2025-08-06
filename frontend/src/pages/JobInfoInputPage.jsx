@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
 import LoginModal from '../components/LoginModal';
-import { getAuthToken } from '../services/api';
+import { supabase } from '../services/supabaseClient';
 import './JobInfoInputPage.css';
 
 // Mock 데이터 (보이저엑스 서비스기획 인턴)
@@ -66,7 +66,7 @@ e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고
   { id: 'preferredQualifications', title: '우대사항을 입력해 주세요', placeholder: '예시) 영어 가능자, 일본어 가능자' }
 ];
 
-const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal }) => {
+const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal, currentStep, setCurrentStep }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     jobTitle: '',
@@ -74,7 +74,7 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal 
     requirements: '',
     preferredQualifications: ''
   });
-  const [currentStep, setCurrentStep] = useState(0);
+  // currentStep은 props로 받아옴
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
@@ -93,12 +93,22 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal 
 
   // 인증 상태 확인
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
-      // 로그인되지 않은 경우 모달 표시
-      onShowLoginModal();
+    const checkAuth = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        // 로그인되지 않은 경우 모달 표시
+        onShowLoginModal();
+      }
+    };
+    checkAuth();
+  }, [onShowLoginModal]);
+
+  // currentStep이 변경될 때마다 App.js의 currentStep 업데이트
+  useEffect(() => {
+    if (setCurrentStep) {
+      setCurrentStep(currentStep);
     }
-  }, [onShowLoginModal, showLoginModal]);
+  }, [currentStep, setCurrentStep]);
 
   // 모달이 열려있을 때 배경 클릭 방지
   useEffect(() => {
@@ -117,10 +127,6 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal 
   useEffect(() => {
     if (location.state?.jobInfo) {
       setFormData(location.state.jobInfo);
-      // 파일업로드 페이지에서 뒤로가기로 돌아온 경우 마지막 단계로 이동
-      if (location.state?.fromFileUpload) {
-        setCurrentStep(STEPS.length - 1);
-      }
     } else if (localStorage.getItem('useMockApi') === 'true' && localStorage.getItem('mockJobDataFilled') === 'true') {
       // Mock API 모드이고 Mock 데이터 채우기 플래그가 설정되어 있을 때 자동으로 데이터 채우기
       setFormData(mockJobData);

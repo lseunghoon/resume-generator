@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
+import { extractSessionIdFromUrl } from '../utils/sessionUtils';
 import './ResultPage.css';
 
-function ResultPage() {
+function ResultPage({ onSidebarRefresh }) {
     const location = useLocation();
     const navigate = useNavigate();
     const [sessionId, setSessionId] = useState('');
@@ -91,11 +92,10 @@ function ResultPage() {
             currentSessionId = location.state.sessionId;
             console.log('ResultPage - sessionId from location.state:', currentSessionId);
         }
-        // 2. 쿼리 파라미터에서 찾기
+        // 2. 쿼리 파라미터에서 찾기 (암호화된 형태 지원)
         else if (location.search) {
-            const urlParams = new URLSearchParams(location.search);
-            currentSessionId = urlParams.get('sessionId') || '';
-            console.log('ResultPage - sessionId from query params:', currentSessionId);
+            currentSessionId = extractSessionIdFromUrl(location.search);
+            console.log('ResultPage - sessionId from query params (decoded):', currentSessionId);
         }
         
         console.log('ResultPage - Final sessionId:', currentSessionId);
@@ -112,9 +112,10 @@ function ResultPage() {
             // 항상 최신 데이터를 가져오기 위해 API 호출
             fetchCoverLetter(currentSessionId);
         } else {
-            // 세션 ID가 없으면 홈으로 이동
-            console.log('ResultPage - No sessionId found, redirecting to home');
-            navigate('/');
+            // 세션 ID가 없거나 유효하지 않으면 홈으로 이동
+            console.log('ResultPage - No valid sessionId found, redirecting to home');
+            setError('유효하지 않은 세션입니다. 다시 시작해주세요.');
+            setIsLoading(false);
         }
     }, [location.state, location.search, location.pathname, navigate]);
 
@@ -198,11 +199,30 @@ function ResultPage() {
                 setIsLoading(false); // 로딩 완료
             } else {
                 console.error('ResultPage - questions 배열이 없거나 비어있음:', response);
-                setError('자기소개서 데이터를 불러올 수 없습니다');
+                
+                // questions가 비어있는 경우 (수동 삭제로 인한 경우)
+                if (response.questions && response.questions.length === 0) {
+                    setError('이 자기소개서의 질문이 삭제되었습니다. 홈으로 돌아가서 새로운 자기소개서를 작성해주세요.');
+                } else {
+                    setError('자기소개서 데이터를 불러올 수 없습니다');
+                }
+                
                 setIsLoading(false); // 로딩 완료
             }
         } catch (error) {
             console.error('자기소개서 조회 오류:', error);
+            
+            // 세션이 삭제되었거나 찾을 수 없는 경우 홈으로 리다이렉트
+            if (error.message && (
+                error.message.includes('세션 조회에 실패했습니다') ||
+                error.message.includes('세션을 찾을 수 없습니다') ||
+                error.message.includes('세션 조회 실패')
+            )) {
+                console.log('세션이 삭제되었거나 찾을 수 없어 홈으로 이동합니다.');
+                navigate('/');
+                return;
+            }
+            
             setError(error.message || '자기소개서를 불러오는데 실패했습니다');
             setIsLoading(false); // 로딩 완료
         }

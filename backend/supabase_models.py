@@ -91,19 +91,19 @@ class SupabaseQuestion:
     
     def to_dict(self, question_data: Dict[str, Any]) -> Dict[str, Any]:
         """질문 데이터를 딕셔너리로 변환"""
-        history = _parse_answer_history(question_data.get('answer_history', ''))
-        current_answer = history[question_data.get('current_version_index', 0)] if history and 0 <= question_data.get('current_version_index', 0) < len(history) else None
+        answerHistory = _parse_answer_history(question_data.get('answer_history', ''))
+        current_answer = answerHistory[question_data.get('current_version_index', 0)] if answerHistory and 0 <= question_data.get('current_version_index', 0) < len(answerHistory) else None
         
         return {
             'id': question_data.get('id'),
             'question_number': question_data.get('question_number'),
             'question': question_data.get('question'),
-            'length': question_data.get('length'),
             'answer': current_answer,
-            'answer_history': question_data.get('answer_history'),
+            'answer_history': answerHistory,
             'current_version_index': question_data.get('current_version_index', 0),
-            'has_undo': question_data.get('current_version_index', 0) > 0,
-            'has_redo': question_data.get('current_version_index', 0) < len(history) - 1
+            'length': len(current_answer) if current_answer else 0,
+            'has_undo': (question_data.get('current_version_index', 0) > 0),
+            'has_redo': len(answerHistory) > (question_data.get('current_version_index', 0) + 1)
         }
 
 class SupabaseUser:

@@ -426,14 +426,17 @@ def register_routes(app):
                                 'question_number': i+1,  # 세션 내 질문 번호
                                 'question': question_text.strip(),
                                 'answer_history': [answer],
-                                'current_version_index': 0,
-                                'length': len(answer)
+                                'current_version_index': 0
                             }
                             
                             question_model.create_question(new_session['id'], question_data)
                     
                     app.logger.info("질문 저장 완료")
                     app.logger.info("자기소개서 생성 완료")
+                    
+                    # DB 트랜잭션이 완전히 완료되도록 짧은 대기 시간 추가
+                    import time
+                    time.sleep(0.5)  # 0.5초 대기
                     
                 except Exception as e:
                     app.logger.error(f"자기소개서 생성 중 오류: {str(e)}")
@@ -555,75 +558,94 @@ def register_routes(app):
     @app.route('/api/v1/revise', methods=['POST'])
     def revise():
         """자기소개서 수정, undo, redo 처리"""
-        db = next(get_db())
+        # Supabase 모델 가져오기
+        session_model = get_session_model()
+        question_model = get_question_model()
         
         try:
             app.logger.info("자기소개서 수정 요청 시작")
+            
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
+            
             data = request.get_json()
             
             session_id = validate_session_id(data.get('sessionId'))
             question_index = validate_question_index(data.get('questionIndex'))
             action = data.get('action', 'revise')
             
-            session = db.query(Session).filter(Session.id == session_id).first()
-            if not session or question_index > len(session.questions):
-                raise APIError("세션 또는 질문을 찾을 수 없습니다.", status_code=404)
+            session = session_model.get_session(session_id, user['id'])
+            if not session:
+                raise APIError("세션을 찾을 수 없습니다.", status_code=404)
+            
+            # 세션의 질문들 조회
+            questions = question_model.get_session_questions(session_id)
+            if not questions or question_index > len(questions):
+                raise APIError("질문을 찾을 수 없습니다.", status_code=404)
 
             # question_index는 1부터 시작하므로 0부터 시작하는 배열 인덱스로 변환
-            question = session.questions[question_index - 1]
-            history = _parse_answer_history(question.answer_history)
+            question = questions[question_index - 1]
+            history = question.get('answer_history', [])
             
             if action == 'undo':
-                if question.current_version_index > 0:
-                    question.current_version_index -= 1
+                current_version_index = question.get('current_version_index', 0)
+                if current_version_index > 0:
+                    question['current_version_index'] = current_version_index - 1
             
             elif action == 'redo':
-                if question.current_version_index < len(history) - 1:
-                    question.current_version_index += 1
+                current_version_index = question.get('current_version_index', 0)
+                if current_version_index < len(history) - 1:
+                    question['current_version_index'] = current_version_index + 1
             
             elif action == 'revise':
                 revision_request = validate_revision_request(data.get('revisionRequest'))
                 
                 # 현재 버전 이후의 히스토리 삭제
-                history = history[:question.current_version_index + 1]
+                current_version_index = question.get('current_version_index', 0)
+                history = history[:current_version_index + 1]
                 
                 revised_text = app.get_ai_service().revise_cover_letter(
-                    question=question.question,
-                    jd_text=session.jd_text,
-                    resume_text=session.resume_text,
-                    original_answer=history[question.current_version_index],
+                    question=question['question'],
+                    jd_text=session.get('jd_text', ''),
+                    resume_text=session.get('resume_text', ''),
+                    original_answer=history[current_version_index],
                     user_edit_prompt=revision_request,
                     company_info="",  # 회사 정보 사용 비활성화
-                    company_name=session.company_name or "",
-                    job_title=session.job_title or "",
+                    company_name=session.get('company_name', ''),
+                    job_title=session.get('job_title', ''),
                     answer_history=history
                 )
                 
                 history.append(revised_text)
-                question.answer_history = json.dumps(history)
-                question.current_version_index = len(history) - 1
+                question['answer_history'] = history
+                question['current_version_index'] = len(history) - 1
             
             else:
                 raise APIError(f"알 수 없는 액션입니다: {action}", status_code=400)
 
-            db.commit()
-            db.refresh(question)
+            # 질문 업데이트
+            question_model.update_question(question['id'], question)
             
             return jsonify({
-                'revisedAnswer': question.to_dict()['answer'],
+                'revisedAnswer': history[question['current_version_index']],
                 'message': '자기소개서가 성공적으로 수정되었습니다.'
             }), 200
 
         except (APIError, ValidationError):
-            db.rollback()
             raise
         except Exception as e:
-            db.rollback()
             app.logger.error(f"자기소개서 수정 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"자기소개서 수정에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
     @app.route('/api/v1/session/<string:id>', methods=['DELETE'])
     def delete_session(id):
@@ -632,42 +654,38 @@ def register_routes(app):
             session_id = validate_session_id(id)
             app.logger.info(f"세션 삭제 요청: {session_id}")
             
-            db = next(get_db())
-            session = db.query(Session).filter_by(id=session_id).first()
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
             
-            if not session:
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
+            
+            # Supabase에서 세션 삭제
+            session_model = get_session_model()
+            success = session_model.delete_session(session_id, user['id'])
+            
+            if not success:
                 raise APIError("Session not found", status_code=404)
 
+            # 파일 정리 (업로드된 파일이 있다면 정리)
             try:
-                # 1. 세션과 관련된 모든 질문들 삭제 (CASCADE로 자동 삭제됨)
-                app.logger.info(f"세션 관련 질문들 삭제: {len(session.questions)}개")
-                
-                # 2. 세션 삭제
-                db.delete(session)
-                db.commit()
-                
-                # 3. 메모리 정리 (프리로딩된 콘텐츠가 있다면 정리)
-                # preloaded_content_store는 세션별로 관리되지 않으므로 별도 정리 불필요
-                
-                # 4. 파일 정리 (업로드된 파일이 있다면 정리)
-                try:
-                    file_service = app.get_file_service()
-                    cleanup_result = file_service.cleanup_old_files(max_age_days=0)  # 즉시 정리
-                    app.logger.info(f"파일 정리 결과: {cleanup_result}")
-                except Exception as file_error:
-                    app.logger.warning(f"파일 정리 중 오류 (무시됨): {file_error}")
-                
-                app.logger.info(f"세션 삭제 및 데이터 정리 완료: {session_id}")
-                return jsonify({
-                    'success': True,
-                    'message': 'Session and related data deleted successfully'
-                }), 200
-
-            except Exception as e:
-                db.rollback()
-                raise APIError(f"Failed to delete session: {str(e)}", status_code=500)
-            finally:
-                db.close()
+                file_service = app.get_file_service()
+                cleanup_result = file_service.cleanup_old_files(max_age_days=0)  # 즉시 정리
+                app.logger.info(f"파일 정리 결과: {cleanup_result}")
+            except Exception as file_error:
+                app.logger.warning(f"파일 정리 중 오류 (무시됨): {file_error}")
+            
+            app.logger.info(f"세션 삭제 및 데이터 정리 완료: {session_id}")
+            return jsonify({
+                'success': True,
+                'message': 'Session and related data deleted successfully'
+            }), 200
 
         except (APIError, ValidationError):
             raise
@@ -706,13 +724,14 @@ def register_routes(app):
             
             questions_with_answers = []
             for question in questions:
+                current_answer = question['answer_history'][question['current_version_index']] if question['answer_history'] else ''
                 questions_with_answers.append({
                     'id': question['id'],
                     'question': question['question'],
-                    'answer': question['answer_history'][question['current_version_index']] if question['answer_history'] else '',
+                    'answer': current_answer,
                     'answer_history': question['answer_history'],
                     'current_version_index': question['current_version_index'],
-                    'length': question['length'],
+                    'length': len(current_answer),
                     'question_number': question['question_number']
                 })
 
@@ -802,8 +821,7 @@ def register_routes(app):
                 'question_number': question_number,
                 'question': validated_question['question'],
                 'answer_history': [generated_answer],
-                'current_version_index': 0,
-                'length': len(generated_answer)
+                'current_version_index': 0
             }
             
             new_question = question_model.create_question(session_id, question_data)
@@ -828,10 +846,24 @@ def register_routes(app):
     @app.route('/api/v1/sessions/<string:session_id>/questions', methods=['POST'])
     def add_question_to_session(session_id):
         """특정 세션에 새로운 질문 추가 (RESTful 엔드포인트)"""
-        db = next(get_db())
+        # Supabase 모델 가져오기
+        session_model = get_session_model()
+        question_model = get_question_model()
         
         try:
             app.logger.info(f"새 질문 추가 요청 시작 - 세션: {session_id}")
+            
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
             
             data = request.get_json()
             if not data or 'question' not in data:
@@ -843,56 +875,48 @@ def register_routes(app):
             validated_question = validate_question_data(question_text)
             
             # 세션 조회
-            session = db.query(Session).filter(Session.id == session_id).first()
+            session = session_model.get_session(session_id, user['id'])
             if not session:
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
+            # 기존 질문 수 확인
+            existing_questions = question_model.get_session_questions(session_id)
+            
             # 최대 질문 수 제한
-            if len(session.questions) >= 3:
+            if len(existing_questions) >= 3:
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
             # 데이터 유효성 검증
-            if not session.resume_text or not session.jd_text:
+            if not session.get('resume_text') or not session.get('jd_text'):
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
             
             # AI 답변 생성
             generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
-                jd_text=session.jd_text,
-                resume_text=session.resume_text,
-                company_name=session.company_name or "",
-                job_title=session.job_title or ""
+                jd_text=session.get('jd_text'),
+                resume_text=session.get('resume_text'),
+                company_name=session.get('company_name') or "",
+                job_title=session.get('job_title') or ""
             )
-            
-            # 회사 정보가 있으면 세션에 저장 (현재 비활성화)
-            # if company_info and not session.company_info:
-            #     session.company_info = company_info
             
             if not generated_answer:
                 raise APIError("답변 생성에 실패했습니다.", status_code=500)
             
             # 세션 내 질문 번호 계산
-            existing_questions_count = len(session.questions)
-            question_number = existing_questions_count + 1
+            question_number = len(existing_questions) + 1
             
             # 새 질문 저장
-            new_question_obj = Question(
-                question=validated_question['question'],
-                length=len(generated_answer),
-                question_number=question_number,
-                answer_history=json.dumps([generated_answer]),
-                current_version_index=0,
-                session_id=session_id
-            )
+            new_question = question_model.create_question(session_id, {
+                'question_number': question_number,
+                'question': validated_question['question'],
+                'answer_history': [generated_answer],
+                'current_version_index': 0
+            })
             
-            db.add(new_question_obj)
-            db.commit()
-            db.refresh(new_question_obj)
-            
-            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {new_question_obj.question_number}")
+            app.logger.info(f"새 질문 저장 완료 - 세션 내 번호: {question_number}")
             
             return jsonify({
-                'questionId': new_question_obj.id,
+                'questionId': new_question['id'],
                 'question': validated_question['question'],
                 'answer': generated_answer,
                 'length': len(generated_answer),
@@ -900,15 +924,11 @@ def register_routes(app):
             }), 200
             
         except (APIError, ValidationError):
-            db.rollback()
             raise
         except Exception as e:
-            db.rollback()
             app.logger.error(f"새 질문 추가 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"새 질문 추가에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
     # 인증 관련 API 엔드포인트
     @app.route('/api/v1/auth/google/url', methods=['GET'])
@@ -1062,7 +1082,9 @@ def register_routes(app):
     @app.route('/api/v1/sessions/<string:session_id>/questions/<int:question_index>/revise', methods=['POST'])
     def revise_answer(session_id, question_index):
         """특정 질문의 답변 수정 (세션 내 인덱스 기반)"""
-        db = next(get_db())
+        # Supabase 모델 가져오기
+        session_model = get_session_model()
+        question_model = get_question_model()
         
         try:
             app.logger.info(f"답변 수정 요청 시작 - 세션: {session_id}, 질문 인덱스: {question_index}")
@@ -1074,7 +1096,7 @@ def register_routes(app):
             revision_text = data['revision']
             
             # 세션 조회
-            session = db.query(Session).filter(Session.id == session_id).first()
+            session = session_model.get_session(session_id, user['id'])
             if not session:
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
@@ -1124,7 +1146,7 @@ def register_routes(app):
             question.answer_history = json.dumps(history_list)
             question.current_version_index = len(history_list) - 1
             
-            db.commit()
+            session_model.update_session(session_id, user['id'], session.to_dict())
             
             app.logger.info(f"답변 수정 완료 - 세션: {session_id}, 질문 인덱스: {question_index}")
             
@@ -1135,15 +1157,11 @@ def register_routes(app):
             }), 200
             
         except (APIError, ValidationError):
-            db.rollback()
             raise
         except Exception as e:
-            db.rollback()
             app.logger.error(f"답변 수정 중 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"답변 수정에 실패했습니다: {str(e)}", status_code=500)
-        finally:
-            db.close()
 
 
 # Flask 앱 생성

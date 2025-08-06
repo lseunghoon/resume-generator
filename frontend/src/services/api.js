@@ -1,9 +1,41 @@
-import { mockApi, isMockApiEnabled } from './mockApi';
+import { mockApi, enableMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
+import { supabase } from './supabaseClient';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Mock API 모드 확인 (런타임에 확인)
 const checkMockMode = () => isMockApiEnabled();
+
+// API 호출을 위한 래퍼(wrapper) 함수
+const fetchWithAuth = async (url, options = {}) => {
+  // 1. API를 호출하기 '직전에' 현재 세션 정보를 가져옵니다.
+  //    이 과정에서 supabase-js가 토큰이 만료되었다면 자동으로 갱신해줍니다.
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
+    // 세션이 없거나 오류 발생 시 로그인 페이지로 리다이렉트 또는 에러 처리
+    console.log('세션이 없거나 오류가 발생했습니다:', error);
+    window.location.href = '/';
+    throw new Error('인증되지 않았습니다.');
+  }
+
+  // 2. '방금 받은' 최신 토큰을 헤더에 담습니다.
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`,
+    ...options.headers,
+  };
+
+  // 3. 요청을 보냅니다.
+  const response = await fetch(url, { ...options, headers });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `API 호출 실패: ${response.status}`);
+  }
+
+  return response.json();
+};
 
 // 공통 API 호출 함수
 const apiCall = async (endpoint, options = {}) => {
@@ -13,48 +45,10 @@ const apiCall = async (endpoint, options = {}) => {
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API 호출 실패: ${response.status}`);
-  }
-
-  return response.json();
+  return fetchWithAuth(url, options);
 };
 
 
-
-// 인증 토큰 관리
-let authToken = localStorage.getItem('authToken');
-
-export const setAuthToken = (token) => {
-  authToken = token;
-  localStorage.setItem('authToken', token);
-};
-
-export const getAuthToken = () => {
-  return authToken || localStorage.getItem('authToken');
-};
-
-export const clearAuthToken = () => {
-  authToken = null;
-  localStorage.removeItem('authToken');
-};
-
-// 인증 헤더 생성
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  console.log('인증 토큰 확인:', token ? '토큰 있음' : '토큰 없음');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
 
 // Google OAuth 로그인
 export const signInWithGoogle = async () => {
@@ -85,63 +79,38 @@ export const signInWithGoogle = async () => {
 
 // 로그아웃
 export const signOut = async () => {
-  const token = getAuthToken();
-  if (token) {
-    try {
-      await fetch(`${API_BASE_URL}/api/v1/auth/signout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-    } catch (error) {
-      console.error('로그아웃 오류:', error);
-    }
+  try {
+    await supabase.auth.signOut();
+  } catch (error) {
+    console.error('로그아웃 오류:', error);
   }
-  
-  clearAuthToken();
 };
 
 // 사용자 정보 조회
 export const getCurrentUser = async () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('인증 토큰이 없습니다');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/user`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || '사용자 정보 조회에 실패했습니다');
-  }
-
-  return data;
+  return fetchWithAuth(`${API_BASE_URL}/api/v1/auth/user`);
 };
 
 // 사용자별 자기소개서 세션 목록 조회
 export const getUserSessions = async () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('인증 토큰이 없습니다');
+  // 재시도 로직 추가
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/user/sessions`);
+      console.log('getUserSessions 응답:', response);
+      return response;
+    } catch (error) {
+      console.log(`getUserSessions 시도 ${attempt}/${maxRetries} 실패:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw error; // 마지막 시도에서도 실패하면 에러 던지기
+      }
+      
+      // 1초 대기 후 재시도
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/user/sessions`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || '세션 목록 조회에 실패했습니다');
-  }
-
-  return data;
 };
 
 // 채용정보 직접 입력 (새로운 방식)
@@ -150,21 +119,10 @@ export const submitJobInfo = async (jobInfo) => {
     return mockApi.submitJobInfo(jobInfo);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/job-info`, {
+  return fetchWithAuth(`${API_BASE_URL}/api/v1/job-info`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-    },
     body: JSON.stringify(jobInfo),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || '채용정보 입력에 실패했습니다');
-  }
-
-  return response.json();
 };
 
 // 세션 생성 (자기소개서 생성)
@@ -191,8 +149,17 @@ export const createSession = async (data) => {
   
   formData.append('data', JSON.stringify(jsonData));
 
+  // FormData를 사용하는 경우를 위한 특별한 fetchWithAuth 호출
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
+    console.log('세션이 없거나 오류가 발생했습니다:', error);
+    window.location.href = '/';
+    throw new Error('인증되지 않았습니다.');
+  }
+
   const headers = {
-    ...getAuthHeaders(),
+    'Authorization': `Bearer ${session.access_token}`,
     // FormData를 사용할 때는 Content-Type을 설정하지 않음 (브라우저가 자동으로 설정)
   };
   
@@ -206,7 +173,7 @@ export const createSession = async (data) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-          throw new Error(errorData.message || '자기소개서 생성에 실패했습니다');
+    throw new Error(errorData.message || '자기소개서 생성에 실패했습니다');
   }
 
   return response.json();
@@ -219,9 +186,25 @@ export const getCoverLetter = async (sessionId) => {
   }
 
   console.log('API: getCoverLetter 호출 - sessionId:', sessionId);
-  const response = await apiCall(`/api/v1/session/${sessionId}`);
-  console.log('API: getCoverLetter 응답:', response);
-  return response;
+  
+  // 재시도 로직 추가
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await apiCall(`/api/v1/session/${sessionId}`);
+      console.log('API: getCoverLetter 응답:', response);
+      return response;
+    } catch (error) {
+      console.log(`getCoverLetter 시도 ${attempt}/${maxRetries} 실패:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw error; // 마지막 시도에서도 실패하면 에러 던지기
+      }
+      
+      // 1초 대기 후 재시도
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
 };
 
 // 자기소개서 생성 (AI 모델 호출)
@@ -272,9 +255,12 @@ export const deleteSession = async (sessionId) => {
     return mockApi.deleteSession(sessionId);
   }
 
-  return apiCall(`/api/v1/session/${sessionId}`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/session/${sessionId}`, {
     method: 'DELETE',
   });
+
+  console.log('deleteSession 응답:', response);
+  return response;
 };
 
 // Mock API 모드 제어 함수들

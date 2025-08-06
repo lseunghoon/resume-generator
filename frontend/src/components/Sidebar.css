@@ -1,0 +1,469 @@
+/* 사이드바 컨테이너 */
+.sidebar {
+  position: fixed;
+  top: 80px; /* 헤더 높이만큼 아래로 이동 */
+  right: 0;
+  width: 280px;
+  height: calc(100vh - 80px); /* 헤더 높이만큼 높이 감소 */
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+/* 사이드바 토글 버튼 - 헤더로 이동됨 */
+
+/* 사이드바가 열려있을 때 토글 버튼 숨기기 - 제거됨 */
+
+/* 사이드바 헤더 - 제거됨 */
+
+/* 사이드바 콘텐츠 */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 0; /* 패딩 원래대로 복구 */
+}
+
+/* 로딩 상태 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 에러 상태 */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.error-state p {
+  color: #ef4444;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.retry-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: #e5e7eb;
+}
+
+/* 빈 상태 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state p {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* 새 자기소개서 버튼 - 제거됨 */
+
+/* 세션 목록 */
+.sessions-list {
+  padding: 0 8px;
+}
+
+/* 세션 아이템 */
+.session-item {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.session-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.session-content:hover {
+  background: #f3f4f6;
+}
+
+.session-item.active .session-content {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
+.session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* 세션 메뉴 버튼 */
+.session-menu-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  position: relative;
+}
+
+.session-item:hover .session-menu-btn,
+.session-item.active .session-menu-btn {
+  opacity: 1;
+}
+
+.session-menu-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: scale(1.1);
+}
+
+.session-menu-btn:active {
+  transform: scale(0.95);
+}
+
+.session-menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* 세션 메뉴 */
+.session-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1003;
+  min-width: 100px;
+  animation: menuFadeIn 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s ease;
+  text-align: left;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background: #f9fafb;
+}
+
+.menu-item:active {
+  background: #f3f4f6;
+}
+
+.menu-item.delete-btn {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.menu-item.delete-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.menu-item.delete-btn:active {
+  background: #fee2e2;
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent !important;
+}
+
+.menu-item svg {
+  flex-shrink: 0;
+}
+
+/* 사이드바 닫기 버튼 - 제거됨 */
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    z-index: 1002;
+  }
+  
+  /* 모바일에서 토글 버튼 - 헤더로 이동됨 */
+  
+  /* 모바일에서 메뉴 위치 조정 */
+  .session-menu {
+    right: 0;
+    min-width: 100px;
+  }
+}
+
+/* 스크롤바 스타일링 */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 삭제 확인 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-confirm-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+.delete-confirm-modal h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+}
+
+.delete-confirm-modal p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.delete-confirm-modal .session-title-preview {
+  margin: 16px 0 24px 0;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.delete-confirm-modal .modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.delete-confirm-modal .delete-confirm-btn {
+  padding: 10px 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.delete-confirm-modal .delete-confirm-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.delete-confirm-modal .delete-confirm-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.delete-confirm-modal .delete-confirm-btn:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.delete-confirm-modal .delete-cancel-btn {
+  padding: 10px 20px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.delete-confirm-modal .delete-cancel-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.delete-confirm-modal .delete-cancel-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.delete-confirm-modal .delete-cancel-btn:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .delete-confirm-modal {
+    margin: 20px;
+    padding: 20px;
+  }
+  
+  .delete-confirm-modal .modal-buttons {
+    flex-direction: column;
+  }
+  
+  .delete-confirm-modal .delete-confirm-btn,
+  .delete-confirm-modal .delete-cancel-btn {
+    width: 100%;
+  }
+} 
