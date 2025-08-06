@@ -6,10 +6,10 @@
 **iLoveResume** - AI 기반 맞춤형 자기소개서 생성 서비스
 
 ### 1.2 제품 버전
-**v2.0** - 사용자 직접 입력 방식으로 전환
+**v2.1** - Supabase 마이그레이션 및 Google OAuth 인증 시스템
 
 ### 1.3 제품 개요
-iLoveResume은 사용자가 채용정보를 직접 입력하고 이력서를 업로드하면, AI가 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. v2.0에서는 웹 크롤링 기능을 제거하고 사용자 직접 입력 방식으로 전환하여 더 정확하고 안정적인 서비스를 제공합니다.
+iLoveResume은 사용자가 Google 계정으로 로그인하여 채용정보를 직접 입력하고 이력서를 업로드하면, AI가 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. v2.1에서는 Supabase 데이터베이스로 마이그레이션하고 Google OAuth 인증 시스템을 구축하여 더 안전하고 확장 가능한 서비스를 제공합니다.
 
 ### 1.4 목표 사용자
 - 구직자 (신입/경력)
@@ -20,41 +20,47 @@ iLoveResume은 사용자가 채용정보를 직접 입력하고 이력서를 업
 ## 2. 제품 목표
 
 ### 2.1 비즈니스 목표
-- **정확성 향상**: 사용자 직접 입력으로 더 정확한 채용정보 확보
-- **안정성 확보**: 웹 크롤링의 불안정성 제거
-- **비용 최적화**: AI 모델 호출 및 OCR 사용 최소화
-- **사용자 경험 개선**: 직관적이고 단계별 프로세스 제공
+- **보안성 강화**: Google OAuth를 통한 안전한 인증 시스템
+- **확장성 확보**: Supabase를 통한 클라우드 기반 데이터베이스
+- **사용자 경험 개선**: 통합된 헤더와 모달 기반 로그인 시스템
+- **데이터 무결성**: RLS 정책을 통한 사용자별 데이터 보호
 
 ### 2.2 기술 목표
-- **모듈화**: 기능별 서비스 분리로 유지보수성 향상
-- **확장성**: 다양한 채용정보 형식에 유연하게 대응
-- **성능**: 빠른 응답 시간과 안정적인 서비스 제공
-- **보안**: 파일 업로드 및 데이터 처리의 안전성 확보
+- **클라우드 네이티브**: Supabase 기반 서버리스 아키텍처
+- **인증 시스템**: Google OAuth 기반 사용자 인증
+- **데이터 보안**: Row Level Security (RLS) 정책 적용
+- **성능 최적화**: 환경 변수 관리 및 비용 효율적인 AI 모델 사용
 
 ## 3. 제품 기능
 
 ### 3.1 핵심 기능
 
-#### 3.1.1 채용정보 직접 입력
+#### 3.1.1 사용자 인증
+- **Google OAuth 로그인**: Google 계정을 통한 간편 로그인
+- **세션 관리**: 자동 로그인 상태 유지
+- **로그아웃**: 안전한 세션 종료
+- **사용자 프로필**: Google 프로필 이미지 및 정보 표시
+
+#### 3.1.2 채용정보 직접 입력
 - **회사명 입력**: 지원하고자 하는 회사 이름
 - **직무 입력**: 지원 직무명
 - **주요업무 입력**: 해당 직무의 주요 업무 내용
 - **자격요건 입력**: 필수 자격요건
 - **우대사항 입력**: 우대사항 및 추가 요구사항
 
-#### 3.1.2 이력서 파일 업로드
+#### 3.1.3 이력서 파일 업로드
 - **지원 형식**: PDF, DOCX
 - **파일 크기 제한**: 50MB
 - **OCR 처리**: 텍스트 추출이 필요한 경우 자동 처리
 - **비용 최적화**: 가장 관련성 높은 이미지만 선별하여 OCR 실행
 
-#### 3.1.3 AI 기반 자기소개서 생성
+#### 3.1.4 AI 기반 자기소개서 생성
 - **맞춤형 답변**: 채용정보와 이력서를 바탕으로 개인화된 답변 생성
 - **질문별 생성**: 각 자기소개서 질문에 대한 개별 답변 생성
 - **길이 조절**: 질문별 요구 길이에 맞춘 답변 생성
 - **배치 처리**: 1회 모델 호출로 모든 질문 처리하여 비용 최적화
 
-#### 3.1.4 답변 수정 및 버전 관리
+#### 3.1.5 답변 수정 및 버전 관리
 - **수정 요청**: 생성된 답변에 대한 수정 요청 가능
 - **버전 히스토리**: 이전 답변 버전 보존
 - **버전 간 비교**: 현재 버전과 이전 버전 비교 가능
@@ -65,52 +71,55 @@ iLoveResume은 사용자가 채용정보를 직접 입력하고 이력서를 업
 - **세션 저장**: 작업 진행 상황 자동 저장
 - **세션 복원**: 이전 작업 내용 복원 가능
 - **세션 삭제**: 불필요한 세션 정리
+- **사용자별 세션**: 로그인한 사용자별 세션 분리
 
-#### 3.2.2 개발자 도구
-- **Mock API 모드**: 실제 API 없이 개발 및 테스트 가능
-- **디버깅 정보**: 상세한 로그 및 오류 정보 제공
-- **API 테스트**: 각 API 엔드포인트 테스트 기능
+#### 3.2.2 UI/UX 개선
+- **통합 헤더**: 로고, 사용자 프로필, 네비게이션 통합
+- **모달 기반 로그인**: 페이지 전환 없이 로그인 처리
+- **반응형 디자인**: 모바일 및 데스크톱 최적화
+- **로딩 상태**: 사용자 친화적인 로딩 인디케이터
 
 ## 4. 사용자 플로우
 
 ### 4.1 메인 플로우
 
 ```
-1. 채용정보 입력 (5단계)
+1. 로그인
+   ├── Google OAuth 로그인
+   ├── 사용자 인증 확인
+   └── 메인 페이지 진입
+
+2. 채용정보 입력 (5단계)
    ├── 회사명 입력
    ├── 직무 입력
    ├── 주요업무 입력
    ├── 자격요건 입력
    └── 우대사항 입력
 
-2. 이력서 업로드
+3. 이력서 업로드
    ├── 파일 선택 (PDF/DOCX)
    ├── 파일 검증
    └── 텍스트 추출 (OCR 필요시)
 
-3. 자기소개서 생성
+4. 자기소개서 생성
    ├── 질문 입력
    ├── AI 모델 호출
    └── 답변 생성
 
-4. 결과 확인 및 수정
+5. 결과 확인 및 수정
    ├── 생성된 답변 확인
    ├── 수정 요청 (선택사항)
    └── 최종 완료
 ```
 
-### 4.2 에러 플로우
+### 4.2 인증 플로우
 
 ```
-파일 업로드 실패
-├── 파일 형식 오류 → 형식 안내 및 재업로드
-├── 파일 크기 초과 → 크기 제한 안내
-└── OCR 실패 → 텍스트 수동 입력 옵션 제공
-
-AI 생성 실패
-├── 모델 호출 오류 → 재시도 옵션
-├── 응답 파싱 오류 → 수동 수정 안내
-└── 네트워크 오류 → 연결 상태 확인 안내
+로그인 필요 시
+├── 로그인 모달 표시
+├── Google OAuth 리다이렉트
+├── 인증 완료 후 메인 페이지
+└── 세션 상태 유지
 ```
 
 ## 5. 기술 아키텍처
@@ -119,6 +128,7 @@ AI 생성 실패
 
 ```
 Frontend (React)
+├── App.js - 메인 애플리케이션 (통합 헤더, 로그인 모달)
 ├── JobInfoInputPage - 채용정보 입력
 ├── FileUploadPage - 파일 업로드
 ├── QuestionPage - 질문 관리
@@ -128,101 +138,108 @@ Backend (Flask)
 ├── AIService - AI 모델 처리
 ├── OCRService - 텍스트 추출
 ├── FileService - 파일 처리
-└── Database - 데이터 저장
+├── AuthService - Google OAuth 인증
+└── SupabaseService - 데이터베이스 연동
 
 External Services
 ├── Google Cloud Vertex AI (Gemini 2.0 Flash)
 ├── Google Cloud Vision AI (OCR)
-└── SQLite/PostgreSQL (Database)
+├── Supabase (PostgreSQL + Auth)
+└── Google OAuth
 ```
 
 ### 5.2 데이터 모델
 
-#### Session 모델
-```python
-{
-  id: String (UUID),
-  created_at: DateTime,
-  company_name: String,
-  job_title: String,
-  main_responsibilities: Text,
-  requirements: Text,
-  preferred_qualifications: Text,
-  resume_text: Text,
-  questions: [Question]
-}
+#### Session 모델 (Supabase)
+```sql
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users(id),
+  company_name TEXT,
+  job_title TEXT,
+  main_responsibilities TEXT,
+  requirements TEXT,
+  preferred_qualifications TEXT,
+  jd_text TEXT,
+  resume_text TEXT,
+  company_info JSONB
+);
 ```
 
-#### Question 모델
-```python
-{
-  id: Integer,
-  question_number: Integer,
-  question: String,
-  length: Integer,
-  answer_history: Text (JSON),
-  current_version_index: Integer,
-  session_id: String (FK)
-}
+#### Question 모델 (Supabase)
+```sql
+CREATE TABLE questions (
+  id SERIAL PRIMARY KEY,
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  question_number INTEGER,
+  question TEXT,
+  length INTEGER,
+  answer_history JSONB,
+  current_version_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
 
 ## 6. API 설계
 
 ### 6.1 주요 엔드포인트
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/job-info` | 채용정보 입력 |
-| POST | `/api/v1/upload` | 파일 업로드 |
-| POST | `/api/v1/generate` | 자기소개서 생성 |
-| POST | `/api/v1/revise` | 답변 수정 |
-| GET | `/api/v1/session/<id>` | 세션 조회 |
-| DELETE | `/api/v1/session/<id>` | 세션 삭제 |
-| POST | `/api/v1/add-question` | 질문 추가 |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/auth/google/url` | Google OAuth URL 생성 | No |
+| POST | `/api/v1/auth/google/callback` | OAuth 콜백 처리 | No |
+| POST | `/api/v1/auth/signout` | 로그아웃 | Yes |
+| GET | `/api/v1/auth/user` | 사용자 정보 조회 | Yes |
+| POST | `/api/v1/job-info` | 채용정보 입력 | Yes |
+| POST | `/api/v1/upload` | 파일 업로드 | Yes |
+| POST | `/api/v1/generate` | 자기소개서 생성 | Yes |
+| POST | `/api/v1/revise` | 답변 수정 | Yes |
+| GET | `/api/v1/session/<id>` | 세션 조회 | Yes |
+| DELETE | `/api/v1/session/<id>` | 세션 삭제 | Yes |
+| GET | `/api/v1/user/sessions` | 사용자 세션 목록 | Yes |
 
-### 6.2 응답 형식
+### 6.2 인증 방식
+- **JWT 토큰**: Supabase에서 발급하는 JWT 토큰 사용
+- **Authorization 헤더**: `Bearer <token>` 형식
+- **토큰 갱신**: 자동 토큰 갱신 처리
 
-```json
-{
-  "success": true,
-  "data": {
-    // 응답 데이터
-  },
-  "message": "성공적으로 처리되었습니다."
-}
-```
+## 7. 보안 요구사항
 
-## 7. 성능 요구사항
+### 7.1 인증 보안
+- **Google OAuth**: 안전한 소셜 로그인
+- **JWT 토큰**: 암호화된 토큰 기반 인증
+- **세션 관리**: 자동 세션 만료 및 갱신
 
-### 7.1 응답 시간
+### 7.2 데이터 보안
+- **Row Level Security (RLS)**: 사용자별 데이터 접근 제어
+- **API 인증**: 모든 민감한 API에 인증 필수
+- **CORS 설정**: 허용된 도메인만 접근
+- **환경 변수**: 민감한 정보 환경 변수로 관리
+
+### 7.3 파일 보안
+- **파일 형식 검증**: PDF, DOCX만 허용
+- **파일 크기 제한**: 50MB 이하
+- **임시 파일 정리**: 자동 삭제
+
+## 8. 성능 요구사항
+
+### 8.1 응답 시간
 - **페이지 로딩**: 3초 이내
+- **로그인 처리**: 5초 이내
 - **파일 업로드**: 10초 이내 (50MB 기준)
 - **AI 생성**: 30초 이내 (5개 질문 기준)
 - **답변 수정**: 15초 이내
 
-### 7.2 동시 사용자
+### 8.2 동시 사용자
 - **동시 접속**: 100명
 - **동시 파일 업로드**: 20명
 - **동시 AI 생성**: 10명
 
-### 7.3 가용성
+### 8.3 가용성
 - **서비스 가용성**: 99.5% 이상
-- **데이터 백업**: 일일 자동 백업
+- **데이터 백업**: Supabase 자동 백업
 - **장애 복구**: 30분 이내 복구
-
-## 8. 보안 요구사항
-
-### 8.1 파일 보안
-- **파일 형식 검증**: PDF, DOCX만 허용
-- **파일 크기 제한**: 50MB 이하
-- **악성 코드 검사**: 업로드 파일 스캔
-- **임시 파일 정리**: 자동 삭제
-
-### 8.2 데이터 보안
-- **개인정보 암호화**: 민감 정보 암호화 저장
-- **API 인증**: API 키 기반 인증
-- **CORS 설정**: 허용된 도메인만 접근
-- **로그 보안**: 민감 정보 로그 제외
 
 ## 9. 비용 최적화
 
@@ -236,6 +253,11 @@ External Services
 - **단일 이미지**: 가장 관련성 높은 이미지만 처리
 - **이미지 최적화**: 크기 및 품질 조정
 
+### 9.3 데이터베이스 비용
+- **Supabase 무료 티어**: 개발 및 소규모 운영
+- **쿼리 최적화**: 효율적인 데이터베이스 쿼리
+- **인덱스 활용**: 빠른 검색을 위한 인덱스 설정
+
 ## 10. 모니터링 및 로깅
 
 ### 10.1 로깅
@@ -248,14 +270,14 @@ External Services
 - **API 응답 시간**: 실시간 모니터링
 - **오류율**: 5분 간격 체크
 - **리소스 사용량**: CPU, 메모리, 디스크
-- **외부 서비스 상태**: GCP 서비스 상태 확인
+- **외부 서비스 상태**: GCP, Supabase 서비스 상태 확인
 
 ## 11. 배포 및 운영
 
 ### 11.1 배포 환경
 - **개발 환경**: 로컬 개발
-- **테스트 환경**: GCP Cloud Run
-- **운영 환경**: GCP Cloud Run
+- **테스트 환경**: GCP Cloud Run + Supabase
+- **운영 환경**: GCP Cloud Run + Supabase
 
 ### 11.2 CI/CD
 - **자동 빌드**: GitHub Actions
@@ -269,16 +291,18 @@ External Services
 - **사용자 만족도**: 4.5/5.0 이상
 - **완료율**: 80% 이상 (시작부터 완료까지)
 - **재사용율**: 60% 이상 (2회 이상 사용)
+- **로그인 전환율**: 90% 이상
 
 ### 12.2 기술 지표
 - **응답 시간**: 목표 시간 내 처리 95% 이상
 - **오류율**: 1% 이하
 - **가용성**: 99.5% 이상
+- **인증 성공율**: 95% 이상
 
 ### 12.3 비즈니스 지표
 - **비용 효율성**: AI 모델 호출 비용 30% 절감
 - **정확성**: 사용자 직접 입력으로 정확도 90% 이상
-- **안정성**: 크롤링 관련 오류 0%
+- **보안성**: 데이터 유출 사고 0%
 
 ## 13. 향후 계획
 
@@ -286,10 +310,14 @@ External Services
 - **성능 최적화**: 응답 시간 개선
 - **UI/UX 개선**: 사용자 인터페이스 개선
 - **모바일 지원**: 반응형 웹 디자인 적용
+- **다국어 지원**: 영어 버전 추가
 
 ### 13.2 중기 계획 (3-6개월)
+- **고급 분석**: 자기소개서 품질 분석 기능
+- **템플릿 시스템**: 다양한 자기소개서 템플릿 제공
+- **협업 기능**: 팀 단위 자기소개서 작성 지원
 
 ### 13.3 장기 계획 (6개월 이상)
 - **AI 모델 고도화**: 더 정교한 답변 생성
-- **분석 기능**: 자기소개서 품질 분석
 - **채용 연계**: 채용사이트와 연동
+- **기업 솔루션**: 기업용 자기소개서 관리 시스템
