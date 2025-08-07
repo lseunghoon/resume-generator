@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 # 환경 변수 로드
 load_dotenv()
 
-# 데이터베이스 설정
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///resume_ai.db')
+# 데이터베이스 설정 (Supabase 사용으로 변경)
+# DATABASE_URL은 더 이상 사용하지 않음 - Supabase 클라이언트 사용
 
 # Vertex AI 설정
 PROJECT_ID = os.getenv("PROJECT_ID")
@@ -52,10 +52,11 @@ def validate_settings():
     return True
 
 def get_database_config():
-    """데이터베이스 설정 반환"""
+    """데이터베이스 설정 반환 (Supabase 사용으로 변경)"""
     return {
-        'url': DATABASE_URL,
-        'echo': LOG_LEVEL.upper() == 'DEBUG'
+        'supabase_url': os.getenv('SUPABASE_URL'),
+        'supabase_service_role_key': os.getenv('SUPABASE_SERVICE_ROLE_KEY'),
+        'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY')
     }
 
 def get_vertex_ai_config():

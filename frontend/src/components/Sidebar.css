@@ -57,11 +57,7 @@
   100% { transform: rotate(360deg); }
 }
 
-.loading-state p {
-  color: #6b7280;
-  font-size: 14px;
-  margin: 0;
-}
+
 
 /* 에러 상태 */
 .error-state {

@@ -56,7 +56,13 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
     validated_data = {
         'resumeText': sanitize_text(data['resumeText']),
         'jobDescription': sanitize_text(data['jobDescription']),
-        'questions': questions
+        'questions': questions,
+        # 사용자가 입력한 개별 필드들 추가
+        'companyName': data.get('companyName', ''),
+        'jobTitle': data.get('jobTitle', ''),
+        'mainResponsibilities': data.get('mainResponsibilities', ''),
+        'requirements': data.get('requirements', ''),
+        'preferredQualifications': data.get('preferredQualifications', '')
     }
     
     return validated_data

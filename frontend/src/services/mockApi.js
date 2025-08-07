@@ -133,7 +133,9 @@ export const mockApi = {
     // 저장된 데이터 반환
     const mockResponse = {
       session_id: sessionId,
-      questions: mockCoverLetterData.questions
+      questions: mockCoverLetterData.questions,
+      companyName: mockJobInfo.companyName,
+      jobTitle: mockJobInfo.jobTitle
     };
     
     // 질문이 설정되어 있으면 업데이트

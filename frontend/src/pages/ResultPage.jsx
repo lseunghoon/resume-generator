@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
+import Navigation from '../components/Navigation';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
 import { extractSessionIdFromUrl } from '../utils/sessionUtils';
 import './ResultPage.css';
@@ -40,12 +41,12 @@ function ResultPage({ onSidebarRefresh }) {
         }
     };
 
-    // 다시 시작 함수
-    const handleRestart = async () => {
-        await handleDeleteSession();
-        // localStorage에서 activeTab 정보도 삭제
+    // 다시 시작 함수 (세션 삭제 없이 홈페이지로 이동)
+    const handleRestart = () => {
+        // localStorage에서 activeTab 정보만 삭제
         localStorage.removeItem('resultPageActiveTab');
-        navigate('/');
+        // 완전한 새로고침으로 홈페이지로 이동
+        window.location.href = '/';
     };
 
     // activeTab 변경 시 localStorage에 저장
@@ -137,6 +138,7 @@ function ResultPage({ onSidebarRefresh }) {
             if (response.questions && response.questions.length > 0) {
                 console.log('ResultPage - questions 배열:', response.questions);
                 console.log('ResultPage - 첫 번째 question 객체:', response.questions[0]);
+                console.log('ResultPage - API 응답 전체:', response);
                 console.log('ResultPage - question 객체의 속성들:', {
                     id: response.questions[0]?.id,
                     question: response.questions[0]?.question,
@@ -145,6 +147,15 @@ function ResultPage({ onSidebarRefresh }) {
                     current_version_index: response.questions[0]?.current_version_index,
                     length: response.questions[0]?.length
                 });
+                
+                // API 응답에서 회사명과 직무명 정보 가져오기
+                if (response.companyName && response.jobTitle) {
+                    setJobInfo({
+                        companyName: response.companyName,
+                        jobTitle: response.jobTitle
+                    });
+                    setSelectedJob(response.jobTitle);
+                }
                 
                 // 실제 API 응답 구조에 맞게 수정
                 const answers = response.questions.map((question, index) => {
@@ -384,9 +395,14 @@ function ResultPage({ onSidebarRefresh }) {
     if (isLoading) {
         return (
             <div className="result-page">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>결과를 불러오고 있습니다...</p>
+                <div className="page-content">
+                    <Navigation
+                        canGoBack={true}
+                        onGoBack={handleRestart}
+                    />
+                    <div className="loading-container">
+                        <div className="loading-spinner"></div>
+                    </div>
                 </div>
             </div>
         );
@@ -396,9 +412,15 @@ function ResultPage({ onSidebarRefresh }) {
     if (error || answers.length === 0) {
         return (
             <div className="result-page">
-                <div className="error-container">
-                    <p>{error || '결과를 찾을 수 없습니다'}</p>
-                    <Button onClick={handleRestart}>다시 시작</Button>
+                <div className="page-content">
+                    <Navigation
+                        canGoBack={true}
+                        onGoBack={handleRestart}
+                    />
+                    <div className="error-container">
+                        <p>{error || '결과를 찾을 수 없습니다'}</p>
+                        <Button onClick={handleRestart}>다시 시작</Button>
+                    </div>
                 </div>
             </div>
         );
@@ -408,6 +430,10 @@ function ResultPage({ onSidebarRefresh }) {
         <div className="result-page">
             
             <div className="page-content">
+                <Navigation
+                    canGoBack={true}
+                    onGoBack={handleRestart}
+                />
                 <div className="content-wrapper">
                     {/* 채용공고 정보 섹션 */}
                     <div className="job-info-section">

@@ -93,36 +93,9 @@ cd iloveresume
 
 2. **데이터베이스 스키마 설정**:
    ```sql
-   -- sessions 테이블
-   CREATE TABLE sessions (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-     user_id UUID REFERENCES auth.users(id),
-     company_name TEXT,
-     job_title TEXT,
-     main_responsibilities TEXT,
-     requirements TEXT,
-     preferred_qualifications TEXT,
-     jd_text TEXT,
-     resume_text TEXT,
-     company_info JSONB
-   );
-
-   -- questions 테이블
-   CREATE TABLE questions (
-     id SERIAL PRIMARY KEY,
-     session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-     question_number INTEGER,
-     question TEXT,
-     length INTEGER,
-     answer_history JSONB,
-     current_version_index INTEGER DEFAULT 0,
-     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
-
-   -- RLS 정책 설정
-   ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-   ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
+   -- supabase_migration.sql 파일을 Supabase 대시보드의 SQL Editor에서 실행하세요
+   -- 또는 다음 명령으로 실행:
+   -- supabase db push
    ```
 
 3. **Google OAuth 설정**:
@@ -268,8 +241,9 @@ npm install -g supabase
 # 프로젝트 연결
 supabase link --project-ref your-project-ref
 
-# 마이그레이션 배포
+# 마이그레이션 배포 (supabase_migration.sql 사용)
 supabase db push
+# 또는 Supabase 대시보드의 SQL Editor에서 supabase_migration.sql 실행
 ```
 
 ### GCP 배포

@@ -14,8 +14,7 @@ CREATE TABLE sessions (
     requirements TEXT,
     preferred_qualifications TEXT,
     
-    -- 기존 호환성 필드
-    jd_text TEXT,
+    -- 기타 필드
     resume_text TEXT,
     company_info TEXT
 );

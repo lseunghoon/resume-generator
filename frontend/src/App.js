@@ -91,15 +91,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '16px',
-        color: '#666'
-      }}>
-        로딩 중...
+      <div className="app-loading-container">
+        <div className="app-loading-spinner"></div>
       </div>
     );
   }

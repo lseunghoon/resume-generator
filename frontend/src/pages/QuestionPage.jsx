@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import NextButton from '../components/NextButton';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
 import { createSessionUrl } from '../utils/sessionUtils';
@@ -91,7 +90,13 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         uploadedFiles: uploadedFiles || [],
         questions: [question], // 사용자가 입력한 질문
         jobDescription: jobInfo ? `${jobInfo.companyName} - ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}` : '',
-        resumeText: uploadedFiles && uploadedFiles.length > 0 ? '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.' : '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.'
+        resumeText: uploadedFiles && uploadedFiles.length > 0 ? '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.' : '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.',
+        // 사용자가 직접 입력한 개별 필드들 추가
+        companyName: jobInfo ? jobInfo.companyName : '',
+        jobTitle: jobInfo ? jobInfo.jobTitle : '',
+        mainResponsibilities: jobInfo ? jobInfo.mainResponsibilities : '',
+        requirements: jobInfo ? jobInfo.requirements : '',
+        preferredQualifications: jobInfo ? jobInfo.preferredQualifications : ''
       };
       
       // 디버깅: FormData 크기 확인
@@ -246,7 +251,7 @@ const QuestionPage = ({ onSidebarRefresh }) => {
             <div className="question-input-section">
               <div className="form-header">
                 <h1>자기소개서 문항을 선택하거나<br/> 직접 입력해 주세요</h1>
-                <p>자주 쓰는 문항 중 하나를 골라 입력해보세요.</p>
+                <p>자주 쓰는 문항 중 하나를 골라 입력해보세요</p>
               </div>
 
               {/* 질문 직접 입력 */}
@@ -282,11 +287,22 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         </div>
       </div>
 
-      <NextButton
-        text="자기소개서 생성하기"
-        loading={isGenerating}
-        onClick={handleGenerate}
-      />
+      <div className="button-container">
+        <button 
+          className={`next-button ${isGenerating ? 'disabled' : 'active'}`}
+          onClick={handleGenerate}
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <>
+              <div className="next-button-spinner"></div>
+              <span>자기소개서 작성 중</span>
+            </>
+          ) : (
+            '자기소개서 생성하기'
+          )}
+        </button>
+      </div>
     </div>
   );
 };

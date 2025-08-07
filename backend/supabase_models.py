@@ -62,7 +62,6 @@ class SupabaseSession:
             'main_responsibilities': session_data.get('main_responsibilities'),
             'requirements': session_data.get('requirements'),
             'preferred_qualifications': session_data.get('preferred_qualifications'),
-            'jd_text': session_data.get('jd_text'),
             'resume_text': session_data.get('resume_text'),
             'company_info': session_data.get('company_info')
         }

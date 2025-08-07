@@ -140,11 +140,17 @@ export const createSession = async (data) => {
     });
   }
 
-  // JSON 데이터 추가 (새로운 채용정보 입력 방식 지원)
+  // JSON 데이터 추가 (사용자가 입력한 개별 필드들 포함)
   const jsonData = {
     jobDescription: data.jobDescription || '',
     resumeText: data.resumeText || '',
-    questions: data.questions || []
+    questions: data.questions || [],
+    // 사용자가 직접 입력한 개별 필드들 추가
+    companyName: data.companyName || '',
+    jobTitle: data.jobTitle || '',
+    mainResponsibilities: data.mainResponsibilities || '',
+    requirements: data.requirements || '',
+    preferredQualifications: data.preferredQualifications || ''
   };
   
   formData.append('data', JSON.stringify(jsonData));

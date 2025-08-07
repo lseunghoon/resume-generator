@@ -4,6 +4,16 @@ import { getUserSessions, deleteSession } from '../services/api';
 import { createSessionUrl, extractSessionIdFromUrl } from '../utils/sessionUtils';
 import './Sidebar.css';
 
+// 공통 날짜 포맷 함수
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  
+  return `${year}년 ${month}월 ${day}일`;
+};
+
 const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,26 +59,6 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) {
-      return '오늘';
-    } else if (diffDays === 2) {
-      return '어제';
-    } else if (diffDays <= 7) {
-      return `${diffDays - 1}일 전`;
-    } else {
-      return date.toLocaleDateString('ko-KR', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
-  };
-
   const getSessionTitle = (session) => {
     const company = session.company_name || '회사명 없음';
     const job = session.job_title || '직무 없음';
@@ -86,7 +76,6 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
           {loading ? (
             <div className="loading-state">
               <div className="loading-spinner"></div>
-              <p>목록을 불러오는 중...</p>
             </div>
           ) : error ? (
             <div className="error-state">
@@ -97,7 +86,7 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
             </div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">
-              <p>아직 작성한 자기소개서가 없습니다</p>
+              <p>아직 작성한 자기소개서가 없어요</p>
             </div>
           ) : (
             <div className="sessions-list">
@@ -152,46 +141,25 @@ const SessionItem = ({ session, isActive, onClick, onRefresh }) => {
   const handleDeleteConfirm = async () => {
     try {
       setIsDeleting(true);
+      await deleteSession(session.id);
+      console.log('세션 삭제 성공');
       
-      const result = await deleteSession(session.id);
-      console.log('세션 삭제 성공:', result);
-      
-      if (result.success) {
-        onRefresh(); // 목록 새로고침
-      } else {
-        throw new Error(result.message || '삭제에 실패했습니다');
+      // 사이드바 새로고침
+      if (onRefresh) {
+        onRefresh();
       }
+      
+      setShowDeleteModal(false);
     } catch (error) {
-      console.error('세션 삭제 오류:', error);
-      alert('삭제 중 오류가 발생했습니다');
+      console.error('세션 삭제 실패:', error);
+      alert('세션 삭제에 실패했습니다.');
     } finally {
       setIsDeleting(false);
-      setShowDeleteModal(false);
     }
   };
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) {
-      return '오늘';
-    } else if (diffDays === 2) {
-      return '어제';
-    } else if (diffDays <= 7) {
-      return `${diffDays - 1}일 전`;
-    } else {
-      return date.toLocaleDateString('ko-KR', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
   };
 
   const getSessionTitle = (session) => {

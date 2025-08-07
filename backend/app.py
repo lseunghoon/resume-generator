@@ -293,95 +293,22 @@ def register_routes(app):
                 app.logger.info("파일이 없어서 사용자 입력 텍스트만 사용")
 
             # 세션 생성 (Supabase 사용)
-            # 채용정보에서 회사명과 직무 추출 시도
-            company_name = ""
-            job_title = ""
+            # 사용자가 직접 입력한 데이터를 그대로 사용
+            app.logger.info("사용자가 직접 입력한 데이터를 DB에 저장합니다.")
             
-            # 개선된 파싱 로직
-            company_name = ""
-            job_title = ""
-            main_responsibilities = ""
-            requirements = ""
-            preferred_qualifications = ""
+            # 사용자가 입력한 개별 필드들을 직접 사용
+            company_name = validated_data.get('companyName', '')
+            job_title = validated_data.get('jobTitle', '')
+            main_responsibilities = validated_data.get('mainResponsibilities', '')
+            requirements = validated_data.get('requirements', '')
+            preferred_qualifications = validated_data.get('preferredQualifications', '')
             
-            # 전체 텍스트를 한 줄로 처리
-            full_text = job_description.replace('\n', ' ').strip()
-            
-            # 회사명과 직무 추출 (예: "김나라테크 - 제조 엔지니어")
-            if ' - ' in full_text:
-                parts = full_text.split(' - ', 1)
-                company_name = parts[0].strip()
-                remaining_text = parts[1].strip()
-                
-                # 직무 추출 (첫 번째 공백까지)
-                if ' ' in remaining_text:
-                    job_title = remaining_text.split(' ', 1)[0].strip()
-                    remaining_text = remaining_text.split(' ', 1)[1].strip()
-                else:
-                    job_title = remaining_text
-                    remaining_text = ""
-            else:
-                remaining_text = full_text
-            
-            # 섹션별 내용 파싱
-            current_section = None
-            current_content = ""
-            
-            # 주요업무, 자격요건, 우대사항 섹션 찾기
-            sections = {
-                'main_responsibilities': ['주요업무:', '담당업무:', '업무내용:'],
-                'requirements': ['자격요건:', '요구사항:', '필수요건:'],
-                'preferred_qualifications': ['우대사항:', '선호사항:', '가산점:']
-            }
-            
-            # 각 섹션의 시작 위치 찾기
-            section_positions = {}
-            for section_name, keywords in sections.items():
-                for keyword in keywords:
-                    pos = remaining_text.find(keyword)
-                    if pos != -1:
-                        section_positions[section_name] = pos
-                        break
-            
-            # 섹션별로 내용 추출
-            if section_positions:
-                # 섹션을 위치 순으로 정렬
-                sorted_sections = sorted(section_positions.items(), key=lambda x: x[1])
-                
-                for i, (section_name, start_pos) in enumerate(sorted_sections):
-                    # 다음 섹션의 시작 위치 찾기
-                    if i + 1 < len(sorted_sections):
-                        end_pos = sorted_sections[i + 1][1]
-                    else:
-                        end_pos = len(remaining_text)
-                    
-                    # 섹션 내용 추출
-                    section_content = remaining_text[start_pos:end_pos].strip()
-                    
-                    # 키워드 제거하고 내용만 추출
-                    for keyword in sections[section_name]:
-                        if keyword in section_content:
-                            section_content = section_content.replace(keyword, '').strip()
-                            break
-                    
-                    # 해당 섹션에 내용 할당
-                    if section_name == 'main_responsibilities':
-                        main_responsibilities = section_content
-                    elif section_name == 'requirements':
-                        requirements = section_content
-                    elif section_name == 'preferred_qualifications':
-                        preferred_qualifications = section_content
-            else:
-                # 섹션 구분이 없는 경우 전체를 주요업무로 처리
-                main_responsibilities = remaining_text
-            
-            # 디버깅을 위한 로그 추가
-            app.logger.info(f"파싱 결과:")
+            app.logger.info(f"사용자 입력 데이터:")
             app.logger.info(f"  - 회사명: '{company_name}'")
             app.logger.info(f"  - 직무: '{job_title}'")
-            app.logger.info(f"  - 주요업무: '{main_responsibilities}'")
-            app.logger.info(f"  - 자격요건: '{requirements}'")
-            app.logger.info(f"  - 우대사항: '{preferred_qualifications}'")
+            app.logger.info(f"  - 주요업무: {len(main_responsibilities)}자")
+            app.logger.info(f"  - 자격요건: {len(requirements)}자")
+            app.logger.info(f"  - 우대사항: {len(preferred_qualifications)}자")
             
             # Supabase에 세션 생성
             session_data = {
@@ -390,7 +317,6 @@ def register_routes(app):
                 'main_responsibilities': main_responsibilities,
                 'requirements': requirements,
                 'preferred_qualifications': preferred_qualifications,
-                'jd_text': job_description,  # 기존 호환성을 위해 유지
                 'resume_text': resume_text
             }
             
@@ -526,7 +452,6 @@ def register_routes(app):
                 'main_responsibilities': data['mainResponsibilities'].strip(),
                 'requirements': data['requirements'].strip(),
                 'preferred_qualifications': preferred_qualifications,
-                'jd_text': job_description,
                 'resume_text': ""
             }
             
@@ -613,9 +538,24 @@ def register_routes(app):
                 current_version_index = question.get('current_version_index', 0)
                 history = history[:current_version_index + 1]
                 
+                # 개별 필드들을 조합하여 JD 텍스트 생성
+                jd_text = f"""
+회사명: {session.get('company_name', '')}
+직무: {session.get('job_title', '')}
+
+주요업무:
+{session.get('main_responsibilities', '')}
+
+자격요건:
+{session.get('requirements', '')}
+
+우대사항:
+{session.get('preferred_qualifications', '')}
+                """.strip()
+                
                 revised_text = app.get_ai_service().revise_cover_letter(
                     question=question['question'],
-                    jd_text=session.get('jd_text', ''),
+                    jd_text=jd_text,
                     resume_text=session.get('resume_text', ''),
                     original_answer=history[current_version_index],
                     user_edit_prompt=revision_request,
@@ -735,9 +675,24 @@ def register_routes(app):
                     'question_number': question['question_number']
                 })
 
+            # 개별 필드들을 조합하여 JD 텍스트 생성
+            jd_text = f"""
+회사명: {session.get('company_name', '')}
+직무: {session.get('job_title', '')}
+
+주요업무:
+{session.get('main_responsibilities', '')}
+
+자격요건:
+{session.get('requirements', '')}
+
+우대사항:
+{session.get('preferred_qualifications', '')}
+            """.strip()
+
             return jsonify({
                 'questions': questions_with_answers,
-                'jobDescription': session['jd_text'] or '',
+                'jobDescription': jd_text,
                 'companyName': session['company_name'] or '',
                 'jobTitle': session['job_title'] or '',
                 'message': '자기소개서 조회에 성공했습니다.'
@@ -795,13 +750,28 @@ def register_routes(app):
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
             # 데이터 유효성 검증
-            if not session['resume_text'] or not session['jd_text']:
+            if not session['resume_text'] or not session['main_responsibilities']:
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
+            
+            # 개별 필드들을 조합하여 JD 텍스트 생성
+            jd_text = f"""
+회사명: {session['company_name'] or ''}
+직무: {session['job_title'] or ''}
+
+주요업무:
+{session['main_responsibilities'] or ''}
+
+자격요건:
+{session['requirements'] or ''}
+
+우대사항:
+{session['preferred_qualifications'] or ''}
+            """.strip()
             
             # AI 답변 생성
             result = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
-                jd_text=session['jd_text'],
+                jd_text=jd_text,
                 resume_text=session['resume_text'],
                 company_name=session['company_name'] or "",
                 job_title=session['job_title'] or ""
@@ -887,13 +857,28 @@ def register_routes(app):
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
             # 데이터 유효성 검증
-            if not session.get('resume_text') or not session.get('jd_text'):
+            if not session.get('resume_text') or not session.get('main_responsibilities'):
                 raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
+            
+            # 개별 필드들을 조합하여 JD 텍스트 생성
+            jd_text = f"""
+회사명: {session.get('company_name', '')}
+직무: {session.get('job_title', '')}
+
+주요업무:
+{session.get('main_responsibilities', '')}
+
+자격요건:
+{session.get('requirements', '')}
+
+우대사항:
+{session.get('preferred_qualifications', '')}
+            """.strip()
             
             # AI 답변 생성
             generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
-                jd_text=session.get('jd_text'),
+                jd_text=jd_text,
                 resume_text=session.get('resume_text'),
                 company_name=session.get('company_name') or "",
                 job_title=session.get('job_title') or ""
@@ -1126,10 +1111,25 @@ def register_routes(app):
             else:
                 history_list.append("")
             
+            # 개별 필드들을 조합하여 JD 텍스트 생성
+            jd_text = f"""
+회사명: {session.company_name or ''}
+직무: {session.job_title or ''}
+
+주요업무:
+{session.main_responsibilities or ''}
+
+자격요건:
+{session.requirements or ''}
+
+우대사항:
+{session.preferred_qualifications or ''}
+            """.strip()
+            
             # 답변 수정
             revised_answer = app.get_ai_service().revise_cover_letter(
                 question=question.question,
-                jd_text=session.jd_text,
+                jd_text=jd_text,
                 resume_text=session.resume_text or "",
                 original_answer=current_answer_text if 'current_answer_text' in locals() else "",
                 user_edit_prompt=revision_text,

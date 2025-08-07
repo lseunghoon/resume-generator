@@ -57,20 +57,16 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     console.log('로고 클릭됨!');
     console.log('현재 경로:', location.pathname);
     
-    // App.js의 currentStep 초기화 함수 호출
-    if (onLogoClick) {
-      onLogoClick();
-    }
+    // localStorage에서 모든 입력 관련 데이터 삭제
+    console.log('로고 클릭 - localStorage 클리어 실행');
+    localStorage.removeItem('resultPageActiveTab');
+    localStorage.removeItem('pendingSessionDelete');
+    localStorage.removeItem('mockJobDataFilled');
+    localStorage.removeItem('useMockApi');
     
-    // 현재 경로가 / 이면 새로고침, 아니면 홈으로 이동
-    if (location.pathname === '/') {
-      console.log('홈페이지에서 새로고침 실행 - 첫 번째 단계로 초기화됨');
-      window.location.reload();
-    } else {
-      console.log('다른 페이지에서 홈으로 이동');
-      // location.state를 초기화하여 첫 번째 단계로 이동
-      navigate('/', { replace: true, state: null });
-    }
+    // 완전한 새로고침으로 홈페이지로 이동 (모든 페이지에서 동일하게 작동)
+    console.log('로고 클릭 - 완전한 새로고침으로 홈페이지로 이동');
+    window.location.href = '/';
   };
 
   const handleLogoutClick = () => {
