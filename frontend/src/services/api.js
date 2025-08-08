@@ -53,24 +53,17 @@ const apiCall = async (endpoint, options = {}) => {
 // Google OAuth 로그인
 export const signInWithGoogle = async () => {
   try {
-    console.log('Google OAuth 로그인 시작');
-    
-    // 1. Google OAuth URL 가져오기
-    console.log('Google OAuth URL 요청 중...');
-    const urlResponse = await fetch(`${API_BASE_URL}/api/v1/auth/google/url`);
-    console.log('Google OAuth URL 응답 상태:', urlResponse.status);
-    
-    const urlData = await urlResponse.json();
-    console.log('Google OAuth URL 응답 데이터:', urlData);
-    
-    if (!urlData.success) {
-      throw new Error(urlData.message || 'Google OAuth URL 생성에 실패했습니다');
+    console.debug('Google OAuth 로그인 시작 (supabase-js)');
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo }
+    });
+    if (error) throw error;
+    // 일부 환경에서 자동 리다이렉트가 되지 않으면 수동으로 이동
+    if (data?.url) {
+      window.location.href = data.url;
     }
-    
-    // 2. Google OAuth 페이지로 리다이렉트
-    console.log('Google OAuth 페이지로 리다이렉트:', urlData.auth_url);
-    window.location.href = urlData.auth_url;
-    
   } catch (error) {
     console.error('Google OAuth 오류:', error);
     throw error;

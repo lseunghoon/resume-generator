@@ -32,18 +32,60 @@ function AppContent() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Supabase 세션 확인
+        // 1) Supabase 세션 확인
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('세션 확인 오류:', error);
-        } else if (session) {
-          try {
-            const userData = await getCurrentUser();
-            setUser(userData.user);
-          } catch (error) {
-            console.error('사용자 정보 조회 실패:', error);
+        }
+
+        // 2) 세션 없으면 로그인 모달 표시
+        if (!session) {
+          setShowLoginModal(true);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // 3) 토큰 발급처(iss) 검증 – 기대값: `${REACT_APP_SUPABASE_URL}/auth/v1`
+        const expectedIss = `${(process.env.REACT_APP_SUPABASE_URL || '').replace(/\/$/, '')}/auth/v1`;
+        let isIssuerValid = false;
+        try {
+          const token = session.access_token;
+          const payload = JSON.parse(atob(token.split('.')[1] || '')) || {};
+          isIssuerValid = payload.iss === expectedIss;
+        } catch (e) {
+          isIssuerValid = false;
+        }
+
+        if (!isIssuerValid) {
+          // 비파괴 모드: 즉시 로그아웃하지 않고 원인 파악을 위해 로그만 남기고 모달 표시
+          const tokenIss = (function(){
+            try { return JSON.parse(atob((session.access_token || '').split('.')[1] || ''))?.iss || null; } catch(_) { return null; }
+          })();
+          console.warn('[Auth] ISS mismatch detected. Keeping session for inspection', {
+            tokenIss,
+            expectedIss,
+            href: typeof window !== 'undefined' ? window.location.href : ''
+          });
+          // 디버깅 편의를 위해 전역으로 노출
+          if (typeof window !== 'undefined') {
+            window.__AUTH_DEBUG__ = { tokenIss, expectedIss };
           }
+          // 여기서는 반환하지 않고, 서버에 사용자 정보 요청을 이어갑니다.
+        }
+
+        // 4) 서버에 현재 사용자 요청
+        try {
+          const userData = await getCurrentUser();
+          if (userData && userData.user) {
+            setUser(userData.user);
+          } else {
+            setShowLoginModal(true);
+          }
+        } catch (error) {
+          console.error('사용자 정보 조회 실패:', error);
+          setShowLoginModal(true);
         }
       } catch (error) {
         console.error('인증 확인 실패:', error);

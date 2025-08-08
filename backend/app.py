@@ -11,6 +11,8 @@ import werkzeug
 import uuid
 import os
 from dotenv import load_dotenv
+import threading
+import time
 
 # .env 파일 로드
 load_dotenv()
@@ -108,6 +110,21 @@ def create_app():
     
     # 에러 핸들러 등록
     register_error_handlers(app)
+
+    # --- AI 서비스 사전 예열 (비동기) ---
+    def _prewarm_ai_service():
+        try:
+            start_ms = int(time.time() * 1000)
+            app.logger.info("AI 서비스 예열 시작...")
+            # 첫 접근 시 내부에서 AIService 인스턴스화 및 모델 로드 수행
+            _ = app.get_ai_service()
+            elapsed_ms = int(time.time() * 1000) - start_ms
+            app.logger.info(f"AI 서비스 예열 완료 ({elapsed_ms}ms)")
+        except Exception as e:
+            app.logger.error(f"AI 서비스 예열 실패: {str(e)}")
+
+    threading.Thread(target=_prewarm_ai_service, name="ai-prewarm", daemon=True).start()
+    # -----------------------------------
     
     return app
 
