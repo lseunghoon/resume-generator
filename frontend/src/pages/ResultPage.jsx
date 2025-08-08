@@ -193,7 +193,8 @@ function ResultPage({ onSidebarRefresh }) {
                         answer: currentAnswer,
                         answer_history: answerHistory,
                         current_version_index: question.current_version_index || 0,
-                        length: question.length || 500,
+                        // length는 DB에 저장하지 않고 프론트에서 계산
+                        length: calculateTextLength(currentAnswer),
                         has_undo: (question.current_version_index || 0) > 0,
                         has_redo: answerHistory.length > (question.current_version_index || 0) + 1
                     };
@@ -350,7 +351,7 @@ function ResultPage({ onSidebarRefresh }) {
         }
         
         if (answers.length >= 3) {
-            console.log('문항은 최대 3개까지 추가 가능합니다.');
+            console.log('문항은 최대 2개까지 추가 가능합니다.');
             return;
         }
 
@@ -570,7 +571,7 @@ function ResultPage({ onSidebarRefresh }) {
                 <div className="modal-overlay" onClick={() => setShowAddQuestionModal(false)}>
                     <div className="add-question-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>추가로 생성하고자 하는<br/>문항을 입력해 주세요</h3>
-                        <p>자기소개서 문항은 최대 3개까지 추가 가능합니다.</p>
+                        <p>자기소개서 문항은 최대 2개까지 추가 가능해요</p>
                         <input
                             type="text"
                             placeholder="예) 지원 동기는 무엇인가요?"
@@ -587,8 +588,9 @@ function ResultPage({ onSidebarRefresh }) {
                                 variant="primary" 
                                 onClick={handleAddQuestion}
                                 disabled={!newQuestion.trim() || isAddingQuestion || answers.length >= 3}
+                                loading={isAddingQuestion}
                             >
-                                {isAddingQuestion ? '생성 중...' : '추가 생성하기'}
+                                {isAddingQuestion ? '생성 중' : '추가 생성하기'}
                             </Button>
                             <Button 
                                 variant="outline" 

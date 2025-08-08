@@ -7,7 +7,7 @@ const LandingPage = () => {
   return (
     <div style={{ background: 'linear-gradient(180deg, #eaeffa 0%, #fff 100%)', minHeight: '100vh' }}>
       <header style={{ display: 'flex', alignItems: 'center', height: 111, padding: '0 2rem' }}>
-        <img src="/logo192.png" alt="로고" style={{ height: 39 }} />
+        <img src="/assets/logo_sseojum.svg" alt="서줌 로고" style={{ height: 56 }} />
       </header>
       <main style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
         <h1 style={{ fontSize: 64, fontWeight: 700, margin: '2rem 0 1rem', letterSpacing: -1 }}>어떠한 질문도 AI로 손 쉽게</h1>

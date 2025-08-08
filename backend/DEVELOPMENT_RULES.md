@@ -141,7 +141,6 @@ CREATE TABLE questions (
   session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
   question_number INTEGER,
   question TEXT,
-  length INTEGER,
   answer_history JSONB,
   current_version_index INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -25,7 +25,6 @@ CREATE TABLE questions (
     session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
     question_number INTEGER NOT NULL,
     question TEXT NOT NULL,
-    length INTEGER NOT NULL,
     answer_history TEXT, -- JSON 형태의 문자열로 답변 리스트 저장
     current_version_index INTEGER DEFAULT 0 NOT NULL,
     

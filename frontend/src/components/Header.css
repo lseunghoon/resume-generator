@@ -52,7 +52,7 @@
 }
 
 .logo-image {
-  height: 40px;
+  height: 56px;
   width: auto;
   pointer-events: auto !important;
   cursor: pointer;
@@ -178,7 +178,7 @@
   }
   
   .logo-image {
-    height: 32px;
+    height: 44px;
   }
   
   .dropdown-menu {

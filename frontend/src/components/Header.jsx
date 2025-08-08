@@ -83,8 +83,8 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
           style={{ cursor: 'pointer', pointerEvents: 'auto' }}
         >
           <img 
-            src="/assets/logo_test.svg" 
-            alt="로고" 
+            src="/assets/logo_sseojum.svg" 
+            alt="서줌 로고" 
             className="logo-image"
           />
         </div>

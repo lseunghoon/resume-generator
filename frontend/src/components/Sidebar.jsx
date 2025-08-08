@@ -18,6 +18,12 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebarWidth');
+    const value = saved ? parseInt(saved, 10) : 280;
+    return Number.isFinite(value) ? value : 280;
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -50,6 +56,39 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
     }
   };
 
+  // 사이드바 리사이즈 핸들러
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      const minWidth = 240;
+      const maxWidth = Math.min(640, window.innerWidth - 100); // 우측 패널 최대폭 제한
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, window.innerWidth - e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        // 저장
+        localStorage.setItem('sidebarWidth', String(sidebarWidth));
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing, sidebarWidth]);
+
   const handleSessionClick = (sessionId) => {
     navigate(createSessionUrl(sessionId));
     
@@ -71,7 +110,16 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
 
   return (
     <>
-      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className={`sidebar ${isOpen ? 'open' : ''} ${isResizing ? 'resizing' : ''}`} style={{ width: sidebarWidth }}>
+        {/* 좌측 리사이저 핸들 */}
+        <div
+          className="sidebar-resizer"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsResizing(true);
+          }}
+          title="너비 조절"
+        />
         <div className="sidebar-content">
           {loading ? (
             <div className="loading-state">
