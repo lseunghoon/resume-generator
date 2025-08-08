@@ -24,8 +24,11 @@ class AuthService:
     def get_google_auth_url(self) -> str:
         """Google OAuth URL 생성"""
         try:
+            # 환경 변수 기반으로 프론트엔드 콜백 URL 구성 (기본값: 로컬)
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            redirect_uri = f"{frontend_url}/auth/callback"
             # Supabase의 Google OAuth URL 반환
-            return f"{self.supabase_url}/auth/v1/authorize?provider=google&redirect_to=http://localhost:3000/auth/callback"
+            return f"{self.supabase_url}/auth/v1/authorize?provider=google&redirect_to={redirect_uri}"
         except Exception as e:
             raise Exception(f"Google OAuth URL 생성 오류: {str(e)}")
     
