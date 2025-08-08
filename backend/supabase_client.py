@@ -8,8 +8,8 @@ from typing import Optional, Dict, Any, List
 import json
 from datetime import datetime
 
-# Supabase 설정
-SUPABASE_URL = "https://orjplexhlzipkjlngoua.supabase.co"
+# Supabase 설정 (환경 변수 사용)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # 서비스 계정 키 사용
 
 # Supabase 클라이언트 초기화
@@ -18,6 +18,8 @@ supabase: Optional[Client] = None
 def init_supabase():
     """Supabase 클라이언트 초기화"""
     global supabase
+    if not SUPABASE_URL:
+        raise ValueError("SUPABASE_URL 환경 변수가 설정되지 않았습니다.")
     if not SUPABASE_KEY:
         raise ValueError("SUPABASE_SERVICE_ROLE_KEY 환경 변수가 설정되지 않았습니다.")
     

@@ -160,3 +160,5 @@ dist-ssr/
 .env.*.local 
 
 gen-lang-client-0050370482-fa51721528ae.json
+backend/logs/
+backend/chromedriver.exe

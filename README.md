@@ -1,10 +1,10 @@
-# iLoveResume
+# sseojum (써줌)
 
 AI 기반 자기소개서 생성 서비스
 
 ## 프로젝트 개요
 
-iLoveResume은 AI 기술을 활용하여 사용자의 이력서와 채용정보를 바탕으로 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. Google OAuth를 통한 안전한 인증과 Supabase를 통한 클라우드 기반 데이터베이스를 제공합니다.
+sseojum(써줌)은 AI 기술을 활용하여 사용자의 이력서와 채용정보를 바탕으로 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. Google OAuth를 통한 안전한 인증과 Supabase를 통한 클라우드 기반 데이터베이스를 제공합니다.
 
 ## 주요 변경사항 (v2.1)
 
@@ -52,7 +52,7 @@ iLoveResume은 AI 기술을 활용하여 사용자의 이력서와 채용정보�
 ## 프로젝트 구조
 
 ```
-iloveresume/
+sseojum/
 ├── backend/                 # 백엔드 API 서버
 │   ├── app.py              # 메인 Flask 애플리케이션
 │   ├── supabase_client.py  # Supabase 클라이언트
@@ -82,7 +82,7 @@ iloveresume/
 
 ```bash
 git clone <repository-url>
-cd iloveresume
+cd sseojum
 ```
 
 ### 2. Supabase 설정
@@ -250,8 +250,8 @@ supabase db push
 
 ```bash
 # Cloud Run 배포
-gcloud run deploy iloveresume-backend --source backend
-gcloud run deploy iloveresume-frontend --source frontend
+gcloud run deploy sseojum-backend --source backend
+gcloud run deploy sseojum-frontend --source frontend
 ```
 
 ### 환경 변수 설정 (배포 시)

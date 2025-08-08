@@ -4,6 +4,22 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Global console log suppression based on environment
+(() => {
+  const NOOP = () => {};
+  const level = process.env.REACT_APP_LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'warn' : 'debug');
+  const levelRank = { silent: 5, error: 4, warn: 3, info: 2, log: 1, debug: 0 };
+  const methodRank = { debug: 0, log: 1, info: 2, warn: 3, error: 4 };
+  const threshold = levelRank[level] ?? 0;
+
+  Object.keys(methodRank).forEach((method) => {
+    if (methodRank[method] < threshold && typeof console[method] === 'function') {
+      // Suppress lower-priority methods
+      console[method] = NOOP;
+    }
+  });
+})();
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

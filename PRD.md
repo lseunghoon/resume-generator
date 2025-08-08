@@ -1,15 +1,15 @@
-# iLoveResume PRD (Product Requirements Document)
+# sseojum(써줌) PRD (Product Requirements Document)
 
 ## 1. 프로젝트 개요
 
 ### 1.1 제품명
-**iLoveResume** - AI 기반 맞춤형 자기소개서 생성 서비스
+**sseojum(써줌)** - AI 기반 맞춤형 자기소개서 생성 서비스
 
 ### 1.2 제품 버전
 **v2.1** - Supabase 마이그레이션 및 Google OAuth 인증 시스템
 
 ### 1.3 제품 개요
-iLoveResume은 사용자가 Google 계정으로 로그인하여 채용정보를 직접 입력하고 이력서를 업로드하면, AI가 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. v2.1에서는 Supabase 데이터베이스로 마이그레이션하고 Google OAuth 인증 시스템을 구축하여 더 안전하고 확장 가능한 서비스를 제공합니다.
+sseojum(써줌)은 사용자가 Google 계정으로 로그인하여 채용정보를 직접 입력하고 이력서를 업로드하면, AI가 맞춤형 자기소개서를 생성하는 웹 애플리케이션입니다. v2.1에서는 Supabase 데이터베이스로 마이그레이션하고 Google OAuth 인증 시스템을 구축하여 더 안전하고 확장 가능한 서비스를 제공합니다.
 
 ### 1.4 목표 사용자
 - 구직자 (신입/경력)

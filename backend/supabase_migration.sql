@@ -1,4 +1,4 @@
--- iloveresume Supabase 마이그레이션 스크립트
+-- sseojum Supabase 마이그레이션 스크립트
 -- Supabase 대시보드의 SQL Editor에서 실행하세요
 
 -- 세션 테이블 생성

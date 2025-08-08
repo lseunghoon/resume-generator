@@ -1,4 +1,4 @@
-# iLoveResume Frontend
+# sseojum Frontend
 
 AI 기반 자기소개서 생성 서비스의 프론트엔드 애플리케이션입니다.
 

@@ -22,7 +22,7 @@ const Login = ({ onLoginSuccess }) => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>iLoveResume에 오신 것을 환영합니다</h2>
+        <h2>써줌(sseojum)에 오신 것을 환영합니다</h2>
         <p className="login-description">
           AI 기반 자기소개서 생성 서비스를 이용하려면 로그인이 필요합니다.
         </p>

@@ -1,4 +1,4 @@
-# iLoveResume Backend
+# sseojum Backend
 
 AI 기반 자기소개서 생성 서비스의 백엔드 API 서버입니다.
 
@@ -150,16 +150,16 @@ backend/
 ### Docker 배포
 ```bash
 # Docker 이미지 빌드
-docker build -t iloveresume-backend .
+docker build -t sseojum-backend .
 
 # 컨테이너 실행
-docker run -p 5000:5000 iloveresume-backend
+docker run -p 5000:5000 sseojum-backend
 ```
 
 ### GCP 배포
 ```bash
 # Cloud Run 배포
-gcloud run deploy iloveresume-backend \
+gcloud run deploy sseojum-backend \
   --source . \
   --platform managed \
   --region us-central1 \

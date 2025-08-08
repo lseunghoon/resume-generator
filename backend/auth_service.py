@@ -11,9 +11,11 @@ class AuthService:
     """Supabase 인증 서비스"""
     
     def __init__(self):
-        self.supabase_url = "https://orjplexhlzipkjlngoua.supabase.co"
+        self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_key = os.getenv("SUPABASE_ANON_KEY")
         
+        if not self.supabase_url:
+            raise ValueError("SUPABASE_URL 환경 변수가 설정되지 않았습니다.")
         if not self.supabase_key:
             raise ValueError("SUPABASE_ANON_KEY 환경 변수가 설정되지 않았습니다.")
         
