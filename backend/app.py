@@ -111,7 +111,7 @@ def create_app():
     # 에러 핸들러 등록
     register_error_handlers(app)
 
-    # --- AI 서비스 사전 예열 (비동기) ---
+    # --- AI 서비스 사전 예열 (비동기, 환경변수로 제어) ---
     def _prewarm_ai_service():
         try:
             start_ms = int(time.time() * 1000)
@@ -123,7 +123,11 @@ def create_app():
         except Exception as e:
             app.logger.error(f"AI 서비스 예열 실패: {str(e)}")
 
-    threading.Thread(target=_prewarm_ai_service, name="ai-prewarm", daemon=True).start()
+    prewarm_env = os.getenv("PREWARM_AI", "true").strip().lower()
+    if prewarm_env in ("1", "true", "yes", "on"): 
+        threading.Thread(target=_prewarm_ai_service, name="ai-prewarm", daemon=True).start()
+    else:
+        app.logger.info("환경변수 PREWARM_AI=false 감지: AI 서비스 예열을 비활성화합니다.")
     # -----------------------------------
     
     return app
