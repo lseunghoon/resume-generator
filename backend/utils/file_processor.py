@@ -57,10 +57,8 @@ def validate_file_size(file_stream):
     file_stream.seek(current_position)
     
     if file_size > MAX_FILE_SIZE:
-        raise FileProcessingError(
-            f"파일 크기가 제한을 초과합니다. "
-            f"최대 크기: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
-        )
+        # 사용자 메시지를 프론트에서 그대로 노출할 수 있도록 명확히 표기
+        raise FileProcessingError("첨부파일의 용량이 50mb를 초과했습니다.")
 
 
 def parse_pdf(file_stream):

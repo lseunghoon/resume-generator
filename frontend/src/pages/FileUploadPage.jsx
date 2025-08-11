@@ -34,8 +34,9 @@ const FileUploadPage = () => {
   }, [location.state, navigate]);
 
   const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  const maxFileSize = 50 * 1024 * 1024; // 50MB (백엔드와 동일하게 설정)
+  const maxFileSize = 50 * 1024 * 1024; // 단일 파일 50MB 허용
   const maxFiles = 3;
+  const maxTotalSize = 50 * 1024 * 1024; // 3개 도합 50MB
 
   const validateFile = (file) => {
     if (!allowedTypes.includes(file.type)) {
@@ -44,7 +45,7 @@ const FileUploadPage = () => {
     }
     
     if (file.size > maxFileSize) {
-      setError('파일 크기는 50MB 이하여야 합니다');
+      setError('첨부파일의 용량이 50mb를 초과했습니다.');
       return false;
     }
     
@@ -86,6 +87,12 @@ const FileUploadPage = () => {
     }
     
     console.log(`총 파일 크기: ${totalSize} bytes (${(totalSize / 1024 / 1024).toFixed(2)} MB)`);
+    // 총합 50MB 제한 검사
+    const newTotal = getTotalSize() + validFiles.reduce((sum, f) => sum + f.size, 0);
+    if (newTotal > maxTotalSize) {
+      setError('첨부파일의 용량이 50mb를 초과했습니다. (최대 3개, 총합 50MB)');
+      return;
+    }
     console.log('========================');
     
     if (validFiles.length > 0) {
@@ -211,7 +218,7 @@ const FileUploadPage = () => {
                   <span className="file-count">{uploadedFiles.length}</span>
                   <span className="file-separator">/</span>
                   <span className="max-files">3개</span>
-                  <span className="size-info">({formatFileSize(getTotalSize())} / 10MB)</span>
+                  <span className="size-info">({formatFileSize(getTotalSize())} / 50MB)</span>
                 </div>
                 
                 <div className="upload-content">
@@ -264,7 +271,7 @@ const FileUploadPage = () => {
                 </div>
                 
                 <div className="upload-notes">
-                  <p>* 첨부 파일은 최대 3개, 10Mb 까지 업로드 가능합니다.</p>
+                  <p>* 첨부 파일은 최대 3개, 총합 50MB 까지 업로드 가능합니다.</p>
                   <p>* pdf, docx 파일만 업로드 가능합니다.</p>
                 </div>
                 

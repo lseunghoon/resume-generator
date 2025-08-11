@@ -46,11 +46,16 @@ class FileService(LoggerMixin):
             if not valid_files:
                 raise FileProcessingError("유효한 파일이 없습니다.")
             
+            # 파일 개수 제한: 최대 3개
+            if len(valid_files) > 3:
+                raise FileProcessingError("첨부파일은 최대 3개까지 업로드할 수 있습니다.")
+            
             self.logger.info(f"유효한 파일 {len(valid_files)}개 발견")
             
             all_extracted_texts = []
             all_file_infos = []
             total_text_length = 0
+            total_bytes_sum = 0
             
             for i, file in enumerate(valid_files, 1):
                 self.logger.info(f"파일 {i}/{len(valid_files)} 처리 중: {file.filename}")
@@ -61,6 +66,10 @@ class FileService(LoggerMixin):
                 
                 # 파일 유효성 검사
                 self._validate_file(file_info)
+                total_bytes_sum += file_info['size']
+                # 총합 50MB(= 50 * 1024 * 1024) 초과 시 즉시 차단
+                if total_bytes_sum > (50 * 1024 * 1024):
+                    raise FileProcessingError("첨부파일의 용량이 50mb를 초과했습니다.")
                 
                 # 텍스트 추출
                 extracted_text = extract_text_from_file(file)

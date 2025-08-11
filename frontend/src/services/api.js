@@ -171,8 +171,10 @@ export const createSession = async (data) => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || '자기소개서 생성에 실패했습니다');
+    const errorData = await response.json().catch(() => ({}));
+    // 백엔드에서 413 또는 명시 메시지를 내려줄 때 사용자 친화적으로 노출
+    const msg = errorData.message || (response.status === 413 ? '첨부파일의 용량이 50mb를 초과했습니다.' : '자기소개서 생성에 실패했습니다');
+    throw new Error(msg);
   }
 
   return response.json();

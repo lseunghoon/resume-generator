@@ -29,7 +29,8 @@ LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "10"))
 
 # 파일 업로드 설정
 ALLOWED_EXTENSIONS = {'.pdf', '.docx'}
-MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
+# 단일 파일 최대 크기: 50MB로 통일
+MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", str(50 * 1024 * 1024)))  # 50MB
 
 # AI 모델 설정
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash-001")

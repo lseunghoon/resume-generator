@@ -62,7 +62,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 CORS_ORIGINS=http://localhost:3000
 
 # 파일 업로드 설정
-MAX_FILE_SIZE=10485760  # 10MB
+MAX_FILE_SIZE=52428800  # 50MB
 
 # 로깅 설정
 LOG_LEVEL=INFO
