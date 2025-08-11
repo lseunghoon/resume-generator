@@ -449,22 +449,26 @@ function ResultPage({ onSidebarRefresh }) {
                     </div>
 
                     {/* 탭 네비게이션 */}
-                    <div className="tab-navigation">
+                    <div className="tab-navigation" role="tablist" aria-label="자기소개서 문항">
                         {answers.map((item, index) => (
                             <button
                                 key={index}
+                                role="tab"
+                                aria-selected={activeTab === index}
                                 className={`tab ${activeTab === index ? 'active' : ''}`}
                                 onClick={() => setActiveTab(index)}
+                                type="button"
                             >
                                 {item.question}
                             </button>
                         ))}
-                        
+
                         <button 
                             className="add-tab"
                             onClick={() => setShowAddQuestionModal(true)}
                             title="새 문항 추가"
                             disabled={answers.length >= 3}
+                            type="button"
                         >
                             + 문항 추가
                         </button>

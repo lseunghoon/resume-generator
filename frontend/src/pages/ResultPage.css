@@ -96,39 +96,57 @@
   font-weight: 500;
 }
 
-/* 탭 네비게이션 */
+/* 탭 네비게이션 (언더라인 스타일) */
 .tab-navigation {
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 24px;
   margin-bottom: 24px;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
   overflow-x: auto;
-  padding-bottom: 0;
+  overflow-y: hidden; /* 세로 스크롤 및 화살표 제거 */
+  padding: 0 0 6px 0;
+  /* 스크롤바 숨김 (브라우저별) */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+
+.tab-navigation::-webkit-scrollbar { /* Chrome/Safari */
+  display: none;
 }
 
 .tab {
-  padding: 14px 24px;
+  position: relative;
+  padding: 8px 2px;
   border: none;
-  background-color: transparent;
-  color: #64748b;
+  background: transparent;
+  color: #9ca3af;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 500; /* 비활성 탭: bold 제거 */
   cursor: pointer;
-  border-bottom: 3px solid transparent;
   white-space: nowrap;
-  transition: all 0.2s ease;
-  border-radius: 8px 8px 0 0;
+  transition: color 0.2s ease;
 }
 
 .tab:hover {
-  color: #343435;
-  background-color: #f1f5f9;
+  color: #6b7280;
+  background: transparent;
 }
 
 .tab.active {
   color: #343435;
-  border-bottom-color: #343435;
-  background-color: #f1f5f9;
+  font-weight: 600; /* 활성 탭만 약간 굵게 */
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -7px;
+  height: 3px;
+  background: #000000; /* 언더라인: 검은색 */
+  border-radius: 2px;
 }
 
 .add-tab {
@@ -1142,42 +1160,21 @@
   justify-content: center;
 }
 
-/* 탭 네비게이션 디자인 통일 */
-.tab-navigation {
-  padding: 20px 0;
-}
-
-.tab {
-  background: transparent;
-  border: 1px solid #343435;
-  border-radius: 8px;
-  padding: 8px 16px;
-  margin-right: 12px;
-  font-family: 'Pretendard Variable', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: #343435;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab.active {
-  background: #343435;
-  color: #ffffff;
-}
-
+/* 탭 네비게이션 보조 컨트롤 (문항 추가) */
 .add-tab {
+  margin-left: auto;
   background: transparent;
   border: none;
-  padding: 8px 16px;
+  padding: 8px 12px;
+  appearance: none;
+  -webkit-appearance: none; /* Safari의 기본 화살표 제거 */
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #b3b3b4;
+  color: #9ca3af;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .add-tab:hover:not(:disabled) {
@@ -1188,4 +1185,4 @@
   opacity: 0.4;
   cursor: not-allowed;
   color: #d1d5db;
-} 
+}
