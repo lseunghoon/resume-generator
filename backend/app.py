@@ -111,7 +111,7 @@ def create_app():
     # 에러 핸들러 등록
     register_error_handlers(app)
 
-    # --- AI 서비스 사전 예열 (비동기) ---
+    # --- AI 서비스 사전 예열 (비동기, 환경변수로 제어) ---
     def _prewarm_ai_service():
         try:
             start_ms = int(time.time() * 1000)
@@ -123,7 +123,11 @@ def create_app():
         except Exception as e:
             app.logger.error(f"AI 서비스 예열 실패: {str(e)}")
 
-    threading.Thread(target=_prewarm_ai_service, name="ai-prewarm", daemon=True).start()
+    prewarm_env = os.getenv("PREWARM_AI", "true").strip().lower()
+    if prewarm_env in ("1", "true", "yes", "on"): 
+        threading.Thread(target=_prewarm_ai_service, name="ai-prewarm", daemon=True).start()
+    else:
+        app.logger.info("환경변수 PREWARM_AI=false 감지: AI 서비스 예열을 비활성화합니다.")
     # -----------------------------------
     
     return app
@@ -149,7 +153,7 @@ def register_error_handlers(app):
     @app.errorhandler(413)
     def handle_request_entity_too_large(error):
         app.logger.error(f"파일 크기 초과: {str(error)}")
-        response = jsonify({'message': '업로드된 파일의 크기가 너무 큽니다. (최대 50MB)'})
+        response = jsonify({'message': '첨부파일의 용량이 50mb를 초과했습니다.'})
         response.status_code = 413
         return response
     
@@ -233,7 +237,7 @@ def register_routes(app):
                 
             except werkzeug.exceptions.RequestEntityTooLarge:
                 app.logger.error("파일 크기가 너무 큽니다.")
-                return jsonify({'message': '업로드된 파일의 크기가 너무 큽니다. (최대 50MB)'}), 413
+                return jsonify({'message': '첨부파일의 용량이 50mb를 초과했습니다.'}), 413
             
             # 데이터 검증
             data_str = request.form.get('data')
@@ -252,6 +256,7 @@ def register_routes(app):
                 app.logger.info(f"전체 요청 크기: {content_length} bytes ({content_length / 1024 / 1024:.2f} MB)")
                 if content_length > 50 * 1024 * 1024:  # 50MB 초과
                     app.logger.error(f"전체 요청이 50MB를 초과합니다: {content_length / 1024 / 1024:.2f} MB")
+                    return jsonify({'message': '첨부파일의 용량이 50mb를 초과했습니다.'}), 413
             
             # FormData 개별 필드 크기 확인
             app.logger.info("=== FormData 필드별 크기 분석 ===")
@@ -1090,6 +1095,15 @@ def register_routes(app):
         
         try:
             app.logger.info(f"답변 수정 요청 시작 - 세션: {session_id}, 질문 인덱스: {question_index}")
+            # 인증 확인
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise APIError("인증 토큰이 필요합니다.", status_code=401)
+            access_token = auth_header.split(' ')[1]
+            auth_service = app.get_auth_service()
+            user = auth_service.get_user(access_token)
+            if not user:
+                raise APIError("유효하지 않은 토큰입니다.", status_code=401)
             
             data = request.get_json()
             if not data or 'revision' not in data:

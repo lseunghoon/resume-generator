@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, Any, Optional, Tuple
 
 # 1. 의미 기반 유사도 측정을 위한 라이브러리 임포트
@@ -43,13 +44,27 @@ class AIService(LoggerMixin):
         # 자기소개서 '생성'을 위한 LLM 모델 (Vertex AI 또는 Mock)
         self.model = model
 
-        # 질문 '분류'를 위한 임베딩 모델 로드
-        try:
-            self.embedding_model = SentenceTransformer('jhgan/ko-sroberta-multitask')
-            self.logger.info("의미 유사도 측정을 위한 임베딩 모델 로드 완료.")
-        except Exception as e:
-            self.logger.error(f"임베딩 모델 로드 실패: {e}. 이 모델 없이는 질문 분류가 불가능합니다.")
-            raise
+        # 임베딩 분류 기능 토글 (메모리 절약용)
+        disable_embed = os.getenv("AI_DISABLE_EMBEDDING_CLASSIFIER", "false").strip().lower() in ("1", "true", "yes", "on")
+        self.embedding_disabled: bool = disable_embed
+        self.embedding_model = None
+
+        if self.embedding_disabled:
+            self.logger.info("AI_DISABLE_EMBEDDING_CLASSIFIER=true: 임베딩 분류를 비활성화합니다 (항상 'default' 가이드 사용).")
+        else:
+            # 질문 '분류'를 위한 임베딩 모델 로드
+            try:
+                # 경량 다국어 임베딩 모델로 교체
+                self.embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
+                # 메모리/속도 최적화를 위해 최대 시퀀스 길이 제한
+                try:
+                    self.embedding_model.max_seq_length = 128
+                except Exception:
+                    pass
+                self.logger.info("의미 유사도 측정을 위한 임베딩 모델 로드 완료 (intfloat/multilingual-e5-small, max_seq_len=128).")
+            except Exception as e:
+                self.logger.error(f"임베딩 모델 로드 실패: {e}. 이 모델 없이는 질문 분류가 불가능합니다.")
+                raise
 
         # 질문 유형별 가이드라인과 대표 질문 벡터를 미리 계산
         self.QUESTION_GUIDELINES, self.guideline_vectors = self._precompute_guidelines_and_vectors()
@@ -153,9 +168,16 @@ class AIService(LoggerMixin):
         }
         
         vectors = {}
-        for type_name, data in guidelines.items():
-            if data['canonical_question']:
-                vectors[type_name] = self.embedding_model.encode(data['canonical_question'], convert_to_tensor=True)
+        if not self.embedding_disabled and self.embedding_model is not None:
+            for type_name, data in guidelines.items():
+                if data['canonical_question']:
+                    v = self.embedding_model.encode(data['canonical_question'], convert_to_tensor=True)
+                    # 코사인 유사도 안정화를 위해 정규화
+                    try:
+                        util.normalize_embeddings(v)
+                    except Exception:
+                        pass
+                    vectors[type_name] = v
         
         return guidelines, vectors
 
@@ -165,7 +187,13 @@ class AIService(LoggerMixin):
         (신규 로직: 최고 점수와 2등 점수의 차이가 작으면 'default'로 처리)
         """
         try:
+            if self.embedding_disabled or self.embedding_model is None:
+                return 'default'
             user_vector = self.embedding_model.encode(question, convert_to_tensor=True)
+            try:
+                util.normalize_embeddings(user_vector)
+            except Exception:
+                pass
             
             similarities = {}
             for type_name, vector in self.guideline_vectors.items():
@@ -180,7 +208,7 @@ class AIService(LoggerMixin):
             # 2. 점수가 2개 미만이면 비교할 수 없으므로, 이전 로직을 그대로 따릅니다.
             if len(scores) < 2:
                 best_type = max(similarities, key=similarities.get)
-                if scores[0] > 0.65:
+                if scores[0] > 0.60:
                     self.logger.info(f"질문 유형이 '{best_type}'으로 분류되었습니다 (유사도: {scores[0]:.2f}).")
                     return best_type
                 else:
@@ -194,7 +222,7 @@ class AIService(LoggerMixin):
             AMBIGUITY_THRESHOLD = 0.15
 
             # 5. 최고 점수가 임계치(0.6)를 넘었는지, 그리고 1-2등 점수 차이가 충분히 큰지 확인합니다.
-            if best_score > 0.6 and (best_score - second_best_score) > AMBIGUITY_THRESHOLD:
+            if best_score > 0.55 and (best_score - second_best_score) > AMBIGUITY_THRESHOLD:
                 # 점수 차이가 충분히 커서 명확할 경우에만 해당 유형으로 분류
                 best_type = max(similarities, key=similarities.get)
                 self.logger.info(f"질문이 명확하여 '{best_type}'으로 분류되었습니다 (유사도: {best_score:.2f}, 2등과 차이: {(best_score - second_best_score):.2f}).")
