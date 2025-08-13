@@ -137,10 +137,12 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
           </div>
         )}
       </div>
-      <div 
-        className="active-indicator" 
-        style={{ width: getProgressWidth() }}
-      ></div>
+      {location.pathname !== '/' && (
+        <div 
+          className="active-indicator" 
+          style={{ width: getProgressWidth() }}
+        ></div>
+      )}
     </header>
   );
 };

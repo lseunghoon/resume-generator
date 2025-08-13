@@ -1,35 +1,255 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../components/Button.css';
+import { supabase } from '../services/supabaseClient';
+import './LandingPage.css';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
-  return (
-    <div style={{ background: 'linear-gradient(180deg, #eaeffa 0%, #fff 100%)', minHeight: '100vh' }}>
-      <header style={{ display: 'flex', alignItems: 'center', height: 111, padding: '0 2rem' }}>
-        <img src="/assets/logo_sseojum.svg" alt="서줌 로고" style={{ height: 56 }} />
-      </header>
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 64, fontWeight: 700, margin: '2rem 0 1rem', letterSpacing: -1 }}>어떠한 질문도 AI로 손 쉽게</h1>
-        <p style={{ fontSize: 24, marginBottom: '2rem' }}>기업과 직무에 최적화된 자기소개서로 합격의 가능성을 더합니다.</p>
-        <button className="main-cta" onClick={() => navigate('/upload')}>무료로 시작하기</button>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginTop: 64 }}>
-          <div className="feature-card">
-            <h2>빠르지만 정확한 답변을</h2>
-            <p>불필요한 정보 없이 핵심만 뽑아내어 답변 퀄리티를 높입니다.</p>
-          </div>
-          <div className="feature-card">
-            <h2>내 이야기를 복잡한 정보없이 한 번에</h2>
-            <p>기존 자기소개서 첨부만으로 나의 이야기를 자연스럽게 녹입니다.</p>
-          </div>
-          <div className="feature-card">
-            <h2>지원하는 기업과 직무에 딱 맞게</h2>
-            <p>실제 채용 공고를 분석하여 직무에 맞는 자기소개서를 생성합니다.</p>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+	const navigate = useNavigate();
+	const [email, setEmail] = useState('');
+	const [message, setMessage] = useState('');
+	const [submitting, setSubmitting] = useState(false);
+
+	const handleStart = async () => {
+		try {
+			const { data: { session } } = await supabase.auth.getSession();
+			if (session) {
+				navigate('/job-info');
+			} else {
+				navigate('/login?next=/job-info');
+			}
+		} catch (_) {
+			navigate('/login?next=/job-info');
+		}
+	};
+
+	const handleContactSubmit = (e) => {
+		e.preventDefault();
+		if (submitting) return;
+		setSubmitting(true);
+		try {
+			const subject = encodeURIComponent('[써줌] 서비스 제안/문의');
+			const body = encodeURIComponent(`From: ${email || 'anonymous'}\n\n${message}`);
+			window.location.href = `mailto:zinozico0070@gmail.com?subject=${subject}&body=${body}`;
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	return (
+		<div className="landing-root">
+			{/* Main Content */}
+			<main className="landing-main">
+				{/* Hero Section */}
+				<section className="hero">
+					<div className="hero-card">
+						<h1 className="hero-title">자소서, 쉽고 완벽하게 써줌에서</h1>
+						<button onClick={handleStart} className="hero-button">시작하기</button>
+						<img src="/assets/example_image.png" alt="써줌 서비스 예시" className="hero-image" />
+					</div>
+				</section>
+
+				{/* How It Works Section */}
+				<section className="how-section">
+					<h2 className="how-title">자기소개서 작성 방법</h2>
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+						{/* Step 1 */}
+						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
+							<div style={{ 
+								width: 40,
+								height: 66.67,
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'center'
+							}}>
+								<div style={{ 
+									width: 24,
+									height: 24,
+									background: '#cfdbe8',
+									borderRadius: '50%',
+									marginBottom: 8
+								}}></div>
+								<div style={{ 
+									width: 2,
+									height: 32,
+									background: '#cfdbe8'
+								}}></div>
+							</div>
+							<div style={{ flex: 1 }}>
+								<h3 style={{ 
+									fontSize: '16px',
+									fontWeight: 500,
+									marginBottom: 8,
+									color: '#0d141c'
+								}}>
+									Input Your Information
+								</h3>
+								<p style={{ 
+									color: '#4a739c',
+									lineHeight: 1.5,
+									fontSize: '16px'
+								}}>
+									Enter your work history, education, skills, and other relevant details into our intuitive interface.
+								</p>
+							</div>
+						</div>
+
+						{/* Step 2 */}
+						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
+							<div style={{ 
+								width: 40,
+								height: 66.67,
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'center'
+							}}>
+								<div style={{ 
+									width: 2,
+									height: 8,
+									background: '#cfdbe8',
+									marginBottom: 8
+								}}></div>
+								<div style={{ 
+									width: 24,
+									height: 24,
+									background: '#cfdbe8',
+									borderRadius: '50%',
+									marginBottom: 8
+								}}></div>
+								<div style={{ 
+									width: 2,
+									height: 32,
+									background: '#cfdbe8'
+								}}></div>
+							</div>
+							<div style={{ flex: 1 }}>
+								<h3 style={{ 
+									fontSize: '16px',
+									fontWeight: 500,
+									marginBottom: 8,
+									color: '#0d141c'
+								}}>
+									Customize Your Template
+								</h3>
+								<p style={{ 
+									color: '#4a739c',
+									lineHeight: 1.5,
+									fontSize: '16px'
+								}}>
+									Select a template that matches your industry and personal style, then customize the layout, fonts, and colors.
+								</p>
+							</div>
+						</div>
+
+						{/* Step 3 */}
+						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
+							<div style={{ 
+								width: 40,
+								height: 66.67,
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'center'
+							}}>
+								<div style={{ 
+									width: 2,
+									height: 8,
+									background: '#cfdbe8',
+									marginBottom: 8
+								}}></div>
+								<div style={{ 
+									width: 24,
+									height: 24,
+									background: '#cfdbe8',
+									borderRadius: '50%'
+								}}></div>
+							</div>
+							<div style={{ flex: 1 }}>
+								<h3 style={{ 
+									fontSize: '16px',
+									fontWeight: 500,
+									marginBottom: 8,
+									color: '#0d141c'
+								}}>
+									Download Your Resume
+								</h3>
+								<p style={{ 
+									color: '#4a739c',
+									lineHeight: 1.5,
+									fontSize: '16px'
+								}}>
+									Download your polished resume in various formats, ready to be submitted to potential employers.
+								</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				{/* Contact Section */}
+				<section className="contact-section">
+					<h2 className="contact-title">Contact Us</h2>
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+						<div>
+							<label style={{ 
+								display: 'block',
+								fontSize: '16px',
+								fontWeight: 500,
+								color: '#0d141c',
+								marginBottom: 8
+							}}>
+								Your Email
+							</label>
+							<input 
+								type="email"
+								value={email} 
+								onChange={(e) => setEmail(e.target.value)} 
+								placeholder="Enter your email" 
+								className="contact-input"
+							/>
+						</div>
+
+						<div>
+							<label style={{ 
+								display: 'block',
+								fontSize: '16px',
+								fontWeight: 500,
+								color: '#0d141c',
+								marginBottom: 8
+							}}>
+								Message
+							</label>
+							<textarea 
+								value={message} 
+								onChange={(e) => setMessage(e.target.value)} 
+								placeholder="Enter your message" 
+								rows={6} 
+								className="contact-textarea"
+							/>
+						</div>
+
+						<div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+							<button 
+								type="submit" 
+								onClick={handleContactSubmit}
+								disabled={submitting} 
+								className="contact-submit"
+							>
+								{submitting ? 'Sending...' : 'Submit'}
+							</button>
+						</div>
+
+					</div>
+				</section>
+			</main>
+
+			{/* Footer */}
+			<footer className="footer">
+				<div className="footer-inner">
+					<div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginBottom: 20 }}>
+						<button onClick={() => navigate('/privacy')} className="footer-link">개인정보처리방침</button>
+					</div>
+				</div>
+			</footer>
+		</div>
+	);
 };
 
-export default LandingPage; 
+export default LandingPage;

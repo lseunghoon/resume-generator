@@ -1,10 +1,10 @@
 .navigation-container {
   position: absolute;
-  top: 20px;
+  top: 80px; /* 헤더 높이(65px) + 여백(15px) */
   left: 20px;
   display: flex;
   align-items: center;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .navigation-left {
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #343435;
+  color: #121417;
   transition: all 0.2s ease;
   border-radius: 4px;
   padding: 0;
@@ -43,7 +43,7 @@
 /* 모바일 반응형 */
 @media (max-width: 768px) {
   .navigation-container {
-    top: 16px;
+    top: 70px; /* 모바일에서는 헤더 높이 조정 */
     left: 16px;
   }
 
@@ -60,7 +60,7 @@
 
 @media (max-width: 480px) {
   .navigation-container {
-    top: 12px;
+    top: 65px;
     left: 12px;
   }
 

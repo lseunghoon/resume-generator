@@ -1,8 +1,28 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
 
 const PrivacyPage = () => {
+	const navigate = useNavigate();
+
+	const handleGoBack = () => {
+		navigate(-1); // 이전 페이지로 이동
+	};
+
 	return (
-		<div className="privacy-page" style={{ maxWidth: 900, margin: '0 auto', padding: '24px' }}>
+		<div className="privacy-page" style={{ 
+			maxWidth: 900, 
+			margin: '0 auto', 
+			padding: '24px',
+			paddingTop: '120px', /* Navigation 공간 확보 */
+			position: 'relative' /* Navigation의 기준점 설정 */
+		}}>
+			{/* Navigation */}
+			<Navigation 
+				canGoBack={true}
+				onGoBack={handleGoBack}
+			/>
+			
 			<h1>Privacy Policy for 써줌</h1>
 			<p><strong>Privacy Policy</strong><br />
 			Last updated: August 11, 2025</p>

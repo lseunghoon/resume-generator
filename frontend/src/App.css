@@ -246,7 +246,7 @@ input, textarea, [contenteditable] {
 }
 
 /* 가로 스크롤 방지 */
-html, body {
+body {
   overflow-x: hidden;
   width: 100%;
 }

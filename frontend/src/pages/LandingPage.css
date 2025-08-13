@@ -1,0 +1,139 @@
+.landing-root {
+  background: #ffffff;
+  min-height: 100vh;
+  color: #0d141c;
+}
+
+.landing-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.hero {
+  padding: 50px 0 50px;
+  text-align: center;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #f4f3fe 0%, #cfcbfa 100%);
+  border-radius: 8px;
+  padding: 32px 24px 0;
+  padding-bottom: 252px; /* 가시 이미지 높이 확보 */
+  margin-bottom: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 32px;
+  color: #404759;
+  letter-spacing: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-button {
+  background: #0d80f2;
+  color: #f7fafc;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-image {
+  width: 100%;
+  max-width: 824px;
+  height: auto;
+  border-radius: 11.4px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: calc(100% - 252px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.how-section {
+  padding: 0px 0;
+  margin-bottom: 60px;
+}
+
+.how-title,
+.contact-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #0d141c;
+}
+
+.contact-section {
+  padding: 60px 0;
+  margin-bottom: 60px;
+}
+
+.contact-input,
+.contact-textarea {
+  width: 100%;
+  border: 1px solid #cfdbe8;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #f7fafc;
+  transition: border-color 0.3s ease;
+}
+
+.contact-input {
+  height: 56px;
+  padding: 0 16px;
+}
+
+.contact-textarea {
+  padding: 16px;
+  min-height: 144px;
+  resize: vertical;
+}
+
+.contact-submit {
+  background: #0d80f2;
+  color: #f7fafc;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.footer {
+  background: #ffffff;
+  padding: 40px 0;
+}
+
+.footer-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.footer-link {
+  background: transparent;
+  border: none;
+  color: #4a739c;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+

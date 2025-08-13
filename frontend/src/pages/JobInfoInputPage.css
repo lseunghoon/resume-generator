@@ -30,6 +30,8 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  padding-top: 120px; /* Navigation 공간 확보 */
+  position: relative; /* Navigation의 기준점 설정 */
 }
 
 .content-wrapper {

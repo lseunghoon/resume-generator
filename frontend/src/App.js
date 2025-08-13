@@ -7,6 +7,8 @@ import JobInfoInputPage from './pages/JobInfoInputPage';
 import FileUploadPage from './pages/FileUploadPage';
 import QuestionPage from './pages/QuestionPage';
 import ResultPage from './pages/ResultPage';
+import LandingPage from './pages/LandingPage';
+import Login from './components/Login';
 import PrivacyPage from './pages/PrivacyPage';
 
 // Components
@@ -40,13 +42,8 @@ function AppContent() {
           console.error('세션 확인 오류:', error);
         }
 
-        // 2) 세션 없으면 로그인 모달 표시
-        if (!session) {
-          setShowLoginModal(true);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
+        // 루트 경로에서는 로그인 모달을 띄우지 않습니다. 라우팅 분리(/login)
+        // 세션이 없어도 계속 진행하여 비로그인 사용자도 랜딩을 볼 수 있게 함
 
         // 3) 토큰 발급처(iss) 검증 – 기대값: `${REACT_APP_SUPABASE_URL}/auth/v1`
         const expectedIss = `${(process.env.REACT_APP_SUPABASE_URL || '').replace(/\/$/, '')}/auth/v1`;
@@ -76,17 +73,16 @@ function AppContent() {
           // 여기서는 반환하지 않고, 서버에 사용자 정보 요청을 이어갑니다.
         }
 
-        // 4) 서버에 현재 사용자 요청
-        try {
-          const userData = await getCurrentUser();
-          if (userData && userData.user) {
-            setUser(userData.user);
-          } else {
-            setShowLoginModal(true);
+        // 4) 서버에 현재 사용자 요청 (세션이 있을 때만)
+        if (session) {
+          try {
+            const userData = await getCurrentUser();
+            if (userData && userData.user) {
+              setUser(userData.user);
+            }
+          } catch (error) {
+            console.error('사용자 정보 조회 실패:', error);
           }
-        } catch (error) {
-          console.error('사용자 정보 조회 실패:', error);
-          setShowLoginModal(true);
         }
       } catch (error) {
         console.error('인증 확인 실패:', error);
@@ -140,8 +136,7 @@ function AppContent() {
     );
   }
 
-  // 로그인되지 않은 경우에도 JobInfoInputPage를 표시하되, 로그인 모달을 함께 표시
-  // JobInfoInputPage 내부에서 로그인 상태를 확인하여 모달을 표시할 예정
+  // 루트는 공개 랜딩 페이지로, 로그인은 /login 경로에서만 처리
 
   return (
     <div className={`App ${showLoginModal ? 'modal-open' : ''}`}>
@@ -166,14 +161,16 @@ function AppContent() {
       
       {/* 메인 콘텐츠 영역 */}
       <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-                       <Routes>
-                 <Route path="/" element={<JobInfoInputPage onShowLoginModal={handleShowLoginModal} onCloseLoginModal={handleCloseLoginModal} showLoginModal={showLoginModal} currentStep={currentStep} setCurrentStep={setCurrentStep} onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
-                 <Route path="/auth/callback" element={<OAuthCallback />} />
-                 <Route path="/file-upload" element={<FileUploadPage />} />
-                 <Route path="/question" element={<QuestionPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
-                 <Route path="/result" element={<ResultPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
-                 <Route path="/privacy" element={<PrivacyPage />} />
-               </Routes>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/job-info" element={<JobInfoInputPage onShowLoginModal={handleShowLoginModal} onCloseLoginModal={handleCloseLoginModal} showLoginModal={showLoginModal} currentStep={currentStep} setCurrentStep={setCurrentStep} onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
+          <Route path="/auth/callback" element={<OAuthCallback />} />
+          <Route path="/file-upload" element={<FileUploadPage />} />
+          <Route path="/question" element={<QuestionPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
+          <Route path="/result" element={<ResultPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+        </Routes>
       </div>
       
       {/* 개발자 도구 (개발 환경에서만 표시) */}
