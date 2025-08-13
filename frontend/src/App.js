@@ -7,6 +7,7 @@ import JobInfoInputPage from './pages/JobInfoInputPage';
 import FileUploadPage from './pages/FileUploadPage';
 import QuestionPage from './pages/QuestionPage';
 import ResultPage from './pages/ResultPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 // Components
 import DevTools from './components/DevTools';
@@ -171,6 +172,7 @@ function AppContent() {
                  <Route path="/file-upload" element={<FileUploadPage />} />
                  <Route path="/question" element={<QuestionPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
                  <Route path="/result" element={<ResultPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
+                 <Route path="/privacy" element={<PrivacyPage />} />
                </Routes>
       </div>
       
