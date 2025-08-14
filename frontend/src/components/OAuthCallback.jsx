@@ -1,19 +1,35 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     console.log('OAuth 콜백 페이지 로드됨');
     let cleanedUp = false;
     let navigated = false;
 
-    const goHome = () => {
+    // next 파라미터 확인
+    const nextPath = localStorage.getItem('auth_redirect_path') || searchParams.get('next') || '/';
+    console.log('OAuthCallback - localStorage의 auth_redirect_path:', localStorage.getItem('auth_redirect_path'));
+    console.log('OAuthCallback - URL의 next 파라미터:', searchParams.get('next'));
+    console.log('OAuthCallback - 최종 이동할 경로:', nextPath);
+    console.log('OAuthCallback - 전체 URL:', window.location.href);
+
+    const goToNext = () => {
       if (!navigated) {
         navigated = true;
-        navigate('/', { replace: true });
+        console.log('OAuthCallback - 이동할 경로:', nextPath);
+        
+        // localStorage에서 next 경로를 사용했다면 제거
+        if (localStorage.getItem('auth_redirect_path')) {
+          localStorage.removeItem('auth_redirect_path');
+          console.log('OAuthCallback - localStorage에서 auth_redirect_path 제거됨');
+        }
+        
+        navigate(nextPath, { replace: true });
       }
     };
 
@@ -22,7 +38,7 @@ const OAuthCallback = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session && !cleanedUp) {
-          goHome();
+          goToNext();
         }
       } catch (_) {}
     })();
@@ -30,7 +46,7 @@ const OAuthCallback = () => {
     // 2) auth 상태 변화를 구독하여 SIGNED_IN 시점에 이동 (Edge 대응)
     const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' && !cleanedUp) {
-        goHome();
+        goToNext();
       }
     });
 
@@ -39,14 +55,14 @@ const OAuthCallback = () => {
     const interval = setInterval(async () => {
       if (cleanedUp || navigated) return;
       if (Date.now() - startedAt > 5000) {
-        // 타임아웃: 홈으로 보내 UI가 멈추지 않도록 함
-        goHome();
+        // 타임아웃: next 페이지로 보내 UI가 멈추지 않도록 함
+        goToNext();
         return;
       }
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          goHome();
+          goToNext();
         }
       } catch (_) {}
     }, 300);
@@ -56,7 +72,7 @@ const OAuthCallback = () => {
       clearInterval(interval);
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   // 로그인 모달과 어울리는 가벼운 오버레이 스피너만 표시
   return (

@@ -68,7 +68,12 @@ class AIService(LoggerMixin):
 
         # 질문 유형별 가이드라인과 대표 질문 벡터를 미리 계산
         self.QUESTION_GUIDELINES, self.guideline_vectors = self._precompute_guidelines_and_vectors()
-        self.logger.info("질문 유형별 가이드라인 및 벡터 계산 완료.")
+        
+        if self.embedding_disabled:
+            self.logger.info("질문 유형별 가이드라인 계산 완료 (벡터 계산 생략 - 분류 기능 비활성화).")
+        else:
+            self.logger.info(f"질문 유형별 가이드라인 및 벡터 계산 완료 ({len(self.guideline_vectors)}개 유형).")
+        
         self.logger.info("AI 서비스 초기화 완료.")
 
     def _precompute_guidelines_and_vectors(self) -> Tuple[Dict, Dict]:
@@ -178,6 +183,9 @@ class AIService(LoggerMixin):
                     except Exception:
                         pass
                     vectors[type_name] = v
+            self.logger.info(f"임베딩 벡터 계산 완료 ({len(vectors)}개 유형).")
+        else:
+            self.logger.info("임베딩 벡터 계산 생략 (분류 기능 비활성화).")
         
         return guidelines, vectors
 

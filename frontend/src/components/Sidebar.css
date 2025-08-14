@@ -1,10 +1,11 @@
 /* 사이드바 컨테이너 */
 .sidebar {
   position: fixed;
-  top: 80px; /* 헤더 높이만큼 아래로 이동 */
+  top: 60px; /* 헤더 높이만큼 아래로 이동 */
   right: 0;
   width: 280px;
-  height: calc(100vh - 80px); /* 헤더 높이만큼 높이 감소 */
+  min-width: 280px; /* 최소 너비 설정 - 더 줄일 수 없음 */
+  height: calc(100vh - 60px); /* 헤더 높이만큼 높이 감소 */
   background: white;
   border-left: 1px solid #e5e7eb;
   display: flex;
@@ -13,6 +14,7 @@
   transform: translateX(100%);
   transition: transform 0.3s ease;
   overflow: hidden;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08); /* 왼쪽 그림자 추가 */
 }
 
 .sidebar.open {
@@ -28,6 +30,7 @@
   height: 100%;
   cursor: col-resize;
   background: transparent;
+  transition: background-color 0.2s ease;
 }
 
 .sidebar-resizer:hover {
@@ -36,6 +39,12 @@
 
 .sidebar.resizing .sidebar-resizer {
   background: rgba(59, 130, 246, 0.18);
+}
+
+/* 최소 너비 도달 시 리사이저 비활성화 표시 */
+.sidebar.resizing.min-width-reached .sidebar-resizer {
+  background: rgba(156, 163, 175, 0.3);
+  cursor: not-allowed;
 }
 
 /* 사이드바 토글 버튼 - 헤더로 이동됨 */

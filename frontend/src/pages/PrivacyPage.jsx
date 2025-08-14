@@ -1,27 +1,14 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navigation from '../components/Navigation';
 
 const PrivacyPage = () => {
-	const navigate = useNavigate();
-
-	const handleGoBack = () => {
-		navigate(-1); // 이전 페이지로 이동
-	};
-
 	return (
 		<div className="privacy-page" style={{ 
 			maxWidth: 900, 
 			margin: '0 auto', 
 			padding: '24px',
-			paddingTop: '120px', /* Navigation 공간 확보 */
-			position: 'relative' /* Navigation의 기준점 설정 */
+			paddingTop: '80px', /* 헤더 높이 60px + 여백 20px */
+			position: 'relative'
 		}}>
-			{/* Navigation */}
-			<Navigation 
-				canGoBack={true}
-				onGoBack={handleGoBack}
-			/>
 			
 			<h1>Privacy Policy for 써줌</h1>
 			<p><strong>Privacy Policy</strong><br />
@@ -31,7 +18,7 @@ const PrivacyPage = () => {
 				This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 			</p>
 			<p>
-				We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy. This Privacy Policy has been created with the help of the Free Privacy Policy Generator.
+				We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy.
 			</p>
 
 			<h2>Interpretation and Definitions</h2>

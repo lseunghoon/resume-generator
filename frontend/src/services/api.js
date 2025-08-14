@@ -266,3 +266,100 @@ export const deleteSession = async (sessionId) => {
 
 // Mock API 모드 제어 함수들
 export { enableMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
+
+// Google OAuth 세션 확인
+export const checkGoogleSession = () => {
+  return new Promise((resolve) => {
+    // Google Identity Services가 로드되었는지 확인
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        // 현재 토큰이 있는지 확인
+        const token = localStorage.getItem('google_access_token');
+        if (token) {
+          // 토큰 유효성 검증 (간단한 검증)
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } catch (error) {
+        console.log('Google 세션 확인 중 오류:', error);
+        resolve(false);
+      }
+    } else {
+      resolve(false);
+    }
+  });
+};
+
+// 자동 Google 로그인 처리
+export const handleAutoGoogleSignIn = async () => {
+  try {
+    // Google Identity Services 초기화
+    if (!window.google || !window.google.accounts) {
+      throw new Error('Google Identity Services not loaded');
+    }
+
+    // Google OAuth 클라이언트 초기화
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      scope: 'openid profile email',
+      callback: async (tokenResponse) => {
+        if (tokenResponse.access_token) {
+          try {
+            // 액세스 토큰을 localStorage에 저장
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            
+            // 사용자 정보 가져오기
+            const userInfo = await fetchGoogleUserInfo(tokenResponse.access_token);
+            
+            // Supabase에 로그인 처리
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                access_token: tokenResponse.access_token,
+                id_token: tokenResponse.id_token,
+              }
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            console.log('자동 Google 로그인 성공:', data);
+            return { success: true, user: userInfo };
+          } catch (error) {
+            console.error('자동 Google 로그인 실패:', error);
+            throw error;
+          }
+        }
+      },
+    });
+
+    // 토큰 요청
+    client.requestAccessToken();
+  } catch (error) {
+    console.error('자동 Google 로그인 초기화 실패:', error);
+    throw error;
+  }
+};
+
+// Google 사용자 정보 가져오기
+const fetchGoogleUserInfo = async (accessToken) => {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info');
+    }
+
+    const userInfo = await response.json();
+    return userInfo;
+  } catch (error) {
+    console.error('Google 사용자 정보 가져오기 실패:', error);
+    throw error;
+  }
+};

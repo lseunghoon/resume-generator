@@ -1,7 +1,7 @@
 .login-button {
   padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
+  background: transparent;
+  color: #000000;
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -17,18 +17,18 @@
 }
 
 .login-button:hover {
-  background: #2563eb;
+  background: transparent;
   transform: scale(1.05);
 }
 
 .login-button:active {
-  background: #1d4ed8;
+  background: transparent;
   transform: scale(0.98);
 }
 
 .login-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: none;
 }
 
 /* 모바일 반응형 */

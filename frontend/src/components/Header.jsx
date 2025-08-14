@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import LoginButton from './LoginButton';
 import './Header.css';
 
-const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onLogoClick }) => {
+const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onLogoClick, onLoginSuccess }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -63,9 +63,12 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     localStorage.removeItem('mockJobDataFilled');
     localStorage.removeItem('useMockApi');
     
-    // 완전한 새로고침으로 홈페이지로 이동 (모든 페이지에서 동일하게 작동)
-    console.log('로고 클릭 - 완전한 새로고침으로 홈페이지로 이동');
-    window.location.href = '/';
+    // state 정보 완전 초기화하여 홈페이지로 이동
+    console.log('로고 클릭 - state 정보 초기화하여 홈페이지로 이동');
+    navigate('/', { replace: true, state: undefined });
+    
+    // 강제로 스크롤을 최상단으로 이동
+    window.scrollTo(0, 0);
   };
 
   const handleLogoutClick = () => {
@@ -73,19 +76,51 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     onLogout();
   };
 
+  const handleLoginSuccess = () => {
+    // 로그인 성공 시 사용자 상태를 업데이트하는 로직을 여기에 추가
+    // 예: 사용자 정보를 다시 가져오거나, 로그인 상태를 확인하는 함수를 호출
+    console.log('로그인 성공!');
+    // 사용자 상태 업데이트 로직
+    if (onLoginSuccess) {
+      onLoginSuccess();
+    }
+  };
+
+  const handleMenuClick = (sectionId) => {
+    // 현재 페이지가 랜딩페이지가 아닌 경우 홈페이지로 이동
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } });
+    } else {
+      // 랜딩페이지에서는 바로 스크롤
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
-        <div 
-          className="logo-section" 
-          onClick={handleLogoClick}
-          style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-        >
-          <img 
-            src="/assets/logo_sseojum.svg" 
-            alt="서줌 로고" 
-            className="logo-image"
-          />
+        <div className="header-left-section">
+          <div 
+            className="logo-section" 
+            onClick={handleLogoClick}
+            style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+          >
+            <img 
+              src="/assets/logo_sseojum.svg" 
+              alt="서줌 로고" 
+              className="logo-image"
+            />
+          </div>
+          
+          {/* 헤더 메뉴들 - 로고 오른쪽 (모든 페이지에서 표시) */}
+          <div className="header-menu-section">
+            <button className="header-menu-btn" onClick={() => handleMenuClick('service-intro')}>서비스 소개</button>
+            <button className="header-menu-btn" onClick={() => handleMenuClick('how-to-use')}>사용 방법</button>
+            <button className="header-menu-btn" onClick={() => handleMenuClick('feedback')}>피드백</button>
+          </div>
         </div>
         
         <div className="header-right-section">
@@ -137,8 +172,10 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
               </div>
             </>
           ) : (
-            // 로그인 안된 사용자: 로그인 버튼
-            <LoginButton />
+            // 로그인 안된 사용자: 로그인 페이지가 아닐 때만 로그인 버튼 표시
+            location.pathname !== '/login' && (
+              <LoginButton onLoginSuccess={handleLoginSuccess} />
+            )
           )}
         </div>
       </div>
