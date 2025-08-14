@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import LoginButton from './LoginButton';
 import './Header.css';
 
 const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onLogoClick }) => {
@@ -51,8 +52,6 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-
-
   const handleLogoClick = () => {
     console.log('로고 클릭됨!');
     console.log('현재 경로:', location.pathname);
@@ -89,53 +88,59 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
           />
         </div>
         
-        {user && (
-          <div className="header-right-section">
-            {/* 사이드바 토글 버튼 */}
-            <button className="header-sidebar-toggle-btn" onClick={onSidebarToggle}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            
-            {/* 프로필 섹션 */}
-            <div className="profile-section" ref={dropdownRef}>
-              <div 
-                className="profile-icon"
-                onClick={handleProfileClick}
-              >
-                {user.picture ? (
-                  <img 
-                    src={user.picture} 
-                    alt="프로필" 
-                    className="profile-image"
-                  />
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
-                    <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
-                  </svg>
+        <div className="header-right-section">
+          {user ? (
+            // 로그인된 사용자: 사이드바 토글 버튼과 프로필 섹션
+            <>
+              {/* 사이드바 토글 버튼 */}
+              <button className="header-sidebar-toggle-btn" onClick={onSidebarToggle}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              
+              {/* 프로필 섹션 */}
+              <div className="profile-section" ref={dropdownRef}>
+                <div 
+                  className="profile-icon"
+                  onClick={handleProfileClick}
+                >
+                  {user.picture ? (
+                    <img 
+                      src={user.picture} 
+                      alt="프로필" 
+                      className="profile-image"
+                    />
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
+                      <path d="M20 21C20 16.5817 16.4183 13 12 13C13 7.58172 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
+                    </svg>
+                  )}
+                </div>
+                
+                {isDropdownOpen && (
+                  <div className="dropdown-menu">
+                    <div 
+                      className="dropdown-item"
+                      onClick={handleLogoutClick}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      로그아웃
+                    </div>
+                  </div>
                 )}
               </div>
-              
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  <div 
-                    className="dropdown-item"
-                    onClick={handleLogoutClick}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    로그아웃
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+            </>
+          ) : (
+            // 로그인 안된 사용자: 로그인 버튼
+            <LoginButton />
+          )}
+        </div>
       </div>
       {location.pathname !== '/' && (
         <div 
