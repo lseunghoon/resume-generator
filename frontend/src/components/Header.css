@@ -116,7 +116,7 @@
 }
 
 .header-sidebar-toggle-btn:hover {
-  background: #f3f4f6;
+  background: transparent !important;
   color: #374151;
   transform: scale(1.05);
 }
@@ -141,12 +141,12 @@
 }
 
 .header-menu-btn:hover {
-  background: transparent;
+  background: transparent !important;
   transform: scale(1.05);
 }
 
 .header-menu-btn:active {
-  background: transparent;
+  background: transparent !important;
   transform: scale(0.98);
 }
 

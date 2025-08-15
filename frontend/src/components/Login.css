@@ -99,15 +99,19 @@
 }
 
 /* 로그인 버튼 로딩 스피너 */
-.login-btn-spinner {
+.login-spinner {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.spinner {
   width: 16px;
   height: 16px;
   border: 2px solid #e1e5e9;
   border-top: 2px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-right: 8px;
-  display: inline-block;
 }
 
 @keyframes spin {

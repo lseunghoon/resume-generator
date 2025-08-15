@@ -11,10 +11,28 @@ const OAuthCallback = () => {
     let cleanedUp = false;
     let navigated = false;
 
-    // next 파라미터 확인
-    const nextPath = localStorage.getItem('auth_redirect_path') || searchParams.get('next') || '/';
-    console.log('OAuthCallback - localStorage의 auth_redirect_path:', localStorage.getItem('auth_redirect_path'));
-    console.log('OAuthCallback - URL의 next 파라미터:', searchParams.get('next'));
+    // next 파라미터 확인 및 정규화
+    const rawLocal = localStorage.getItem('auth_redirect_path');
+    const rawQuery = searchParams.get('next');
+    const normalizeNext = (value) => {
+      let v = value || '/';
+      try {
+        if (v.startsWith('/login')) {
+          const url = new URL(v, window.location.origin);
+          v = url.searchParams.get('next') || '/';
+        }
+      } catch (_) {}
+      // 화이트리스트 체크
+      const allowed = ['/', '/job-info', '/file-upload', '/question', '/result'];
+      if (!allowed.some((p) => v.startsWith(p))) {
+        v = '/';
+      }
+      return v;
+    };
+
+    const nextPath = normalizeNext(rawLocal || rawQuery || '/');
+    console.log('OAuthCallback - localStorage의 auth_redirect_path:', rawLocal);
+    console.log('OAuthCallback - URL의 next 파라미터:', rawQuery);
     console.log('OAuthCallback - 최종 이동할 경로:', nextPath);
     console.log('OAuthCallback - 전체 URL:', window.location.href);
 
@@ -24,7 +42,7 @@ const OAuthCallback = () => {
         console.log('OAuthCallback - 이동할 경로:', nextPath);
         
         // localStorage에서 next 경로를 사용했다면 제거
-        if (localStorage.getItem('auth_redirect_path')) {
+        if (rawLocal) {
           localStorage.removeItem('auth_redirect_path');
           console.log('OAuthCallback - localStorage에서 auth_redirect_path 제거됨');
         }

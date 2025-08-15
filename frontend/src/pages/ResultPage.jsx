@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Navigation from '../components/Navigation';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
 import { extractSessionIdFromUrl } from '../utils/sessionUtils';
+import { supabase } from '../services/supabaseClient';
 import './ResultPage.css';
 
 function ResultPage({ onSidebarRefresh }) {
@@ -28,6 +29,20 @@ function ResultPage({ onSidebarRefresh }) {
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
+
+    // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
+    useEffect(() => {
+        const checkAuthAndRedirect = async () => {
+            const { data, error } = await supabase.auth.getSession();
+            if (error || !data?.session) {
+                try {
+                    localStorage.setItem('auth_redirect_path', '/result');
+                } catch (_) {}
+                navigate('/login?next=/result', { replace: true });
+            }
+        };
+        checkAuthAndRedirect();
+    }, [navigate]);
 
     // 세션 삭제 함수
     const handleDeleteSession = async () => {
@@ -113,12 +128,38 @@ function ResultPage({ onSidebarRefresh }) {
             // 항상 최신 데이터를 가져오기 위해 API 호출
             fetchCoverLetter(currentSessionId);
         } else {
-            // 세션 ID가 없거나 유효하지 않으면 홈으로 이동
-            console.log('ResultPage - No valid sessionId found, redirecting to home');
-            setError('유효하지 않은 세션입니다. 다시 시작해주세요.');
-            setIsLoading(false);
+            // 세션 ID가 없으면 사용자의 가장 최근 세션을 가져와서 리다이렉트
+            console.log('ResultPage - No sessionId found, fetching user sessions...');
+            fetchLatestSession();
         }
     }, [location.state, location.search, location.pathname, navigate]);
+
+    // 사용자의 가장 최근 세션을 가져와서 리다이렉트하는 함수
+    const fetchLatestSession = useCallback(async () => {
+        try {
+            const { getUserSessions } = await import('../services/api');
+            const response = await getUserSessions();
+            
+            if (response && response.sessions && response.sessions.length > 0) {
+                // 가장 최근 세션 선택 (created_at 기준)
+                const latestSession = response.sessions[0];
+                console.log('ResultPage - Latest session found:', latestSession);
+                
+                // 해당 세션의 결과 페이지로 리다이렉트
+                const sessionUrl = `/result?session=${latestSession.id}`;
+                navigate(sessionUrl, { replace: true });
+            } else {
+                // 세션이 없으면 홈으로 이동
+                console.log('ResultPage - No user sessions found, redirecting to home');
+                setError('자기소개서 세션이 없습니다. 새로운 자기소개서를 작성해주세요.');
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error('ResultPage - Error fetching user sessions:', error);
+            setError('세션 정보를 가져오는데 실패했습니다. 다시 시도해주세요.');
+            setIsLoading(false);
+        }
+    }, [navigate]);
 
     const fetchCoverLetter = async (currentSessionId) => {
         if (!currentSessionId) {

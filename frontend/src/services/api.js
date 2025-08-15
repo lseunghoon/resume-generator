@@ -16,9 +16,40 @@ const fetchWithAuth = async (url, options = {}) => {
     console.log('세션이 없거나 오류가 발생했습니다:', error);
     try {
       const currentPath = window.location.pathname + window.location.search;
-      localStorage.setItem('auth_redirect_path', currentPath);
-    } catch (_) {}
-    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      const existing = localStorage.getItem('auth_redirect_path');
+
+      const extractNext = (pathWithQuery) => {
+        try {
+          const url = new URL(pathWithQuery, window.location.origin);
+          return url.searchParams.get('next') || url.pathname;
+        } catch (_) {
+          return pathWithQuery;
+        }
+      };
+
+      let intended = currentPath;
+
+      // 로그인/콜백 화면에서는 기존 intended를 보존
+      if (currentPath.startsWith('/login') || currentPath.startsWith('/auth/callback')) {
+        intended = existing || '/';
+      }
+
+      // 의도 경로가 로그인 URL 형태라면 next를 추출
+      if (intended && intended.startsWith('/login')) {
+        intended = extractNext(intended) || '/';
+      }
+
+      // 화이트리스트 이외 경로는 루트로 폴백
+      const allowedPrefixes = ['/', '/job-info', '/file-upload', '/question', '/result'];
+      if (!allowedPrefixes.some((p) => intended.startsWith(p))) {
+        intended = '/';
+      }
+
+      localStorage.setItem('auth_redirect_path', intended);
+      window.location.href = `/login?next=${encodeURIComponent(intended)}`;
+    } catch (_) {
+      window.location.href = '/login';
+    }
     throw new Error('인증되지 않았습니다.');
   }
 
