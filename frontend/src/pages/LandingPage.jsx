@@ -89,170 +89,81 @@ const LandingPage = () => {
 				{/* 서비스 소개 섹션 */}
 				<section className="service-intro-section" id="service-intro">
 					<div className="service-intro-content">
-						<h2 className="service-intro-title">서비스 소개</h2>
-						
-						<div className="service-intro-grid">
-							<div className="service-intro-item">
-								<div className="service-intro-icon">
-									<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-										<path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#0d80f2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-										<path d="M2 17L12 22L22 17" stroke="#0d80f2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-										<path d="M2 12L12 17L22 12" stroke="#0d80f2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-									</svg>
-								</div>
-								<h3>1. 써줌이 어떤 서비스인지</h3>
-								<p>AI 기반 맞춤형 자기소개서 생성 서비스입니다. 지원하고자 하는 회사와 직무에 맞춰 개인화된 자기소개서를 자동으로 작성해드립니다. 단순한 템플릿이 아닌, 실제 지원 상황에 최적화된 질문별 답변을 제공합니다.</p>
-							</div>
-
-							<div className="service-intro-item">
-								<div className="service-intro-icon">
-									<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-										<path d="M9 12L11 14L15 10" stroke="#0d80f2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-										<path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#0d80f2" strokeWidth="2"/>
-									</svg>
-								</div>
-								<h3>2. 왜 만들었는지</h3>
-								<p>취업 준비생들이 자기소개서 작성에 어려움을 겪고, 각 회사마다 다른 요구사항에 맞춰 여러 번 작성해야 하는 번거로움을 해결하고자 했습니다. 또한 AI 기술을 활용해 개인 맞춤형 콘텐츠를 제공하여 더욱 효과적인 취업 준비를 도모합니다.</p>
-							</div>
-
-							<div className="service-intro-item">
-								<div className="service-intro-icon">
-									<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-										<path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="#0d80f2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-									</svg>
-								</div>
-								<h3>3. 기대효과</h3>
-								<p>자기소개서 작성 시간을 대폭 단축하고, 각 회사와 직무에 최적화된 맞춤형 내용을 제공받을 수 있습니다. AI의 분석을 통해 더욱 설득력 있고 체계적인 자기소개서를 작성할 수 있으며, 궁극적으로는 취업 성공률 향상과 만족스러운 직장 선택을 도울 수 있습니다.</p>
+						<div className="service-intro-main">
+							<h2 className="service-intro-main-title">'써줌'이 완성하는 당신의 합격 자기소개서</h2>
+							<div className="service-intro-description">
+								<p className="service-intro-lead">
+									AI 기술의 발전으로 글쓰기는 쉬워졌지만, 합격하는 자기소개서는 다릅니다.
+								</p>
+								<p className="service-intro-detail">
+									'써줌'은 수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴,<br/>
+									오직 자기소개서만을 위한 서비스입니다.<br/>
+									전문가가 설계한 가이드라인이 각 문항의 의도를 정밀하게 파악하고,<br/>
+									지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다.
+								</p>
 							</div>
 						</div>
 
-						{/* 사용 방법 */}
-						<div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 60 }}>
+												{/* 사용 방법 - 리뉴얼 (모두싸인 구조 참고) */}
+						<div className="how-steps">
 							{/* Step 1 */}
-							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-								<div style={{ 
-									width: 40,
-									height: 66.67,
-									display: 'flex',
-									flexDirection: 'column',
-									alignItems: 'center'
-								}}>
-									<div style={{ 
-										width: 24,
-										height: 24,
-										background: '#cfdbe8',
-										borderRadius: '50%',
-										marginBottom: 8
-									}}></div>
-									<div style={{ 
-										width: 2,
-										height: 32,
-										background: '#cfdbe8'
-									}}></div>
-								</div>
-								<div style={{ flex: 1 }}>
-									<h3 style={{ 
-										fontSize: '16px',
-										fontWeight: 500,
-										marginBottom: 8,
-										color: '#0d141c'
-									}}>
-										지원 정보 입력
-									</h3>
-									<p style={{ 
-										color: '#4a739c',
-										lineHeight: 1.5,
-										fontSize: '16px'
-									}}>
-										지원하고자 하는 회사명, 직무, 주요업무, 자격요건, 우대사항을 직관적인 인터페이스에 입력하세요.
+							<div className="how-step">
+								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-text">
+									<h3 className="how-step-title">1. 채용 정보 입력</h3>
+									<p className="how-step-desc">
+										합격의 핵심인 '직무 적합성'을 위해<br/>
+										지원하는 회사의 이름, 직무, 주요 업무, 자격 요건 등을 입력해 주세요.<br/>
+										이 정보를 바탕으로 자기소개서의 방향이 설정됩니다.
 									</p>
 								</div>
 							</div>
 
 							{/* Step 2 */}
-							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-								<div style={{ 
-									width: 40,
-									height: 66.67,
-									display: 'flex',
-									flexDirection: 'column',
-									alignItems: 'center'
-								}}>
-									<div style={{ 
-										width: 2,
-										height: 8,
-										background: '#cfdbe8',
-										marginBottom: 8
-									}}></div>
-									<div style={{ 
-										width: 24,
-										height: 24,
-										background: '#cfdbe8',
-										borderRadius: '50%',
-										marginBottom: 8
-									}}></div>
-									<div style={{ 
-										width: 2,
-										height: 32,
-										background: '#cfdbe8'
-									}}></div>
-								</div>
-								<div style={{ flex: 1 }}>
-									<h3 style={{ 
-										fontSize: '16px',
-										fontWeight: 500,
-										marginBottom: 8,
-										color: '#0d141c'
-									}}>
-										이력서 업로드
-									</h3>
-									<p style={{ 
-										color: '#4a739c',
-										lineHeight: 1.5,
-										fontSize: '16px'
-									}}>
-										PDF 또는 DOCX 형식의 이력서를 업로드하면 AI가 자동으로 텍스트를 추출하고 분석합니다.
+							<div className="how-step">
+								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-text">
+									<h3 className="how-step-title">2. 기존 문서 업로드</h3>
+									<p className="how-step-desc">
+										나만의 경험과 역량이 담긴 문서를 업로드해 주세요.<br/>
+										(이력서, 경력기술서, 포트폴리오 등)<br/>
+										문서에서 채용 정보와 맞닿은 연결고리를 찾아냅니다.
 									</p>
 								</div>
 							</div>
 
 							{/* Step 3 */}
-							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-								<div style={{ 
-									width: 40,
-									height: 66.67,
-									display: 'flex',
-									flexDirection: 'column',
-									alignItems: 'center'
-								}}>
-									<div style={{ 
-										width: 2,
-										height: 8,
-										background: '#cfdbe8',
-										marginBottom: 8
-									}}></div>
-									<div style={{ 
-										width: 24,
-										height: 24,
-										background: '#cfdbe8',
-										borderRadius: '50%'
-									}}></div>
+							<div className="how-step">
+								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-text">
+									<h3 className="how-step-title">3. 문항 입력</h3>
+									<p className="how-step-desc">
+										작성해야 할 자기소개서 문항을 입력해 주세요.<br/>
+										문항의 숨은 의도를 정확히 파악합니다.
+									</p>
 								</div>
-								<div style={{ flex: 1 }}>
-									<h3 style={{ 
-										fontSize: '16px',
-										fontWeight: 500,
-										marginBottom: 8,
-										color: '#0d141c'
-									}}>
-										AI 자기소개서 생성
-									</h3>
-									<p style={{ 
-										color: '#4a739c',
-										lineHeight: 1.5,
-										fontSize: '16px'
-									}}>
-										입력한 정보와 이력서를 바탕으로 AI가 맞춤형 자기소개서를 생성합니다. 질문별로 개별 답변을 제공합니다.
+							</div>
+
+							{/* Step 4 */}
+							<div className="how-step">
+								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-text">
+									<h3 className="how-step-title">4. 자기소개서 작성</h3>
+									<p className="how-step-desc">
+										입력된 모든 정보를 종합하여, 지원하는 직무에 꼭 맞는<br/>
+										자기소개서 초안이 완성됩니다.
+									</p>
+								</div>
+							</div>
+
+							{/* Step 5 */}
+							<div className="how-step">
+								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-text">
+									<h3 className="how-step-title">5. 수정 및 완성</h3>
+									<p className="how-step-desc">
+										'써줌'이 작성한 초안을 바탕으로 나만의 스토리를 더해<br/>
+										자기소개서를 완성해 보세요.
 									</p>
 								</div>
 							</div>
