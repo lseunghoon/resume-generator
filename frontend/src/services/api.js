@@ -13,9 +13,12 @@ const fetchWithAuth = async (url, options = {}) => {
   const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error || !session) {
-    // 세션이 없거나 오류 발생 시 로그인 페이지로 리다이렉트 또는 에러 처리
     console.log('세션이 없거나 오류가 발생했습니다:', error);
-    window.location.href = '/';
+    try {
+      const currentPath = window.location.pathname + window.location.search;
+      localStorage.setItem('auth_redirect_path', currentPath);
+    } catch (_) {}
+    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     throw new Error('인증되지 않았습니다.');
   }
 

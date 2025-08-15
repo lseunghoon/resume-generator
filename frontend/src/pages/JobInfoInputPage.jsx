@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
-import LoginModal from '../components/LoginModal';
 import { supabase } from '../services/supabaseClient';
 import './JobInfoInputPage.css';
 
@@ -66,7 +65,7 @@ e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고
   { id: 'preferredQualifications', title: '우대사항을 입력해 주세요', placeholder: '예시) 영어 가능자, 일본어 가능자' }
 ];
 
-const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal, currentStep, setCurrentStep }) => {
+const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     jobTitle: '',
@@ -91,17 +90,19 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
     preferredQualifications: useRef(null)
   };
 
-  // 인증 상태 확인
+  // 인증 상태 확인: 비로그인 시 로그인 페이지로 리다이렉트
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndRedirect = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        // 로그인되지 않은 경우 모달 표시
-        onShowLoginModal();
+      if (error || !data?.session) {
+        try {
+          localStorage.setItem('auth_redirect_path', '/job-info');
+        } catch (_) {}
+        navigate('/login?next=/job-info', { replace: true });
       }
     };
-    checkAuth();
-  }, [onShowLoginModal]);
+    checkAuthAndRedirect();
+  }, [navigate]);
 
   // currentStep이 변경될 때마다 App.js의 currentStep 업데이트
   useEffect(() => {
@@ -110,18 +111,7 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
     }
   }, [currentStep, setCurrentStep]);
 
-  // 모달이 열려있을 때 배경 클릭 방지
-  useEffect(() => {
-    if (showLoginModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showLoginModal]);
+  // 로그인 모달 제거에 따라 body overflow 제어 로직 삭제
 
   // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
@@ -348,7 +338,7 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
   };
 
   return (
-    <div className={`job-info-input-page ${showLoginModal ? 'modal-open' : ''}`}>
+    <div className={`job-info-input-page`}>
       <div className="page-content">
         <Navigation 
           canGoBack={currentStep > 0}
@@ -396,11 +386,6 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
           다음
         </button>
       </div>
-
-              {/* 로그인 모달 */}
-        {showLoginModal && (
-          <LoginModal onClose={onCloseLoginModal} />
-        )}
     </div>
   );
 };

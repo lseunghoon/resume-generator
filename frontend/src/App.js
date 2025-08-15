@@ -16,7 +16,6 @@ import DevTools from './components/DevTools';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import OAuthCallback from './components/OAuthCallback';
-import LoginModal from './components/LoginModal';
 
 // API
 import { getCurrentUser } from './services/api';
@@ -25,7 +24,6 @@ import { supabase } from './services/supabaseClient';
 function AppContent() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState(0);
@@ -104,20 +102,13 @@ function AppContent() {
     }
     
     setUser(null);
-    setShowLoginModal(false); // 모달 상태 초기화
     setSidebarOpen(false); // 사이드바 닫기
     
     // 로그아웃 후 홈페이지로 이동 (새로고침 없이)
     navigate('/', { replace: true });
   };
 
-  const handleShowLoginModal = () => {
-    setShowLoginModal(true);
-  };
-
-  const handleCloseLoginModal = () => {
-    setShowLoginModal(false);
-  };
+  // 로그인 모달 제거로 인한 관련 핸들러 삭제
 
   const handleSidebarToggle = () => {
     console.log('토글 버튼 클릭됨, 현재 상태:', sidebarOpen);
@@ -140,7 +131,7 @@ function AppContent() {
   // 루트는 공개 랜딩 페이지로, 로그인은 /login 경로에서만 처리
 
   return (
-    <div className={`App ${showLoginModal ? 'modal-open' : ''}`}>
+    <div className={`App`}>
       <Header 
         user={user} 
         onLogout={handleLogout} 
@@ -166,7 +157,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/job-info" element={<JobInfoInputPage onShowLoginModal={handleShowLoginModal} onCloseLoginModal={handleCloseLoginModal} showLoginModal={showLoginModal} currentStep={currentStep} setCurrentStep={setCurrentStep} onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
+          <Route path="/job-info" element={<JobInfoInputPage currentStep={currentStep} setCurrentStep={setCurrentStep} onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/file-upload" element={<FileUploadPage />} />
           <Route path="/question" element={<QuestionPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
