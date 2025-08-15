@@ -27,4 +27,4 @@ COPY . .
 # Gunicorn 프로덕션 서버를 실행합니다.
 # Fly.io가 동적으로 주는 $PORT를 사용하고, 없으면 8080을 사용합니다.
 # 워커/스레드/타임아웃 설정을 통해 안정성을 높입니다.
-CMD ["bash", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 4 --timeout 120 app:app"]
+CMD ["bash", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 1 --timeout 120 app:app"]

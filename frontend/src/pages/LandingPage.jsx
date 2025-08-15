@@ -125,139 +125,136 @@ const LandingPage = () => {
 								<p>자기소개서 작성 시간을 대폭 단축하고, 각 회사와 직무에 최적화된 맞춤형 내용을 제공받을 수 있습니다. AI의 분석을 통해 더욱 설득력 있고 체계적인 자기소개서를 작성할 수 있으며, 궁극적으로는 취업 성공률 향상과 만족스러운 직장 선택을 도울 수 있습니다.</p>
 							</div>
 						</div>
-					</div>
-				</section>
 
-				{/* 사용 방법 Section */}
-				<section className="how-section" id="how-to-use">
-					<h2 className="how-title">사용 방법</h2>
-					<div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-						{/* Step 1 */}
-						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-							<div style={{ 
-								width: 40,
-								height: 66.67,
-								display: 'flex',
-								flexDirection: 'column',
-								alignItems: 'center'
-							}}>
+						{/* 사용 방법 */}
+						<div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 60 }}>
+							{/* Step 1 */}
+							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
 								<div style={{ 
-									width: 24,
-									height: 24,
-									background: '#cfdbe8',
-									borderRadius: '50%',
-									marginBottom: 8
-								}}></div>
-								<div style={{ 
-									width: 2,
-									height: 32,
-									background: '#cfdbe8'
-								}}></div>
-							</div>
-							<div style={{ flex: 1 }}>
-								<h3 style={{ 
-									fontSize: '16px',
-									fontWeight: 500,
-									marginBottom: 8,
-									color: '#0d141c'
+									width: 40,
+									height: 66.67,
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center'
 								}}>
-									지원 정보 입력
-								</h3>
-								<p style={{ 
-									color: '#4a739c',
-									lineHeight: 1.5,
-									fontSize: '16px'
-								}}>
-									지원하고자 하는 회사명, 직무, 주요업무, 자격요건, 우대사항을 직관적인 인터페이스에 입력하세요.
-								</p>
+									<div style={{ 
+										width: 24,
+										height: 24,
+										background: '#cfdbe8',
+										borderRadius: '50%',
+										marginBottom: 8
+									}}></div>
+									<div style={{ 
+										width: 2,
+										height: 32,
+										background: '#cfdbe8'
+									}}></div>
+								</div>
+								<div style={{ flex: 1 }}>
+									<h3 style={{ 
+										fontSize: '16px',
+										fontWeight: 500,
+										marginBottom: 8,
+										color: '#0d141c'
+									}}>
+										지원 정보 입력
+									</h3>
+									<p style={{ 
+										color: '#4a739c',
+										lineHeight: 1.5,
+										fontSize: '16px'
+									}}>
+										지원하고자 하는 회사명, 직무, 주요업무, 자격요건, 우대사항을 직관적인 인터페이스에 입력하세요.
+									</p>
+								</div>
 							</div>
-						</div>
 
-						{/* Step 2 */}
-						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-							<div style={{ 
-								width: 40,
-								height: 66.67,
-								display: 'flex',
-								flexDirection: 'column',
-								alignItems: 'center'
-							}}>
+							{/* Step 2 */}
+							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
 								<div style={{ 
-									width: 2,
-									height: 8,
-									background: '#cfdbe8',
-									marginBottom: 8
-								}}></div>
-								<div style={{ 
-									width: 24,
-									height: 24,
-									background: '#cfdbe8',
-									borderRadius: '50%',
-									marginBottom: 8
-								}}></div>
-								<div style={{ 
-									width: 2,
-									height: 32,
-									background: '#cfdbe8'
-								}}></div>
-							</div>
-							<div style={{ flex: 1 }}>
-								<h3 style={{ 
-									fontSize: '16px',
-									fontWeight: 500,
-									marginBottom: 8,
-									color: '#0d141c'
+									width: 40,
+									height: 66.67,
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center'
 								}}>
-									이력서 업로드
-								</h3>
-								<p style={{ 
-									color: '#4a739c',
-									lineHeight: 1.5,
-									fontSize: '16px'
-								}}>
-									PDF 또는 DOCX 형식의 이력서를 업로드하면 AI가 자동으로 텍스트를 추출하고 분석합니다.
-								</p>
+									<div style={{ 
+										width: 2,
+										height: 8,
+										background: '#cfdbe8',
+										marginBottom: 8
+									}}></div>
+									<div style={{ 
+										width: 24,
+										height: 24,
+										background: '#cfdbe8',
+										borderRadius: '50%',
+										marginBottom: 8
+									}}></div>
+									<div style={{ 
+										width: 2,
+										height: 32,
+										background: '#cfdbe8'
+									}}></div>
+								</div>
+								<div style={{ flex: 1 }}>
+									<h3 style={{ 
+										fontSize: '16px',
+										fontWeight: 500,
+										marginBottom: 8,
+										color: '#0d141c'
+									}}>
+										이력서 업로드
+									</h3>
+									<p style={{ 
+										color: '#4a739c',
+										lineHeight: 1.5,
+										fontSize: '16px'
+									}}>
+										PDF 또는 DOCX 형식의 이력서를 업로드하면 AI가 자동으로 텍스트를 추출하고 분석합니다.
+									</p>
+								</div>
 							</div>
-						</div>
 
-						{/* Step 3 */}
-						<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-							<div style={{ 
-								width: 40,
-								height: 66.67,
-								display: 'flex',
-								flexDirection: 'column',
-								alignItems: 'center'
-							}}>
+							{/* Step 3 */}
+							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
 								<div style={{ 
-									width: 2,
-									height: 8,
-									background: '#cfdbe8',
-									marginBottom: 8
-								}}></div>
-								<div style={{ 
-									width: 24,
-									height: 24,
-									background: '#cfdbe8',
-									borderRadius: '50%'
-								}}></div>
-							</div>
-							<div style={{ flex: 1 }}>
-								<h3 style={{ 
-									fontSize: '16px',
-									fontWeight: 500,
-									marginBottom: 8,
-									color: '#0d141c'
+									width: 40,
+									height: 66.67,
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center'
 								}}>
-									AI 자기소개서 생성
-								</h3>
-								<p style={{ 
-									color: '#4a739c',
-									lineHeight: 1.5,
-									fontSize: '16px'
-								}}>
-									입력한 정보와 이력서를 바탕으로 AI가 맞춤형 자기소개서를 생성합니다. 질문별로 개별 답변을 제공합니다.
-								</p>
+									<div style={{ 
+										width: 2,
+										height: 8,
+										background: '#cfdbe8',
+										marginBottom: 8
+									}}></div>
+									<div style={{ 
+										width: 24,
+										height: 24,
+										background: '#cfdbe8',
+										borderRadius: '50%'
+									}}></div>
+								</div>
+								<div style={{ flex: 1 }}>
+									<h3 style={{ 
+										fontSize: '16px',
+										fontWeight: 500,
+										marginBottom: 8,
+										color: '#0d141c'
+									}}>
+										AI 자기소개서 생성
+									</h3>
+									<p style={{ 
+										color: '#4a739c',
+										lineHeight: 1.5,
+										fontSize: '16px'
+									}}>
+										입력한 정보와 이력서를 바탕으로 AI가 맞춤형 자기소개서를 생성합니다. 질문별로 개별 답변을 제공합니다.
+									</p>
+								</div>
 							</div>
 						</div>
 					</div>

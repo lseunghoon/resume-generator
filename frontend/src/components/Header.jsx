@@ -118,7 +118,6 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
           {/* 헤더 메뉴들 - 로고 오른쪽 (모든 페이지에서 표시) */}
           <div className="header-menu-section">
             <button className="header-menu-btn" onClick={() => handleMenuClick('service-intro')}>서비스 소개</button>
-            <button className="header-menu-btn" onClick={() => handleMenuClick('how-to-use')}>사용 방법</button>
             <button className="header-menu-btn" onClick={() => handleMenuClick('feedback')}>피드백</button>
           </div>
         </div>
