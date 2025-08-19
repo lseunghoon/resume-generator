@@ -64,14 +64,21 @@ const LandingPage = () => {
 
 	const handleStart = async () => {
 		try {
+			// 새로 시작하기 전에 관련 데이터 모두 클리어
+			console.log('LandingPage - 새로 시작하기, 모든 데이터 클리어');
+			localStorage.removeItem('resultPageActiveTab');
+			localStorage.removeItem('pendingSessionDelete');
+			localStorage.removeItem('mockJobDataFilled');
+			localStorage.removeItem('useMockApi');
+			
 			// 현재 세션 확인
 			const { data: { session } } = await supabase.auth.getSession();
 			console.log('LandingPage - 현재 세션 상태:', !!session);
 			
 			if (session) {
-				// 이미 로그인된 경우: 바로 job-info 페이지로 이동
+				// 이미 로그인된 경우: 바로 job-info 페이지로 이동 (state 없이 새로 시작)
 				console.log('로그인된 사용자, job-info 페이지로 이동');
-				navigate('/job-info');
+				navigate('/job-info', { replace: true, state: null });
 			} else {
 				// 로그인되지 않은 경우: 로그인 페이지로 이동하고, 로그인 완료 후 job-info로 이동
 				console.log('로그인되지 않은 사용자, 로그인 페이지로 이동');

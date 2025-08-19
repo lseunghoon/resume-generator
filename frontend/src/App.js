@@ -116,7 +116,7 @@ function AppContent() {
   };
 
   const handleLogoClick = () => {
-    console.log('App.js: 로고 클릭됨, currentStep 초기화');
+    console.log('App.js: 로고 클릭됨, currentStep 및 관련 상태 초기화');
     setCurrentStep(0); // currentStep을 0으로 초기화
   };
 

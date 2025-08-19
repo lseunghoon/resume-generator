@@ -179,11 +179,12 @@ const FileUploadPage = () => {
   };
 
   const handleGoBack = () => {
-    // 새로운 채용정보 입력 방식
-    navigate('/', { 
+    // JobInfoInputPage의 우대사항 단계(마지막 단계)로 돌아가기
+    navigate('/job-info', { 
       state: { 
         jobInfo: jobInfo,
-        fromFileUpload: true
+        fromFileUpload: true,
+        goToLastStep: true // 우대사항 단계로 이동하기 위한 플래그
       } 
     });
   };

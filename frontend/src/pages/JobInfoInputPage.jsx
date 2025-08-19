@@ -116,7 +116,22 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
   // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
     if (location.state?.jobInfo) {
-      setFormData(location.state.jobInfo);
+      // fromFileUpload가 true인 경우에만 데이터 복원 (정상적인 뒤로가기)
+      if (location.state?.fromFileUpload) {
+        setFormData(location.state.jobInfo);
+        
+        // goToLastStep이 true인 경우, 마지막 단계로 이동
+        if (location.state?.goToLastStep) {
+          setCurrentStep(STEPS.length - 1); // 우대사항 단계(마지막 단계)로 설정
+          console.log('파일업로드 페이지에서 돌아옴 - 우대사항 단계로 이동');
+        }
+      }
+      // 로고 클릭 등으로 온 경우 (fromFileUpload가 없는 경우) 데이터 복원하지 않음
+      console.log('JobInfoInputPage 진입:', {
+        hasJobInfo: !!location.state?.jobInfo,
+        fromFileUpload: location.state?.fromFileUpload,
+        goToLastStep: location.state?.goToLastStep
+      });
     } else if (localStorage.getItem('useMockApi') === 'true' && localStorage.getItem('mockJobDataFilled') === 'true') {
       // Mock API 모드이고 Mock 데이터 채우기 플래그가 설정되어 있을 때 자동으로 데이터 채우기
       setFormData(mockJobData);
@@ -244,8 +259,8 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
         }
       }, 100); // 상태 업데이트 후 포커스 이동
     } else {
-      // 첫 번째 단계에서 뒤로가기를 누르면 이전 페이지로 이동
-      navigate(-1);
+      // 첫 번째 단계에서 뒤로가기를 누르면 랜딩페이지로 이동
+      navigate('/', { replace: true });
     }
   };
 
@@ -341,7 +356,7 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
     <div className={`job-info-input-page`}>
       <div className="page-content">
         <Navigation 
-          canGoBack={currentStep > 0}
+          canGoBack={true}
           onGoBack={handlePrevious}
         />
         

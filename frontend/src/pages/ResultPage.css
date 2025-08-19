@@ -1,22 +1,28 @@
 .result-page {
-  min-height: calc(100vh - 60px); /* 헤더 높이 60px 제외 */
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: auto; /* 최소 높이 제거 */
 }
 
 .page-content {
-  flex: 1;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 80px 20px; /* 헤더 높이 60px + 여백 20px */
+  padding: 40px 20px 20px 20px; /* 상단 패딩 줄임 */
   width: 100%;
+  align-content: flex-start;
 }
 
 .content-wrapper {
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 /* 채용공고 정보 섹션 */
@@ -438,7 +444,7 @@
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 40px 16px;
+    padding: 20px 16px;
   }
 
   .content-wrapper {
@@ -508,7 +514,7 @@
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 32px 16px;
+    padding: 16px 16px;
   }
 
   .job-info-section {
@@ -545,7 +551,7 @@
 /* 모바일 반응형 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 20px 16px;
+    padding: 16px 16px;
   }
   
   .content-wrapper {
@@ -755,7 +761,7 @@
 /* 웹뷰 최적화 */
 @media (max-width: 390px) {
   .page-content {
-    padding: 12px 8px;
+    padding: 8px 8px;
   }
 
   .result-header h1 {

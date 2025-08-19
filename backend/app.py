@@ -691,6 +691,7 @@ def register_routes(app):
             raise APIError(f"Deletion failed: {str(e)}", status_code=500)
 
     @app.route('/api/v1/session/<string:id>', methods=['GET'])
+    @app.get_limiter().limit("50 per minute, 200 per hour")  # 세션 조회용 제한
     def get_session(id):
         """세션 조회"""
         try:
@@ -1031,6 +1032,7 @@ def register_routes(app):
             return jsonify({"success": False, "message": f"로그아웃 오류: {str(e)}"}), 500
 
     @app.route('/api/v1/auth/user', methods=['GET'])
+    @app.get_limiter().limit("200 per minute, 1000 per hour")  # 사용자 정보 조회용 관대한 제한
     def get_user():
         """현재 사용자 정보 조회"""
         try:
@@ -1053,6 +1055,7 @@ def register_routes(app):
             return jsonify({"success": False, "message": f"사용자 정보 조회 오류: {str(e)}"}), 500
 
     @app.route('/api/v1/user/sessions', methods=['GET'])
+    @app.get_limiter().limit("100 per minute, 500 per hour")  # 세션 목록 조회용 관대한 제한
     def get_user_sessions():
         """사용자별 자기소개서 세션 목록 조회"""
         try:

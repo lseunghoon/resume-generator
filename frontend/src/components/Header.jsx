@@ -62,11 +62,19 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     localStorage.removeItem('pendingSessionDelete');
     localStorage.removeItem('mockJobDataFilled');
     localStorage.removeItem('useMockApi');
+    localStorage.removeItem('auth_redirect_path'); // 인증 관련 리다이렉트 경로도 클리어
+    
+    // App.js의 currentStep 초기화 호출
+    if (onLogoClick) {
+      onLogoClick();
+    }
     
     // 현재 페이지가 랜딩페이지가 아닌 경우에만 navigate
     if (location.pathname !== '/') {
       console.log('로고 클릭 - state 정보 초기화하여 홈페이지로 이동');
-      navigate('/', { replace: true, state: undefined });
+      // 완전한 새로고침으로 모든 상태 초기화
+      window.location.href = '/';
+      return;
     }
     
     // 강제로 스크롤을 최상단으로 이동 (여러 방법 시도)
