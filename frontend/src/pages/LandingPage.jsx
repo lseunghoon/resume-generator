@@ -151,17 +151,7 @@ const LandingPage = () => {
 									<h3 className="how-step-title">4. 자기소개서 작성</h3>
 									<p className="how-step-desc">
 										입력된 모든 정보를 종합하여, 지원하는 직무에 꼭 맞는<br/>
-										자기소개서 초안이 완성됩니다.
-									</p>
-								</div>
-							</div>
-
-							{/* Step 5 */}
-							<div className="how-step">
-								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
-								<div className="how-step-text">
-									<h3 className="how-step-title">5. 수정 및 완성</h3>
-									<p className="how-step-desc">
+										자기소개서가 완성됩니다.<br/>
 										'써줌'이 작성한 초안을 바탕으로 나만의 스토리를 더해<br/>
 										자기소개서를 완성해 보세요.
 									</p>
@@ -233,7 +223,7 @@ const LandingPage = () => {
 								disabled={submitting} 
 								className="contact-submit"
 							>
-								{submitting ? '전송 중...' : '전송하기'}
+								{submitting ? '전송 중...' : '보내기'}
 							</button>
 						</div>
 
