@@ -1,11 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 
 const PrivacyPage = () => {
 	const navigate = useNavigate();
 
+	// 페이지 진입 시 스크롤 복원 비활성화 및 최상단 이동
+	useEffect(() => {
+		// 브라우저의 스크롤 복원 기능 일시적으로 비활성화
+		if (window.history.scrollRestoration) {
+			window.history.scrollRestoration = 'manual';
+		}
+
+		// 항상 최상단으로 스크롤 이동
+		const scrollToTop = () => {
+			try {
+				window.scrollTo(0, 0);
+				document.documentElement.scrollTop = 0;
+				document.body.scrollTop = 0;
+			} catch (error) {
+				console.error('PrivacyPage - 최상단 스크롤 중 오류:', error);
+			}
+		};
+
+		// 즉시 실행
+		scrollToTop();
+
+		// DOM 렌더링 완료 후 한 번 더 시도
+		const timer = setTimeout(scrollToTop, 100);
+
+		// cleanup: 페이지 이탈 시 스크롤 복원 기능 다시 활성화
+		return () => {
+			clearTimeout(timer);
+			if (window.history.scrollRestoration) {
+				window.history.scrollRestoration = 'auto';
+			}
+		};
+	}, []);
+
 	const handleGoBack = () => {
+		// 랜딩페이지로 돌아갈 때 scrollTo가 없어야 최상단 스크롤이 트리거됨
+		// 이는 정상적인 동작이므로 그대로 유지
 		navigate('/', { replace: true });
 	};
 
@@ -240,7 +275,7 @@ const PrivacyPage = () => {
 			<h2>Contact Us</h2>
 			<p>If you have any questions about this Privacy Policy, You can contact us:</p>
 			<ul>
-				<li>By email: zinozico0070@gmail.com</li>
+				<li>By email: sseojum@gmail.com</li>
 			</ul>
 		</div>
 	);

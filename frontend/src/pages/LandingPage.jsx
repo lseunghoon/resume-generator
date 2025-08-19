@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { submitFeedback } from '../services/api';
+import { scrollToElement, scrollToTop } from '../utils/scrollUtils';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -16,51 +17,105 @@ const LandingPage = () => {
 
 	// 다른 페이지에서 메뉴를 통해 이동해온 경우 해당 섹션으로 스크롤
 	useEffect(() => {
+		let stateCleanupTimeout = null;
+		let domRenderingTimeout = null;
+		
 		if (location.state?.scrollTo) {
-			const element = document.getElementById(location.state.scrollTo);
-			if (element) {
-				// 페이지 로드 후 약간의 지연을 두고 스크롤 실행
-				setTimeout(() => {
-					element.scrollIntoView({ behavior: 'smooth' });
-				}, 100);
-			}
+			const sectionId = location.state.scrollTo;
+			console.log(`LandingPage - scrollTo 처리: ${sectionId}`);
 			
-			// state 정보 사용 후 즉시 제거
-			navigate(location.pathname, { replace: true, state: undefined });
+			// 페이지 렌더링 완료 후 스크롤 실행
+			const handleScroll = async () => {
+				try {
+					// DOM 렌더링을 위한 대기 시간
+					await new Promise(resolve => {
+						domRenderingTimeout = setTimeout(() => {
+							// 현재 여전히 랜딩페이지에 있을 때만 resolve
+							if (window.location.pathname === '/') {
+								resolve();
+							}
+						}, 300);
+					});
+					
+					// 현재 페이지가 랜딩페이지가 아니면 스크롤하지 않음
+					if (window.location.pathname !== '/') {
+						console.log('LandingPage - 다른 페이지로 이동했으므로 스크롤 취소');
+						return;
+					}
+					
+					// 스크롤 유틸리티 함수 사용
+					const success = await scrollToElement(sectionId, 5, 300);
+					
+					if (success) {
+						console.log(`${sectionId} 섹션으로 스크롤 성공`);
+					} else {
+						console.warn(`${sectionId} 섹션으로 스크롤 실패`);
+					}
+				} catch (error) {
+					console.error('스크롤 처리 중 오류:', error);
+				} finally {
+					// state 정보 사용 후 제거 (스크롤 완료 후)
+					stateCleanupTimeout = setTimeout(() => {
+						// 현재 여전히 랜딩페이지에 있고, scrollTo state가 있을 때만 제거
+						if (window.location.pathname === '/' && location.state?.scrollTo) {
+							console.log('LandingPage - scrollTo state 제거');
+							navigate(location.pathname, { replace: true, state: undefined });
+						}
+					}, 1000);
+				}
+			};
+			
+			handleScroll();
 		}
+		
+		// Cleanup: 컴포넌트 unmount 시 또는 의존성 변경 시 모든 timeout 정리
+		return () => {
+			if (stateCleanupTimeout) {
+				console.log('LandingPage - scrollTo timeout 정리');
+				clearTimeout(stateCleanupTimeout);
+			}
+			if (domRenderingTimeout) {
+				console.log('LandingPage - DOM 렌더링 timeout 정리');
+				clearTimeout(domRenderingTimeout);
+			}
+		};
 	}, [location.state, navigate]);
 
 	// 페이지 로드 시 스크롤 위치 확인 및 최상단 이동
 	useEffect(() => {
+		// scrollTo state가 있는 경우는 스크롤 최상단 이동하지 않음
+		if (location.state?.scrollTo) {
+			return;
+		}
+		
 		// 페이지가 처음 로드될 때 스크롤을 최상단으로 이동
-		const scrollToTop = () => {
+		const handleScrollToTop = async () => {
 			try {
-				// 여러 방법으로 스크롤 최상단 이동 시도
-				window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-				document.documentElement.scrollTop = 0;
-				document.body.scrollTop = 0;
+				// 현재 여전히 랜딩페이지에 있을 때만 스크롤 실행
+				if (window.location.pathname === '/') {
+					await scrollToTop(true);
+					console.log('LandingPage - 최상단 스크롤 완료');
+				}
 			} catch (error) {
-				console.error('스크롤 최상단 이동 중 오류:', error);
+				console.error('최상단 스크롤 중 오류:', error);
 			}
 		};
 
 		// 즉시 실행
-		scrollToTop();
+		handleScrollToTop();
 		
-		// 약간의 지연 후에도 한 번 더 시도 (페이지 렌더링 완료 후)
-		const timer1 = setTimeout(scrollToTop, 100);
-		const timer2 = setTimeout(scrollToTop, 300);
-		const timer3 = setTimeout(scrollToTop, 500);
-		
-		// requestAnimationFrame으로도 시도
-		requestAnimationFrame(scrollToTop);
+		// 페이지 렌더링 완료 후 한 번 더 시도
+		const timer = setTimeout(() => {
+			// 현재 여전히 랜딩페이지에 있을 때만 실행
+			if (window.location.pathname === '/') {
+				handleScrollToTop();
+			}
+		}, 200);
 		
 		return () => {
-			clearTimeout(timer1);
-			clearTimeout(timer2);
-			clearTimeout(timer3);
+			clearTimeout(timer);
 		};
-	}, []);
+	}, [location.pathname]); // 의존성을 pathname으로 변경하여 state 제거로 인한 재실행 방지
 
 	const handleStart = async () => {
 		try {
@@ -70,6 +125,13 @@ const LandingPage = () => {
 			localStorage.removeItem('pendingSessionDelete');
 			localStorage.removeItem('mockJobDataFilled');
 			localStorage.removeItem('useMockApi');
+			
+			// 헤더 메뉴 클릭으로 인한 scrollTo state가 있다면 즉시 정리
+			if (location.state?.scrollTo) {
+				console.log('LandingPage - handleStart에서 scrollTo state 감지됨, 즉시 정리');
+				// 현재 location.state를 null로 설정
+				window.history.replaceState(null, '', window.location.pathname);
+			}
 			
 			// 현재 세션 확인
 			const { data: { session } } = await supabase.auth.getSession();
@@ -343,7 +405,6 @@ const LandingPage = () => {
 					<div className="footer-links">
 						<button onClick={() => {
 							navigate('/privacy', { replace: true });
-							window.scrollTo(0, 0);
 						}} className="footer-link">개인정보처리방침</button>
 						<button onClick={() => {
 							// 추후 이용약관 페이지 구현 예정

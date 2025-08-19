@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginButton from './LoginButton';
+import { scrollToSection, scrollToTop } from '../utils/scrollUtils';
 import './Header.css';
 
 const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onLogoClick, onLoginSuccess }) => {
@@ -12,27 +13,38 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
   // 단계별 인디케이터 계산
   const getProgressWidth = () => {
     const path = location.pathname;
-    const search = location.search;
     
     // 단계별 진행률 계산 (7단계)
-    if (path === '/') {
-      // 회사명, 직무, 주요업무, 자격요건, 우대사항 입력 페이지 (5단계)
+    if (path === '/job-info') {
+      // 회사명, 직무, 주요업무, 자격요건, 우대사항 입력 페이지 (1-5단계)
       if (currentStep !== undefined) {
-        return `${((currentStep + 1) / 7) * 100}%`;
+        const progress = ((currentStep + 1) / 7) * 100;
+        console.log('JobInfoInputPage 진행률:', currentStep + 1, '/', 7, '=', progress + '%');
+        return `${progress}%`;
       }
+      console.log('JobInfoInputPage currentStep undefined, 기본값 사용');
       return '14.28%'; // 기본값 (1/7 단계)
     } else if (path === '/file-upload') {
+      console.log('FileUploadPage 진행률: 6/7 = 85.71%');
       return '85.71%'; // 6/7 단계 (파일 업로드)
     } else if (path === '/question') {
+      console.log('QuestionPage 진행률: 7/7 = 100%');
       return '100%'; // 7/7 단계 (문항 입력)
     } else if (path === '/result') {
+      console.log('ResultPage 진행률: 완료 = 100%');
       return '100%'; // 완료
     }
     
+    console.log('알 수 없는 경로:', path, '진행률: 0%');
     return '0%';
   };
 
-  console.log('Header 컴포넌트 렌더링됨, 사용자:', user?.email);
+  console.log('Header 컴포넌트 렌더링됨:', {
+    user: user?.email,
+    pathname: location.pathname,
+    currentStep: currentStep,
+    progressWidth: getProgressWidth()
+  });
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -52,7 +64,7 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleLogoClick = () => {
+  const handleLogoClick = async () => {
     console.log('로고 클릭됨!');
     console.log('현재 경로:', location.pathname);
     
@@ -77,39 +89,10 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
       return;
     }
     
-    // 강제로 스크롤을 최상단으로 이동 (여러 방법 시도)
+    // 스크롤 유틸리티 함수 사용하여 최상단으로 이동
     try {
-      // 방법 1: window.scrollTo (즉시)
-      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-      
-      // 방법 2: document.documentElement.scrollTop (즉시)
-      document.documentElement.scrollTop = 0;
-      
-      // 방법 3: document.body.scrollTop (즉시)
-      document.body.scrollTop = 0;
-      
-      // 방법 4: setTimeout으로 지연 실행 (페이지 전환 후)
-      setTimeout(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 100);
-      
-      // 방법 5: 추가 지연 실행 (더 확실하게)
-      setTimeout(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 300);
-      
-      // 방법 6: requestAnimationFrame 사용
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      });
-      
-      console.log('스크롤 최상단 이동 완료');
+      await scrollToTop(true);
+      console.log('로고 클릭 - 스크롤 최상단 이동 완료');
     } catch (error) {
       console.error('스크롤 이동 중 오류:', error);
     }
@@ -130,16 +113,20 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     }
   };
 
-  const handleMenuClick = (sectionId) => {
-    // 현재 페이지가 랜딩페이지가 아닌 경우 홈페이지로 이동
-    if (location.pathname !== '/') {
-      navigate('/', { state: { scrollTo: sectionId } });
-    } else {
-      // 랜딩페이지에서는 바로 스크롤
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+  const handleMenuClick = async (sectionId) => {
+    try {
+      console.log(`메뉴 클릭: ${sectionId}, 현재 경로: ${location.pathname}`);
+      
+      // 스크롤 유틸리티 함수 사용
+      const success = await scrollToSection(sectionId, location.pathname, navigate);
+      
+      if (success) {
+        console.log(`${sectionId} 섹션으로 스크롤 완료`);
+      } else {
+        console.warn(`${sectionId} 섹션으로 스크롤 실패`);
       }
+    } catch (error) {
+      console.error('메뉴 클릭 처리 중 오류:', error);
     }
   };
 
@@ -222,7 +209,7 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
           )}
         </div>
       </div>
-      {location.pathname !== '/' && (
+      {['/job-info', '/file-upload', '/question', '/result'].includes(location.pathname) && (
         <div 
           className="active-indicator" 
           style={{ width: getProgressWidth() }}
