@@ -291,4 +291,48 @@ class SupabaseService:
             }
             
         except Exception as e:
-            raise Exception(f"사용자 생성 실패: {str(e)}") 
+            raise Exception(f"사용자 생성 실패: {str(e)}")
+    
+    # 피드백 관련 메서드들
+    def create_feedback(self, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+        """새 피드백 생성"""
+        try:
+            data = {
+                "user_id": feedback_data.get("user_id"),  # 로그인한 사용자 (선택사항)
+                "email": feedback_data.get("email"),
+                "message": feedback_data.get("message"),
+                "status": "pending"
+            }
+            
+            result = self.client.table("feedbacks").insert(data).execute()
+            return result.data[0] if result.data else None
+            
+        except Exception as e:
+            raise Exception(f"피드백 생성 실패: {str(e)}")
+    
+    def get_feedback(self, feedback_id: str) -> Optional[Dict[str, Any]]:
+        """피드백 조회"""
+        try:
+            result = self.client.table("feedbacks").select("*").eq("id", feedback_id).execute()
+            return result.data[0] if result.data else None
+            
+        except Exception as e:
+            raise Exception(f"피드백 조회 실패: {str(e)}")
+    
+    def update_feedback(self, feedback_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """피드백 업데이트"""
+        try:
+            result = self.client.table("feedbacks").update(update_data).eq("id", feedback_id).execute()
+            return result.data[0] if result.data else None
+            
+        except Exception as e:
+            raise Exception(f"피드백 업데이트 실패: {str(e)}")
+    
+    def get_user_feedbacks(self, user_id: str) -> List[Dict[str, Any]]:
+        """사용자의 피드백 목록 조회"""
+        try:
+            result = self.client.table("feedbacks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+            return result.data
+            
+        except Exception as e:
+            raise Exception(f"사용자 피드백 조회 실패: {str(e)}") 

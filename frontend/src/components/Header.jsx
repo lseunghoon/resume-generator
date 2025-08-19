@@ -63,12 +63,48 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
     localStorage.removeItem('mockJobDataFilled');
     localStorage.removeItem('useMockApi');
     
-    // state 정보 완전 초기화하여 홈페이지로 이동
-    console.log('로고 클릭 - state 정보 초기화하여 홈페이지로 이동');
-    navigate('/', { replace: true, state: undefined });
+    // 현재 페이지가 랜딩페이지가 아닌 경우에만 navigate
+    if (location.pathname !== '/') {
+      console.log('로고 클릭 - state 정보 초기화하여 홈페이지로 이동');
+      navigate('/', { replace: true, state: undefined });
+    }
     
-    // 강제로 스크롤을 최상단으로 이동
-    window.scrollTo(0, 0);
+    // 강제로 스크롤을 최상단으로 이동 (여러 방법 시도)
+    try {
+      // 방법 1: window.scrollTo (즉시)
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      
+      // 방법 2: document.documentElement.scrollTop (즉시)
+      document.documentElement.scrollTop = 0;
+      
+      // 방법 3: document.body.scrollTop (즉시)
+      document.body.scrollTop = 0;
+      
+      // 방법 4: setTimeout으로 지연 실행 (페이지 전환 후)
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 100);
+      
+      // 방법 5: 추가 지연 실행 (더 확실하게)
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 300);
+      
+      // 방법 6: requestAnimationFrame 사용
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+      
+      console.log('스크롤 최상단 이동 완료');
+    } catch (error) {
+      console.error('스크롤 이동 중 오류:', error);
+    }
   };
 
   const handleLogoutClick = () => {

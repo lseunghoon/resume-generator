@@ -298,6 +298,42 @@ export const deleteSession = async (sessionId) => {
   return response;
 };
 
+// 피드백 제출 API
+export const submitFeedback = async (email, message) => {
+  try {
+    // Mock API 모드 확인
+    if (checkMockMode()) {
+      console.log('Mock API 모드: 피드백 제출 시뮬레이션');
+      // Mock 응답 시뮬레이션
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return {
+        success: true,
+        message: '피드백이 성공적으로 전송되었습니다. (Mock)',
+        feedbackId: 'mock-feedback-id'
+      };
+    }
+
+    // 실제 API 호출
+    const response = await fetch(`${API_BASE_URL}/api/v1/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, message })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `피드백 제출 실패: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('피드백 제출 오류:', error);
+    throw error;
+  }
+};
+
 // Mock API 모드 제어 함수들
 export { enableMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
 

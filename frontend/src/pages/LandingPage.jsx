@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
+import { submitFeedback } from '../services/api';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -9,6 +10,9 @@ const LandingPage = () => {
 	const [email, setEmail] = useState('');
 	const [message, setMessage] = useState('');
 	const [submitting, setSubmitting] = useState(false);
+	const [submitStatus, setSubmitStatus] = useState('idle'); // idle, loading, success, error
+	const [statusMessage, setStatusMessage] = useState('');
+	const [errorKey, setErrorKey] = useState(0); // 오류 애니메이션을 위한 key
 
 	// 다른 페이지에서 메뉴를 통해 이동해온 경우 해당 섹션으로 스크롤
 	useEffect(() => {
@@ -25,6 +29,38 @@ const LandingPage = () => {
 			navigate(location.pathname, { replace: true, state: undefined });
 		}
 	}, [location.state, navigate]);
+
+	// 페이지 로드 시 스크롤 위치 확인 및 최상단 이동
+	useEffect(() => {
+		// 페이지가 처음 로드될 때 스크롤을 최상단으로 이동
+		const scrollToTop = () => {
+			try {
+				// 여러 방법으로 스크롤 최상단 이동 시도
+				window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+				document.documentElement.scrollTop = 0;
+				document.body.scrollTop = 0;
+			} catch (error) {
+				console.error('스크롤 최상단 이동 중 오류:', error);
+			}
+		};
+
+		// 즉시 실행
+		scrollToTop();
+		
+		// 약간의 지연 후에도 한 번 더 시도 (페이지 렌더링 완료 후)
+		const timer1 = setTimeout(scrollToTop, 100);
+		const timer2 = setTimeout(scrollToTop, 300);
+		const timer3 = setTimeout(scrollToTop, 500);
+		
+		// requestAnimationFrame으로도 시도
+		requestAnimationFrame(scrollToTop);
+		
+		return () => {
+			clearTimeout(timer1);
+			clearTimeout(timer2);
+			clearTimeout(timer3);
+		};
+	}, []);
 
 	const handleStart = async () => {
 		try {
@@ -60,14 +96,62 @@ const LandingPage = () => {
 		}
 	};
 
-	const handleContactSubmit = (e) => {
+	const handleContactSubmit = async (e) => {
 		e.preventDefault();
 		if (submitting) return;
+		
+		// 입력 검증
+		if (!email.trim()) {
+			setSubmitStatus('error');
+			setStatusMessage('이메일을 입력해 주세요');
+			setErrorKey(prev => prev + 1); // 애니메이션을 위한 key 증가
+			return;
+		}
+		
+		if (!message.trim()) {
+			setSubmitStatus('error');
+			setStatusMessage('메시지를 입력해 주세요');
+			setErrorKey(prev => prev + 1); // 애니메이션을 위한 key 증가
+			return;
+		}
+		
+		if (message.trim().length < 5) {
+			setSubmitStatus('error');
+			setStatusMessage('메시지는 최소 5자 이상 입력해 주세요');
+			setErrorKey(prev => prev + 1); // 애니메이션을 위한 key 증가
+			return;
+		}
+		
+		// 상태 초기화
+		setSubmitStatus('loading');
+		setStatusMessage('');
 		setSubmitting(true);
+		
 		try {
-			const subject = encodeURIComponent('[써줌] 서비스 제안/문의');
-			const body = encodeURIComponent(`From: ${email || 'anonymous'}\n\n${message}`);
-			window.location.href = `mailto:zinozico0070@gmail.com?subject=${subject}&body=${body}`;
+			// API 호출
+			const result = await submitFeedback(email.trim(), message.trim());
+			
+			if (result.success) {
+				setSubmitStatus('success');
+				setStatusMessage(result.message || '피드백이 성공적으로 전송되었습니다.');
+				
+				// 입력 필드 초기화
+				setEmail('');
+				setMessage('');
+				
+				// 3초 후 상태 초기화
+				setTimeout(() => {
+					setSubmitStatus('idle');
+					setStatusMessage('');
+				}, 3000);
+			} else {
+				setSubmitStatus('error');
+				setStatusMessage(result.message || '피드백 전송에 실패했습니다.');
+			}
+		} catch (error) {
+			console.error('피드백 제출 오류:', error);
+			setSubmitStatus('error');
+			setStatusMessage(error.message || '피드백 전송 중 오류가 발생했습니다.');
 		} finally {
 			setSubmitting(false);
 		}
@@ -108,7 +192,9 @@ const LandingPage = () => {
 						<div className="how-steps">
 							{/* Step 1 */}
 							<div className="how-step">
-								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-image">
+									<img src="/assets/jobinfo_example.png" alt="채용 정보 입력 예시" className="step-image" />
+								</div>
 								<div className="how-step-text">
 									<h3 className="how-step-title">1. 채용 정보 입력</h3>
 									<p className="how-step-desc">
@@ -121,7 +207,9 @@ const LandingPage = () => {
 
 							{/* Step 2 */}
 							<div className="how-step">
-								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-image">
+									<img src="/assets/upload_example.png" alt="문서 업로드 예시" className="step-image" />
+								</div>
 								<div className="how-step-text">
 									<h3 className="how-step-title">2. 기존 문서 업로드</h3>
 									<p className="how-step-desc">
@@ -134,7 +222,9 @@ const LandingPage = () => {
 
 							{/* Step 3 */}
 							<div className="how-step">
-								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-image">
+									<img src="/assets/question_example.png" alt="문항 입력 예시" className="step-image" />
+								</div>
 								<div className="how-step-text">
 									<h3 className="how-step-title">3. 문항 입력</h3>
 									<p className="how-step-desc">
@@ -146,12 +236,14 @@ const LandingPage = () => {
 
 							{/* Step 4 */}
 							<div className="how-step">
-								<div className="how-step-image"><div className="image-placeholder"><span>더미 이미지</span></div></div>
+								<div className="how-step-image">
+									<img src="/assets/result_example.png" alt="자기소개서 완성 예시" className="step-image" />
+								</div>
 								<div className="how-step-text">
-									<h3 className="how-step-title">4. 자기소개서 작성</h3>
+									<h3 className="how-step-title">4. 자기소개서 완성</h3>
 									<p className="how-step-desc">
 										입력된 모든 정보를 종합하여, 지원하는 직무에 꼭 맞는<br/>
-										자기소개서가 완성됩니다.<br/>
+										자기소개서가 작성됩니다.<br/>
 										'써줌'이 작성한 초안을 바탕으로 나만의 스토리를 더해<br/>
 										자기소개서를 완성해 보세요.
 									</p>
@@ -164,9 +256,9 @@ const LandingPage = () => {
 				{/* 자기소개서 작성하기 버튼 섹션 */}
 				<section className="cta-section">
 					<div className="cta-content">
-						<h2 className="cta-title">지금 바로 시작해보세요</h2>
+						<h2 className="cta-title">지금 바로 시작해보세요!</h2>
 						<p className="cta-description">
-							AI가 도와주는 맞춤형 자기소개서로 취업 준비를 한 단계 업그레이드하세요
+							써줌의 맞춤형 자기소개서로 취업 준비를 한 단계 업그레이드하세요
 						</p>
 						<button onClick={handleStart} className="cta-button">
 							자기소개서 작성하기
@@ -192,7 +284,7 @@ const LandingPage = () => {
 								type="email"
 								value={email} 
 								onChange={(e) => setEmail(e.target.value)} 
-								placeholder="이메일을 입력하세요" 
+								placeholder="답변을 받을 이메일을 입력해 주세요" 
 								className="contact-input"
 							/>
 						</div>
@@ -210,12 +302,19 @@ const LandingPage = () => {
 							<textarea 
 								value={message} 
 								onChange={(e) => setMessage(e.target.value)} 
-								placeholder="메시지를 입력하세요" 
+								placeholder="피드백 메시지를 입력해 주세요" 
 								rows={6} 
 								className="contact-textarea"
 							/>
 						</div>
 
+						{/* 상태 메시지 표시 */}
+						{submitStatus !== 'idle' && (
+							<div key={`feedback-status-${submitStatus}-${errorKey}`} className={`feedback-status-message ${submitStatus}`}>
+								{statusMessage}
+							</div>
+						)}
+						
 						<div style={{ display: 'flex', justifyContent: 'flex-end' }}>
 							<button 
 								type="submit" 
@@ -234,11 +333,27 @@ const LandingPage = () => {
 			{/* Footer */}
 			<footer className="footer">
 				<div className="footer-inner">
-					<div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginBottom: 20 }}>
+					<div className="footer-links">
 						<button onClick={() => {
 							navigate('/privacy', { replace: true });
 							window.scrollTo(0, 0);
 						}} className="footer-link">개인정보처리방침</button>
+						<button onClick={() => {
+							// 추후 이용약관 페이지 구현 예정
+							console.log('이용약관 페이지로 이동 (구현 예정)');
+							// navigate('/terms', { replace: true });
+							// window.scrollTo(0, 0);
+						}} className="footer-link">이용약관</button>
+					</div>
+					
+					<div className="footer-contact">
+						<p className="footer-email">
+							이메일 : sseojum@gmail.com
+						</p>
+					</div>
+					
+					<div className="footer-copyright">
+						<p>© 2025 써줌. All rights reserved.</p>
 					</div>
 				</div>
 			</footer>
