@@ -119,21 +119,50 @@ class SupabaseUser:
         """새 사용자 생성"""
         return self.supabase.create_user(email, password)
 
+class SupabaseFeedback:
+    """Supabase 기반 피드백 모델"""
+    
+    def __init__(self, supabase_service: SupabaseService):
+        self.supabase = supabase_service
+    
+    def create_feedback(self, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+        """피드백 생성"""
+        return self.supabase.create_feedback(feedback_data)
+    
+    def get_feedback(self, feedback_id: str) -> Optional[Dict[str, Any]]:
+        """피드백 조회"""
+        return self.supabase.get_feedback(feedback_id)
+    
+    def update_feedback_status(self, feedback_id: str, status: str, error_message: str = None) -> Optional[Dict[str, Any]]:
+        """피드백 상태 업데이트"""
+        update_data = {
+            'status': status,
+            'sent_at': datetime.now().isoformat() if status == 'sent' else None,
+            'error_message': error_message
+        }
+        return self.supabase.update_feedback(feedback_id, update_data)
+    
+    def get_user_feedbacks(self, user_id: str) -> List[Dict[str, Any]]:
+        """사용자의 피드백 목록 조회"""
+        return self.supabase.get_user_feedbacks(user_id)
+
 # 전역 Supabase 서비스 인스턴스
 _supabase_service = None
 _session_model = None
 _question_model = None
 _user_model = None
+_feedback_model = None
 
 def init_supabase_models():
     """Supabase 모델 초기화"""
-    global _supabase_service, _session_model, _question_model, _user_model
+    global _supabase_service, _session_model, _question_model, _user_model, _feedback_model
     
     from supabase_client import SupabaseService
     _supabase_service = SupabaseService()
     _session_model = SupabaseSession(_supabase_service)
     _question_model = SupabaseQuestion(_supabase_service)
     _user_model = SupabaseUser(_supabase_service)
+    _feedback_model = SupabaseFeedback(_supabase_service)
 
 def get_session_model() -> SupabaseSession:
     """세션 모델 반환"""
@@ -155,6 +184,13 @@ def get_user_model() -> SupabaseUser:
     if _user_model is None:
         init_supabase_models()
     return _user_model
+
+def get_feedback_model() -> SupabaseFeedback:
+    """피드백 모델 반환"""
+    global _feedback_model
+    if _feedback_model is None:
+        init_supabase_models()
+    return _feedback_model
 
 def get_supabase_service() -> SupabaseService:
     """Supabase 서비스 반환"""

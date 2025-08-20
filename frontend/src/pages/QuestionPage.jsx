@@ -4,6 +4,7 @@ import Navigation from '../components/Navigation';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
 import { createSessionUrl } from '../utils/sessionUtils';
+import { supabase } from '../services/supabaseClient';
 import './QuestionPage.css';
 
 const QuestionPage = ({ onSidebarRefresh }) => {
@@ -15,6 +16,20 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data?.session) {
+        try {
+          localStorage.setItem('auth_redirect_path', '/job-info');
+        } catch (_) {}
+        navigate('/login?next=/job-info', { replace: true });
+      }
+    };
+    checkAuthAndRedirect();
+  }, [navigate]);
 
   useEffect(() => {
     if (location.state) {

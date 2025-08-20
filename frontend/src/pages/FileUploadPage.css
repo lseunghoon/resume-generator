@@ -1,5 +1,5 @@
 .file-upload-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px); /* 헤더 높이 60px 제외 */
   display: flex;
   flex-direction: column;
 }
@@ -10,7 +10,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 80px 20px 100px 20px; /* 상단 Navigation을 위한 여백 추가 */
+  padding: 80px 20px 100px 20px; /* 헤더 높이 60px + 여백 20px */
   width: 100%;
   position: relative; /* Navigation의 absolute positioning을 위해 */
 }

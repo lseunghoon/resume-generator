@@ -1,10 +1,10 @@
 .navigation-container {
-  position: absolute;
-  top: 20px;
+  position: fixed;
+  top: 80px; /* 헤더 높이(60px) + 여백(20px) */
   left: 20px;
   display: flex;
   align-items: center;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .navigation-left {
@@ -19,20 +19,20 @@
 .nav-arrow-button {
   background: none;
   border: none;
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #343435;
+  color: #121417;
   transition: all 0.2s ease;
-  border-radius: 4px;
   padding: 0;
 }
 
 .nav-arrow-button:hover {
-  background-color: #f0f0f2;
+  color: #4a739c;
+  transform: scale(1.1);
 }
 
 .nav-arrow-button svg {
@@ -43,13 +43,13 @@
 /* 모바일 반응형 */
 @media (max-width: 768px) {
   .navigation-container {
-    top: 16px;
+    top: 70px; /* 모바일에서는 헤더 높이 조정 */
     left: 16px;
   }
 
   .nav-arrow-button {
-    width: 20px;
-    height: 20px;
+    width: 36px;
+    height: 36px;
   }
 
   .nav-arrow-button svg {
@@ -60,13 +60,13 @@
 
 @media (max-width: 480px) {
   .navigation-container {
-    top: 12px;
+    top: 65px;
     left: 12px;
   }
 
   .nav-arrow-button {
-    width: 18px;
-    height: 18px;
+    width: 32px;
+    height: 32px;
   }
 
   .nav-arrow-button svg {

@@ -13,9 +13,43 @@ const fetchWithAuth = async (url, options = {}) => {
   const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error || !session) {
-    // 세션이 없거나 오류 발생 시 로그인 페이지로 리다이렉트 또는 에러 처리
     console.log('세션이 없거나 오류가 발생했습니다:', error);
-    window.location.href = '/';
+    try {
+      const currentPath = window.location.pathname + window.location.search;
+      const existing = localStorage.getItem('auth_redirect_path');
+
+      const extractNext = (pathWithQuery) => {
+        try {
+          const url = new URL(pathWithQuery, window.location.origin);
+          return url.searchParams.get('next') || url.pathname;
+        } catch (_) {
+          return pathWithQuery;
+        }
+      };
+
+      let intended = currentPath;
+
+      // 로그인/콜백 화면에서는 기존 intended를 보존
+      if (currentPath.startsWith('/login') || currentPath.startsWith('/auth/callback')) {
+        intended = existing || '/';
+      }
+
+      // 의도 경로가 로그인 URL 형태라면 next를 추출
+      if (intended && intended.startsWith('/login')) {
+        intended = extractNext(intended) || '/';
+      }
+
+      // 화이트리스트 이외 경로는 루트로 폴백
+      const allowedPrefixes = ['/', '/job-info', '/file-upload', '/question', '/result'];
+      if (!allowedPrefixes.some((p) => intended.startsWith(p))) {
+        intended = '/';
+      }
+
+      localStorage.setItem('auth_redirect_path', intended);
+      window.location.href = `/login?next=${encodeURIComponent(intended)}`;
+    } catch (_) {
+      window.location.href = '/login';
+    }
     throw new Error('인증되지 않았습니다.');
   }
 
@@ -264,5 +298,138 @@ export const deleteSession = async (sessionId) => {
   return response;
 };
 
+// 피드백 제출 API
+export const submitFeedback = async (email, message) => {
+  try {
+    // Mock API 모드 확인
+    if (checkMockMode()) {
+      console.log('Mock API 모드: 피드백 제출 시뮬레이션');
+      // Mock 응답 시뮬레이션
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return {
+        success: true,
+        message: '피드백이 성공적으로 전송되었습니다. (Mock)',
+        feedbackId: 'mock-feedback-id'
+      };
+    }
+
+    // 실제 API 호출
+    const response = await fetch(`${API_BASE_URL}/api/v1/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, message })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `피드백 제출 실패: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('피드백 제출 오류:', error);
+    throw error;
+  }
+};
+
 // Mock API 모드 제어 함수들
 export { enableMockApi, disableMockApi, isMockApiEnabled } from './mockApi';
+
+// Google OAuth 세션 확인
+export const checkGoogleSession = () => {
+  return new Promise((resolve) => {
+    // Google Identity Services가 로드되었는지 확인
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        // 현재 토큰이 있는지 확인
+        const token = localStorage.getItem('google_access_token');
+        if (token) {
+          // 토큰 유효성 검증 (간단한 검증)
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } catch (error) {
+        console.log('Google 세션 확인 중 오류:', error);
+        resolve(false);
+      }
+    } else {
+      resolve(false);
+    }
+  });
+};
+
+// 자동 Google 로그인 처리
+export const handleAutoGoogleSignIn = async () => {
+  try {
+    // Google Identity Services 초기화
+    if (!window.google || !window.google.accounts) {
+      throw new Error('Google Identity Services not loaded');
+    }
+
+    // Google OAuth 클라이언트 초기화
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      scope: 'openid profile email',
+      callback: async (tokenResponse) => {
+        if (tokenResponse.access_token) {
+          try {
+            // 액세스 토큰을 localStorage에 저장
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            
+            // 사용자 정보 가져오기
+            const userInfo = await fetchGoogleUserInfo(tokenResponse.access_token);
+            
+            // Supabase에 로그인 처리
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                access_token: tokenResponse.access_token,
+                id_token: tokenResponse.id_token,
+              }
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            console.log('자동 Google 로그인 성공:', data);
+            return { success: true, user: userInfo };
+          } catch (error) {
+            console.error('자동 Google 로그인 실패:', error);
+            throw error;
+          }
+        }
+      },
+    });
+
+    // 토큰 요청
+    client.requestAccessToken();
+  } catch (error) {
+    console.error('자동 Google 로그인 초기화 실패:', error);
+    throw error;
+  }
+};
+
+// Google 사용자 정보 가져오기
+const fetchGoogleUserInfo = async (accessToken) => {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info');
+    }
+
+    const userInfo = await response.json();
+    return userInfo;
+  } catch (error) {
+    console.error('Google 사용자 정보 가져오기 실패:', error);
+    throw error;
+  }
+};

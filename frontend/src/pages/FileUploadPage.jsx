@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import { supabase } from '../services/supabaseClient';
 import './FileUploadPage.css';
 
 const FileUploadPage = () => {
@@ -11,6 +12,20 @@ const FileUploadPage = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data?.session) {
+        try {
+          localStorage.setItem('auth_redirect_path', '/job-info');
+        } catch (_) {}
+        navigate('/login?next=/job-info', { replace: true });
+      }
+    };
+    checkAuthAndRedirect();
+  }, [navigate]);
 
   useEffect(() => {
     if (location.state) {
@@ -164,11 +179,12 @@ const FileUploadPage = () => {
   };
 
   const handleGoBack = () => {
-    // 새로운 채용정보 입력 방식
-    navigate('/', { 
+    // JobInfoInputPage의 우대사항 단계(마지막 단계)로 돌아가기
+    navigate('/job-info', { 
       state: { 
         jobInfo: jobInfo,
-        fromFileUpload: true
+        fromFileUpload: true,
+        goToLastStep: true // 우대사항 단계로 이동하기 위한 플래그
       } 
     });
   };

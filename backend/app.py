@@ -5,6 +5,8 @@ sseojum(써줌) 백엔드 메인 애플리케이션 (리팩토링 버전)
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import traceback
 import json
 import werkzeug
@@ -31,7 +33,8 @@ from utils import (
 # 새로운 서비스 모듈들
 from services import AIService, OCRService, FileService
 from services.auth_service import AuthService
-from supabase_models import get_session_model, get_question_model, get_user_model
+from services.mail_service import MailService
+from supabase_models import get_session_model, get_question_model, get_user_model, get_feedback_model
 
 
 
@@ -76,6 +79,14 @@ def create_app():
     # CORS 설정
     CORS(app, resources=get_cors_config())
     
+    # Rate Limiting 설정
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
+    
     # 서비스 초기화 (Lazy Loading 방식)
     def get_ai_service():
         if not hasattr(app, '_ai_service'):
@@ -99,11 +110,22 @@ def create_app():
             app._auth_service = AuthService()
         return app._auth_service
     
+    def get_mail_service():
+        if not hasattr(app, '_mail_service'):
+            app._mail_service = MailService(app)
+        return app._mail_service
+    
+    # Rate Limiter 접근자
+    def get_limiter():
+        return limiter
+    
     # 서비스 접근자 등록
     app.get_ai_service = get_ai_service
     app.get_ocr_service = get_ocr_service
     app.get_file_service = get_file_service
     app.get_auth_service = get_auth_service
+    app.get_mail_service = get_mail_service
+    app.get_limiter = get_limiter
     
     # API 라우트 등록
     register_routes(app)
@@ -162,6 +184,19 @@ def register_error_handlers(app):
         app.logger.error(f"내부 서버 오류: {str(error)}")
         response = jsonify({'message': '서버 내부 오류가 발생했습니다.'})
         response.status_code = 500
+        return response
+    
+    @app.errorhandler(429)  # Too Many Requests
+    def handle_rate_limit_error(error):
+        """Rate Limiting 에러 핸들러"""
+        app.logger.warning(f"Rate Limiting 에러: {request.remote_addr}")
+        response = jsonify({
+            'success': False,
+            'message': '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+            'status_code': 429,
+            'retry_after': '1분 후'
+        })
+        response.status_code = 429
         return response
 
 
@@ -656,6 +691,7 @@ def register_routes(app):
             raise APIError(f"Deletion failed: {str(e)}", status_code=500)
 
     @app.route('/api/v1/session/<string:id>', methods=['GET'])
+    @app.get_limiter().limit("50 per minute, 200 per hour")  # 세션 조회용 제한
     def get_session(id):
         """세션 조회"""
         try:
@@ -996,6 +1032,7 @@ def register_routes(app):
             return jsonify({"success": False, "message": f"로그아웃 오류: {str(e)}"}), 500
 
     @app.route('/api/v1/auth/user', methods=['GET'])
+    @app.get_limiter().limit("200 per minute, 1000 per hour")  # 사용자 정보 조회용 관대한 제한
     def get_user():
         """현재 사용자 정보 조회"""
         try:
@@ -1018,6 +1055,7 @@ def register_routes(app):
             return jsonify({"success": False, "message": f"사용자 정보 조회 오류: {str(e)}"}), 500
 
     @app.route('/api/v1/user/sessions', methods=['GET'])
+    @app.get_limiter().limit("100 per minute, 500 per hour")  # 세션 목록 조회용 관대한 제한
     def get_user_sessions():
         """사용자별 자기소개서 세션 목록 조회"""
         try:
@@ -1074,7 +1112,7 @@ def register_routes(app):
             email = data.get('email')
             
             if not email:
-                raise APIError("이메일을 입력해주세요.")
+                raise APIError("이메일을 입력해 주세요")
             
             auth_service = app.get_auth_service()
             result = auth_service.reset_password(email)
@@ -1193,6 +1231,144 @@ def register_routes(app):
             app.logger.error(f"답변 수정 중 오류: {str(e)}")
             app.logger.error(traceback.format_exc())
             raise APIError(f"답변 수정에 실패했습니다: {str(e)}", status_code=500)
+
+    @app.route('/api/v1/feedback', methods=['POST'])
+    @app.get_limiter().limit("5 per minute, 20 per hour")  # Rate Limiting 적용
+    def submit_feedback():
+        """피드백 제출 및 메일 전송"""
+        try:
+            app.logger.info("피드백 제출 요청 시작")
+            
+            # 인증 확인 (선택사항 - 비로그인 사용자도 피드백 가능)
+            user_id = None
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                try:
+                    access_token = auth_header.split(' ')[1]
+                    auth_service = app.get_auth_service()
+                    user = auth_service.get_user(access_token)
+                    if user:
+                        user_id = user['id']
+                        app.logger.info(f"인증된 사용자: {user['email']}")
+                except Exception as e:
+                    app.logger.warning(f"인증 실패 (비로그인 사용자로 처리): {str(e)}")
+            
+            # 요청 데이터 검증
+            data = request.get_json()
+            if not data:
+                raise APIError("요청 데이터가 없습니다.", status_code=400)
+            
+            email = data.get('email', '').strip()
+            message = data.get('message', '').strip()
+            
+            # 필수 필드 검증
+            if not email:
+                raise APIError("이메일은 필수입니다.", status_code=400)
+            
+            if not message:
+                raise APIError("메시지는 필수입니다.", status_code=400)
+            
+            # 이메일 형식 검증 (강화된 검증)
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, email):
+                raise APIError("올바른 이메일 형식이 아닙니다.", status_code=400)
+            
+            # 이메일 길이 제한
+            if len(email) > 254:  # RFC 5321 표준
+                raise APIError("이메일 주소가 너무 깁니다.", status_code=400)
+            
+            # 메시지 길이 검증
+            if len(message) < 5:
+                raise APIError("메시지는 최소 5자 이상이어야 합니다.", status_code=400)
+            
+            if len(message) > 2000:
+                raise APIError("메시지는 최대 2000자까지 입력 가능합니다.", status_code=400)
+            
+            app.logger.info(f"피드백 데이터 검증 완료: {email}, 메시지 길이: {len(message)}자, IP: {request.remote_addr}")
+            
+            # Supabase에 피드백 저장
+            feedback_model = get_feedback_model()
+            feedback_data = {
+                'user_id': user_id,
+                'email': email,
+                'message': message
+            }
+            
+            feedback = feedback_model.create_feedback(feedback_data)
+            if not feedback:
+                raise APIError("피드백 저장에 실패했습니다.", status_code=500)
+            
+            app.logger.info(f"피드백 저장 성공: {feedback['id']}")
+            
+            # 메일 전송
+            mail_service = app.get_mail_service()
+            mail_result = mail_service.send_feedback_email({
+                'email': email,
+                'message': message,
+                'created_at': feedback.get('created_at', 'N/A')
+            })
+            
+            # 메일 전송 결과에 따라 상태 업데이트
+            if mail_result['success']:
+                feedback_model.update_feedback_status(feedback['id'], 'sent')
+                app.logger.info(f"피드백 메일 전송 성공: {feedback['id']}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': '피드백이 성공적으로 전송되었습니다.',
+                    'feedbackId': feedback['id']
+                }), 200
+            else:
+                # 메일 전송 실패 시 상태 업데이트
+                feedback_model.update_feedback_status(
+                    feedback['id'], 
+                    'failed', 
+                    mail_result.get('error', '알 수 없는 오류')
+                )
+                
+                app.logger.error(f"피드백 메일 전송 실패: {feedback['id']}, 오류: {mail_result.get('error')}")
+                
+                # 메일 전송 실패해도 피드백은 저장되었으므로 부분 성공으로 처리
+                return jsonify({
+                    'success': False,
+                    'message': '피드백은 저장되었지만 메일 전송에 실패했습니다. 나중에 다시 시도해주세요.',
+                    'feedbackId': feedback['id'],
+                    'error': mail_result.get('error')
+                }), 200
+            
+        except APIError:
+            raise
+        except Exception as e:
+            app.logger.error(f"피드백 제출 처리 중 오류: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            raise APIError(f"피드백 제출에 실패했습니다: {str(e)}", status_code=500)
+
+    @app.route('/api/v1/feedback/test', methods=['GET'])
+    @app.get_limiter().limit("2 per minute, 10 per hour")  # 테스트용 Rate Limiting
+    def test_mail_service():
+        """메일 서비스 연결 테스트"""
+        try:
+            mail_service = app.get_mail_service()
+            result = mail_service.test_connection()
+            
+            if result['success']:
+                return jsonify({
+                    'success': True,
+                    'message': '메일 서비스 연결 테스트 성공'
+                }), 200
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': result['message']
+                }), 500
+                
+        except Exception as e:
+            app.logger.error(f"메일 서비스 테스트 중 오류: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'메일 서비스 테스트 실패: {str(e)}'
+            }), 500
 
 
 # Flask 앱 생성

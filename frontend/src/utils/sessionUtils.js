@@ -47,19 +47,24 @@ export const decodeSessionId = (encodedSessionId) => {
 // URL에서 세션 ID 추출 (암호화된 형태 지원)
 export const extractSessionIdFromUrl = (search) => {
   if (!search) return null;
-  
+
   const urlParams = new URLSearchParams(search);
+
+  // 1) 우선 암호화된 파라미터 지원 (?sessionId=BASE64)
   const encodedSessionId = urlParams.get('sessionId');
-  
-  if (!encodedSessionId) return null;
-  
-  const sessionId = decodeSessionId(encodedSessionId);
-  if (!sessionId) {
-    console.error('URL에서 유효하지 않은 세션 ID 추출됨');
-    return null;
+  if (encodedSessionId) {
+    const decoded = decodeSessionId(encodedSessionId);
+    if (decoded) return decoded;
+    console.error('URL에서 유효하지 않은 암호화된 세션 ID 추출됨');
   }
-  
-  return sessionId;
+
+  // 2) 과거/직접 링크 호환 (?session=UUID)
+  const rawSessionId = urlParams.get('session');
+  if (rawSessionId && validateSessionId(rawSessionId)) {
+    return rawSessionId;
+  }
+
+  return null;
 };
 
 // 세션 ID를 URL 파라미터로 변환
@@ -70,4 +75,4 @@ export const createSessionUrl = (sessionId) => {
     return '/result';
   }
   return `/result?sessionId=${encodedSessionId}`;
-}; 
+};

@@ -1,5 +1,5 @@
 .job-info-input-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px); /* 헤더 높이 60px 제외 */
   display: flex;
   flex-direction: column;
   background: white;
@@ -30,6 +30,8 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  padding-top: 80px; /* 헤더 높이 60px + 여백 20px */
+  position: relative; /* Navigation의 기준점 설정 */
 }
 
 .content-wrapper {

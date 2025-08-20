@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
-import LoginModal from '../components/LoginModal';
 import { supabase } from '../services/supabaseClient';
 import './JobInfoInputPage.css';
 
@@ -66,7 +65,7 @@ e. 그 외 사용자 응대 등 보이저엑스의 서비스 기획자가 하고
   { id: 'preferredQualifications', title: '우대사항을 입력해 주세요', placeholder: '예시) 영어 가능자, 일본어 가능자' }
 ];
 
-const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal, currentStep, setCurrentStep }) => {
+const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     jobTitle: '',
@@ -91,17 +90,19 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
     preferredQualifications: useRef(null)
   };
 
-  // 인증 상태 확인
+  // 인증 상태 확인: 비로그인 시 로그인 페이지로 리다이렉트
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndRedirect = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        // 로그인되지 않은 경우 모달 표시
-        onShowLoginModal();
+      if (error || !data?.session) {
+        try {
+          localStorage.setItem('auth_redirect_path', '/job-info');
+        } catch (_) {}
+        navigate('/login?next=/job-info', { replace: true });
       }
     };
-    checkAuth();
-  }, [onShowLoginModal]);
+    checkAuthAndRedirect();
+  }, [navigate]);
 
   // currentStep이 변경될 때마다 App.js의 currentStep 업데이트
   useEffect(() => {
@@ -110,27 +111,41 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
     }
   }, [currentStep, setCurrentStep]);
 
-  // 모달이 열려있을 때 배경 클릭 방지
-  useEffect(() => {
-    if (showLoginModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showLoginModal]);
+  // 로그인 모달 제거에 따라 body overflow 제어 로직 삭제
 
   // 이전에 입력한 데이터가 있으면 복원, Mock API 모드일 때는 자동 채우기
   useEffect(() => {
-    if (location.state?.jobInfo) {
+    // location.state가 존재하고 jobInfo가 있으며 fromFileUpload가 true인 경우에만 데이터 복원
+    if (location.state?.jobInfo && location.state?.fromFileUpload === true) {
+      console.log('정상적인 뒤로가기 감지 - 데이터 복원');
       setFormData(location.state.jobInfo);
+      
+      // goToLastStep이 true인 경우, 마지막 단계로 이동
+      if (location.state?.goToLastStep) {
+        setCurrentStep(STEPS.length - 1); // 우대사항 단계(마지막 단계)로 설정
+        console.log('파일업로드 페이지에서 돌아옴 - 우대사항 단계로 이동');
+      }
+    } else if (location.state?.scrollTo) {
+      // 헤더 메뉴 클릭으로 인한 scrollTo state가 있는 경우 무시
+      console.log('헤더 메뉴 클릭으로 인한 state 감지 - 첫 단계로 시작');
+      setCurrentStep(0); // 명시적으로 첫 단계로 설정
     } else if (localStorage.getItem('useMockApi') === 'true' && localStorage.getItem('mockJobDataFilled') === 'true') {
       // Mock API 모드이고 Mock 데이터 채우기 플래그가 설정되어 있을 때 자동으로 데이터 채우기
+      console.log('Mock API 모드 - 자동 데이터 채우기');
       setFormData(mockJobData);
+    } else {
+      // 일반적인 새 시작의 경우
+      console.log('새로운 시작 - 첫 단계부터 시작');
+      setCurrentStep(0);
     }
+    
+    console.log('JobInfoInputPage 진입:', {
+      hasJobInfo: !!location.state?.jobInfo,
+      fromFileUpload: location.state?.fromFileUpload,
+      goToLastStep: location.state?.goToLastStep,
+      scrollTo: location.state?.scrollTo,
+      currentStep: currentStep
+    });
   }, [location.state]);
 
   // 현재 단계의 입력 필드에 자동 포커스
@@ -254,8 +269,8 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
         }
       }, 100); // 상태 업데이트 후 포커스 이동
     } else {
-      // 첫 번째 단계에서 뒤로가기를 누르면 이전 페이지로 이동
-      navigate(-1);
+      // 첫 번째 단계에서 뒤로가기를 누르면 랜딩페이지로 이동
+      navigate('/', { replace: true });
     }
   };
 
@@ -348,10 +363,10 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
   };
 
   return (
-    <div className={`job-info-input-page ${showLoginModal ? 'modal-open' : ''}`}>
+    <div className={`job-info-input-page`}>
       <div className="page-content">
         <Navigation 
-          canGoBack={currentStep > 0}
+          canGoBack={true}
           onGoBack={handlePrevious}
         />
         
@@ -396,11 +411,6 @@ const JobInfoInputPage = ({ onShowLoginModal, onCloseLoginModal, showLoginModal,
           다음
         </button>
       </div>
-
-              {/* 로그인 모달 */}
-        {showLoginModal && (
-          <LoginModal onClose={onCloseLoginModal} />
-        )}
     </div>
   );
 };

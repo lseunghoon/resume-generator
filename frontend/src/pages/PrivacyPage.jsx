@@ -1,8 +1,62 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
 
 const PrivacyPage = () => {
+	const navigate = useNavigate();
+
+	// 페이지 진입 시 스크롤 복원 비활성화 및 최상단 이동
+	useEffect(() => {
+		// 브라우저의 스크롤 복원 기능 일시적으로 비활성화
+		if (window.history.scrollRestoration) {
+			window.history.scrollRestoration = 'manual';
+		}
+
+		// 항상 최상단으로 스크롤 이동
+		const scrollToTop = () => {
+			try {
+				window.scrollTo(0, 0);
+				document.documentElement.scrollTop = 0;
+				document.body.scrollTop = 0;
+			} catch (error) {
+				console.error('PrivacyPage - 최상단 스크롤 중 오류:', error);
+			}
+		};
+
+		// 즉시 실행
+		scrollToTop();
+
+		// DOM 렌더링 완료 후 한 번 더 시도
+		const timer = setTimeout(scrollToTop, 100);
+
+		// cleanup: 페이지 이탈 시 스크롤 복원 기능 다시 활성화
+		return () => {
+			clearTimeout(timer);
+			if (window.history.scrollRestoration) {
+				window.history.scrollRestoration = 'auto';
+			}
+		};
+	}, []);
+
+	const handleGoBack = () => {
+		// 랜딩페이지로 돌아갈 때 scrollTo가 없어야 최상단 스크롤이 트리거됨
+		// 이는 정상적인 동작이므로 그대로 유지
+		navigate('/', { replace: true });
+	};
+
 	return (
-		<div className="privacy-page" style={{ maxWidth: 900, margin: '0 auto', padding: '24px' }}>
+		<div className="privacy-page" style={{ 
+			maxWidth: 900, 
+			margin: '0 auto', 
+			padding: '24px',
+			paddingTop: '80px', /* 헤더 높이 60px + 여백 20px */
+			position: 'relative'
+		}}>
+			<Navigation 
+				canGoBack={true}
+				onGoBack={handleGoBack}
+			/>
+			
 			<h1>Privacy Policy for 써줌</h1>
 			<p><strong>Privacy Policy</strong><br />
 			Last updated: August 11, 2025</p>
@@ -11,7 +65,7 @@ const PrivacyPage = () => {
 				This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 			</p>
 			<p>
-				We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy. This Privacy Policy has been created with the help of the Free Privacy Policy Generator.
+				We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy.
 			</p>
 
 			<h2>Interpretation and Definitions</h2>
@@ -221,7 +275,7 @@ const PrivacyPage = () => {
 			<h2>Contact Us</h2>
 			<p>If you have any questions about this Privacy Policy, You can contact us:</p>
 			<ul>
-				<li>By email: zinozico0070@gmail.com</li>
+				<li>By email: sseojum@gmail.com</li>
 			</ul>
 		</div>
 	);

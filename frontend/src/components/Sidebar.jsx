@@ -21,7 +21,8 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth');
     const value = saved ? parseInt(saved, 10) : 280;
-    return Number.isFinite(value) ? value : 280;
+    // 저장된 값이 최소값보다 작으면 최소값으로 설정
+    return Number.isFinite(value) ? Math.max(280, value) : 280;
   });
   const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
@@ -60,15 +61,25 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isResizing) return;
-      const minWidth = 240;
+      const minWidth = 280; // 최소 너비를 280px로 고정 (더 줄일 수 없음)
       const maxWidth = Math.min(640, window.innerWidth - 100); // 우측 패널 최대폭 제한
       const newWidth = Math.max(minWidth, Math.min(maxWidth, window.innerWidth - e.clientX));
+      
+      // 최소 너비에 도달했을 때 시각적 피드백
+      if (newWidth <= minWidth) {
+        document.body.style.cursor = 'not-allowed';
+      } else {
+        document.body.style.cursor = 'col-resize';
+      }
+      
       setSidebarWidth(newWidth);
     };
 
     const handleMouseUp = () => {
       if (isResizing) {
         setIsResizing(false);
+        // 커서 상태 복원
+        document.body.style.cursor = '';
         // 저장
         localStorage.setItem('sidebarWidth', String(sidebarWidth));
       }
@@ -110,7 +121,7 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
 
   return (
     <>
-      <div className={`sidebar ${isOpen ? 'open' : ''} ${isResizing ? 'resizing' : ''}`} style={{ width: sidebarWidth }}>
+      <div className={`sidebar ${isOpen ? 'open' : ''} ${isResizing ? 'resizing' : ''} ${sidebarWidth <= 280 ? 'min-width-reached' : ''}`} style={{ width: sidebarWidth }}>
         {/* 좌측 리사이저 핸들 */}
         <div
           className="sidebar-resizer"
@@ -118,7 +129,7 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
             e.preventDefault();
             setIsResizing(true);
           }}
-          title="너비 조절"
+          title="너비 조절 (최소 280px)"
         />
         <div className="sidebar-content">
           {loading ? (
