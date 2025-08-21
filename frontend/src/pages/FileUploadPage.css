@@ -555,6 +555,12 @@
 @media (max-width: 768px) {
   .modal-buttons {
     flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+  }
+
+  .modal-button {
+    max-width: 280px; /* 모바일에서는 더 넓게 */
+    width: 100%; /* 전체 너비 활용 */
   }
 
   .skip-confirmation-modal {
@@ -584,5 +590,17 @@
   .modal-button {
     font-size: 14px;
     padding: 12px 20px;
+  }
+
+  /* 480px 이하에서도 버튼 수직 정렬 보장 */
+  .modal-buttons {
+    flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+    gap: 12px; /* 모바일에서는 간격 줄임 */
+  }
+
+  .modal-button {
+    max-width: 300px; /* 작은 화면에서는 더 넓게 */
+    width: 100%;
   }
 }
