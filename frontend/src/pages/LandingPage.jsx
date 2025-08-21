@@ -234,7 +234,7 @@ const LandingPage = () => {
 				<section className="hero">
 					<div className="hero-card">
 						<h1 className="hero-title">자소서, 쉽고 완벽하게 「써줌」 에서</h1>
-						<button onClick={handleStart} className="hero-button">시작하기</button>
+						<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
 						<img src="/assets/example_image.png" alt="써줌 서비스 예시" className="hero-image" />
 					</div>
 				</section>
@@ -329,7 +329,7 @@ const LandingPage = () => {
 						<p className="cta-description">
 							써줌의 맞춤형 자기소개서로 취업 준비를 한 단계 업그레이드하세요
 						</p>
-						<button onClick={handleStart} className="cta-button">
+						<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
 							자기소개서 작성하기
 						</button>
 					</div>
