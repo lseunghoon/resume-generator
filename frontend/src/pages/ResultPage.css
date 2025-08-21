@@ -605,6 +605,18 @@
     padding: 8px 16px;
     font-size: 12px;
   }
+
+  /* 480px 이하에서도 모달 버튼 수직 정렬 보장 */
+  .modal-buttons {
+    flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+    gap: 12px; /* 모바일에서는 간격 줄임 */
+  }
+
+  .modal-buttons button {
+    max-width: 300px; /* 작은 화면에서는 더 넓게 */
+    width: 100%;
+  }
 }
 
 /* 웹뷰 최적화 */
@@ -663,6 +675,18 @@
   .add-question-modal input {
     font-size: 12px;
     padding: 6px 8px;
+  }
+
+  /* 390px 이하에서도 모달 버튼 수직 정렬 보장 */
+  .modal-buttons {
+    flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+    gap: 10px; /* 매우 작은 화면에서는 더 작은 간격 */
+  }
+
+  .modal-buttons button {
+    max-width: 320px; /* 매우 작은 화면에서는 가장 넓게 */
+    width: 100%;
   }
 } 
 
@@ -1082,6 +1106,12 @@
   /* 모달 관련 */
   .modal-buttons {
     flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+  }
+
+  .modal-buttons button {
+    max-width: 280px; /* 모바일에서는 더 넓게 */
+    width: 100%; /* 전체 너비 활용 */
   }
 
   .add-question-modal {

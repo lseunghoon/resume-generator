@@ -635,7 +635,7 @@ function ResultPage({ onSidebarRefresh }) {
                                 disabled={!newQuestion.trim() || isAddingQuestion || answers.length >= 3}
                                 loading={isAddingQuestion}
                             >
-                                {isAddingQuestion ? '생성 중' : '추가 생성하기'}
+                                {isAddingQuestion ? '생성 중' : '문항 추가하기'}
                             </Button>
                             <Button 
                                 variant="outline" 
