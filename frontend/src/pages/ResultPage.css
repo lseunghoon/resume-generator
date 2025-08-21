@@ -441,76 +441,7 @@
 
 
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .page-content {
-    padding: 20px 16px;
-  }
-
-  .content-wrapper {
-    max-width: 100%;
-  }
-
-  .job-info-section {
-    padding: 24px 20px;
-  }
-
-  .tab-content {
-    padding: 28px 20px;
-  }
-
-  .answer-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-  }
-
-  .answer-header h3 {
-    font-size: 22px;
-    max-width: 100%;
-  }
-
-  .answer-meta {
-    align-self: stretch;
-    justify-content: space-between;
-  }
-
-  .tab-navigation {
-    gap: 4px;
-  }
-
-  .tab {
-    padding: 12px 20px;
-    font-size: 15px;
-  }
-
-  .add-tab {
-    padding: 12px 20px;
-    font-size: 13px;
-  }
-
-  .revision-input {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .send-revision {
-    align-self: flex-end;
-    min-width: 100px;
-  }
-
-  .modal-buttons {
-    flex-direction: column;
-  }
-
-  .add-question-modal {
-    padding: 36px 24px;
-  }
-
-  .add-question-modal h3 {
-    font-size: 22px;
-  }
-}
+/* 첫 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
 @media (max-width: 480px) {
   .page-content {
@@ -548,97 +479,7 @@
   }
 } 
 
-/* 모바일 반응형 */
-@media (max-width: 768px) {
-  .page-content {
-    padding: 16px 16px;
-  }
-  
-  .content-wrapper {
-    max-width: 100%;
-  }
-
-  .result-header h1 {
-    font-size: 24px;
-    line-height: 1.4;
-  }
-
-  .result-header p {
-    font-size: 14px;
-  }
-
-  .job-info-section {
-    padding: 16px 20px;
-    gap: 12px;
-  }
-
-  .job-link a {
-    font-size: 13px;
-  }
-
-  .job-position span:last-child {
-    font-size: 15px;
-  }
-
-  .tab-navigation {
-    gap: 8px;
-    padding: 0 8px;
-  }
-
-  .tab-button {
-    padding: 8px 12px;
-    font-size: 13px;
-    min-width: 60px;
-  }
-
-  .add-tab {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .answer-header h3 {
-    font-size: 18px;
-  }
-
-  .character-count {
-    font-size: 12px;
-  }
-
-  .copy-button {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-
-  .answer-text p {
-    font-size: 15px;
-    line-height: 1.6;
-  }
-
-
-
-  .revision-input textarea {
-    font-size: 15px;
-    padding: 12px 14px;
-    max-height: 180px;
-  }
-
-
-
-  .add-question-modal {
-    padding: 24px;
-    margin: 20px;
-    max-width: calc(100% - 40px);
-  }
-
-  .add-question-modal h3 {
-    font-size: 18px;
-  }
-
-  .add-question-modal input {
-    font-size: 14px;
-    padding: 10px 12px;
-  }
-}
+/* 두 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
 @media (max-width: 480px) {
   .page-content {
@@ -1042,10 +883,91 @@
   background: #a8a8a8;
 } 
 
-/* 모바일 반응형 */
+/* 통합된 모바일 반응형 디자인 */
 @media (max-width: 768px) {
+  .page-content {
+    padding: 16px 16px;
+  }
+  
+  .content-wrapper {
+    max-width: 100%;
+  }
+
+  .result-header h1 {
+    font-size: 24px;
+    line-height: 1.4;
+  }
+
+  .result-header p {
+    font-size: 14px;
+  }
+
+  .job-info-section {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+
+  .job-link a {
+    font-size: 13px;
+  }
+
+  .job-position span:last-child {
+    font-size: 15px;
+  }
+
+  .tab-navigation {
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .tab {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-width: 60px;
+  }
+
+  .add-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .tab-content {
+    padding: 28px 20px;
+  }
+
+  .answer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .answer-header h3 {
+    font-size: 18px;
+    max-width: 100%;
+  }
+
+  .answer-meta {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .character-count {
+    font-size: 12px;
+  }
+
+  .copy-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .answer-text p {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* 채팅 관련 스타일 */
   .chat-container {
-    padding: 15px 0;
+    padding: 15px 0 100px 0; /* 하단 패딩 추가로 입력창과 겹치지 않도록 */
   }
 
   .message-content {
@@ -1070,20 +992,38 @@
     font-size: 14px;
   }
 
+  /* 모바일에서 입력창 안정적 포지셔닝 */
   .chat-input-section {
-    bottom: 15px;
-    width: calc(100% - 30px);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    padding: 15px;
+    padding-bottom: max(15px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #ebebeb;
+    z-index: 1000;
+    transform: none;
+    /* 키보드 팝업 시 안정성을 위한 추가 스타일 */
+    box-sizing: border-box;
   }
 
   .revision-input {
+    flex-direction: row;
     padding: 3px;
+    max-width: none;
+    margin: 0;
   }
 
   .revision-input textarea {
     padding: 10px 12px;
     font-size: 16px;
     line-height: 24px;
-    max-height: 180px;
+    max-height: 120px;
+    min-height: 44px;
   }
 
   .revision-input textarea::placeholder {
@@ -1091,28 +1031,30 @@
   }
 
   .send-revision {
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
     font-size: 14px;
+    flex-shrink: 0;
   }
 
-  .job-info-section {
-    padding: 15px 0;
+  /* 모달 관련 */
+  .modal-buttons {
+    flex-direction: column;
   }
 
-  .tab-navigation {
-    padding: 15px 0;
+  .add-question-modal {
+    padding: 24px;
+    margin: 20px;
+    max-width: calc(100% - 40px);
   }
 
-  .tab {
-    padding: 6px 12px;
-    font-size: 12px;
-    margin-right: 8px;
+  .add-question-modal h3 {
+    font-size: 18px;
   }
 
-  .add-tab {
-    padding: 6px 12px;
-    font-size: 12px;
+  .add-question-modal input {
+    font-size: 14px;
+    padding: 10px 12px;
   }
 } 
 
