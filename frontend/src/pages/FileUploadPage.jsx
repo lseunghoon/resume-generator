@@ -324,7 +324,8 @@ const FileUploadPage = () => {
         >
           건너뛰기
         </button>
-        <button 
+        <button
+          id="submit-file-upload-btn"
           className="next-button active"
           onClick={handleNext}
         >

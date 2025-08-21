@@ -463,10 +463,22 @@
   .tab {
     padding: 10px 16px;
     font-size: 14px;
+  }
+
+  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  .tab.multiple-tabs {
     max-width: 100px; /* 더 작은 화면에서는 더 작은 최대 너비 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* 문항이 1개일 때는 전체 텍스트 표시 */
+  .tab.single-tab {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .add-tab {
@@ -527,11 +539,23 @@
     padding: 6px 10px;
     font-size: 12px;
     min-width: 50px;
+    flex-shrink: 0;
+  }
+
+  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  .tab-button.multiple-tabs {
     max-width: 80px; /* 매우 작은 화면에서는 더 작은 최대 너비 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex-shrink: 0;
+  }
+
+  /* 문항이 1개일 때는 전체 텍스트 표시 */
+  .tab-button.single-tab {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .add-tab {
@@ -637,10 +661,22 @@
     padding: 5px 8px;
     font-size: 11px;
     min-width: 45px;
+  }
+
+  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  .tab-button.multiple-tabs {
     max-width: 70px; /* 390px 이하에서는 더욱 작은 최대 너비 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* 문항이 1개일 때는 전체 텍스트 표시 */
+  .tab-button.single-tab {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .add-tab {
@@ -960,10 +996,22 @@
     padding: 8px 12px;
     font-size: 13px;
     min-width: 60px;
+  }
+
+  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  .tab.multiple-tabs {
     max-width: 120px; /* 최대 너비 제한 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* 문항이 1개일 때는 전체 텍스트 표시 */
+  .tab.single-tab {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .add-tab {

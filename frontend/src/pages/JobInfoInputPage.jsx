@@ -237,6 +237,14 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
       return;
     }
 
+    // 주요업무 단계 유효성 검사 성공 시 GA 이벤트 발송
+    if (currentField === 'mainResponsibilities') {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'job_info_success'
+      });
+    }
+
     if (currentStep === STEPS.length - 1) {
       // 마지막 단계(우대사항)에서 다음을 누르면 파일업로드 페이지로 이동
       handleSubmit();
@@ -404,6 +412,7 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
           </button>
         )}
         <button 
+          {...(STEPS[currentStep].id === 'mainResponsibilities' && { id: 'submit-job-info-btn' })}
           className={`next-button ${isCurrentStepValid() ? 'active' : 'disabled'}`}
           onClick={handleNext}
           disabled={isSubmitting || !isCurrentStepValid()}

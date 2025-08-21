@@ -496,7 +496,7 @@ function ResultPage({ onSidebarRefresh }) {
                                 key={index}
                                 role="tab"
                                 aria-selected={activeTab === index}
-                                className={`tab ${activeTab === index ? 'active' : ''}`}
+                                className={`tab ${activeTab === index ? 'active' : ''} ${answers.length >= 2 ? 'multiple-tabs' : 'single-tab'}`}
                                 onClick={() => setActiveTab(index)}
                                 type="button"
                             >

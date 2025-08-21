@@ -97,6 +97,12 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     // 에러가 있으면 초기화
     setError('');
 
+    // 자기소개서 생성 유효성 검사 성공 시 GA 이벤트 발송
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'generate_cover_letter_success'
+    });
+
     setIsGenerating(true);
 
     try {
@@ -304,6 +310,7 @@ const QuestionPage = ({ onSidebarRefresh }) => {
 
       <div className="button-container">
         <button 
+          id="generate-cover-letter-btn"
           className={`next-button ${isGenerating ? 'disabled' : 'active'}`}
           onClick={handleGenerate}
           disabled={isGenerating}
