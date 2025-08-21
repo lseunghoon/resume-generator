@@ -41,11 +41,11 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
             raise ValidationError(f"필드 {field}는 비어있지 않은 문자열이어야 합니다.")
     
     # 텍스트 길이 검증
-    if len(data['resumeText'].strip()) < 50:
-        raise ValidationError("이력서 텍스트는 최소 50자 이상이어야 합니다.")
+    if len(data['resumeText'].strip()) < 20:
+        raise ValidationError("이력서 텍스트는 최소 20자 이상이어야 합니다.")
     
-    if len(data['jobDescription'].strip()) < 50:
-        raise ValidationError("채용공고 텍스트는 최소 50자 이상이어야 합니다.")
+    if len(data['jobDescription'].strip()) < 19:
+        raise ValidationError("채용공고 텍스트는 최소 19자 이상이어야 합니다.")
     
     # 질문 필드 검증 (선택사항)
     questions = data.get('questions', [])
