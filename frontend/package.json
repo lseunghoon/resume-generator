@@ -20,7 +20,9 @@
     "start": "cross-env HOST=0.0.0.0 PORT=3000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "generate-sitemap": "node scripts/sitemap-generator.js",
+    "build-with-sitemap": "npm run build && npm run generate-sitemap"
   },
   "eslintConfig": {
     "extends": [
@@ -45,6 +47,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "sitemap": "^8.0.0"
   }
 }
