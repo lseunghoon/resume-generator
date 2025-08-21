@@ -9,6 +9,7 @@ const FileUploadPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState('');
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
+  const [showSkipModal, setShowSkipModal] = useState(false); // 건너뛰기 확인 모달
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -169,6 +170,12 @@ const FileUploadPage = () => {
   };
 
   const handleSkip = () => {
+    // 건너뛰기 확인 모달 표시
+    setShowSkipModal(true);
+  };
+
+  const handleConfirmSkip = () => {
+    // 실제 건너뛰기 실행
     navigate('/question', { 
       state: { 
         uploadedFiles: [], // 빈 배열
@@ -176,6 +183,14 @@ const FileUploadPage = () => {
         question: location.state?.question || '' // 이전에 입력한 질문 전달
       } 
     });
+  };
+
+  const handleUploadFromModal = () => {
+    // 모달 닫고 파일 업로드 실행
+    setShowSkipModal(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const handleGoBack = () => {
@@ -224,7 +239,7 @@ const FileUploadPage = () => {
             
             <div className="form-content">
               <div className="form-header">
-                <h1>기존 자기소개서나 이력서를<br/>업로드해주세요</h1>
+                <h1>기존 자기소개서나 이력서를<br/>업로드해 주세요</h1>
                 <p>더욱 개인화된 자기소개서 작성을 위해 건너뛰지 않는 것을 추천해요<br/>
                 </p>
               </div>
@@ -316,6 +331,30 @@ const FileUploadPage = () => {
           다음
         </button>
       </div>
+
+      {/* 건너뛰기 확인 모달 */}
+      {showSkipModal && (
+        <div className="modal-overlay" onClick={() => setShowSkipModal(false)}>
+          <div className="skip-confirmation-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>잠깐! 합격의 가장 중요한 재료가 빠졌어요</h3><p></p>
+            <p>문서 업로드 없이는 맞춤형 자기소개서 작성이 어려울 수 있어요</p>
+            <div className="modal-buttons">
+              <button 
+                className="modal-button secondary"
+                onClick={handleConfirmSkip}
+              >
+                그래도 건너뛰기
+              </button>
+              <button 
+                className="modal-button primary"
+                onClick={handleUploadFromModal}
+              >
+                문서 업로드
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

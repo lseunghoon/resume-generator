@@ -475,6 +475,114 @@
   color: #a6a6a7 !important;
   cursor: not-allowed;
   pointer-events: none;
-} 
+}
 
- 
+/* 건너뛰기 확인 모달 - ResultPage와 동일한 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.skip-confirmation-modal {
+  background-color: white;
+  border-radius: 20px;
+  padding: 48px;
+  max-width: 540px;
+  width: 90%;
+  text-align: center;
+}
+
+.skip-confirmation-modal h3 {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1a1d29;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.skip-confirmation-modal p {
+  font-size: 16px;
+  color: #64748b;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.modal-button {
+  flex: 1;
+  max-width: 200px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-button.primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.modal-button.primary:hover {
+  background-color: #2563eb;
+}
+
+.modal-button.secondary {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.modal-button.secondary:hover {
+  background-color: #e2e8f0;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .skip-confirmation-modal {
+    padding: 36px 24px;
+  }
+
+  .skip-confirmation-modal h3 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .skip-confirmation-modal {
+    padding: 28px 20px;
+    margin: 20px;
+    max-width: calc(100% - 40px);
+  }
+
+  .skip-confirmation-modal h3 {
+    font-size: 20px;
+  }
+
+  .skip-confirmation-modal p {
+    font-size: 14px;
+  }
+
+  .modal-button {
+    font-size: 14px;
+    padding: 12px 20px;
+  }
+}
