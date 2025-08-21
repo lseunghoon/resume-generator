@@ -158,8 +158,11 @@
   user-select: none;
 }
 
-.session-content:hover {
-  background: #f3f4f6;
+/* 데스크톱에서만 hover 효과 적용 */
+@media (hover: hover) and (pointer: fine) {
+  .session-content:hover {
+    background: #f3f4f6;
+  }
 }
 
 .session-item.active .session-content {
@@ -206,15 +209,29 @@
   position: relative;
 }
 
-.session-item:hover .session-menu-btn,
+/* 활성 상태일 때는 항상 표시 */
 .session-item.active .session-menu-btn {
   opacity: 1;
 }
 
-.session-menu-btn:hover {
-  background: #e5e7eb;
-  color: #374151;
-  transform: scale(1.1);
+/* 데스크톱에서만 hover 시 메뉴 버튼 표시 */
+@media (hover: hover) and (pointer: fine) {
+  .session-item:hover .session-menu-btn {
+    opacity: 1;
+  }
+  
+  .session-menu-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+    transform: scale(1.1);
+  }
+}
+
+/* 모바일에서는 메뉴 버튼 항상 표시 */
+@media (max-width: 768px) {
+  .session-menu-btn {
+    opacity: 1;
+  }
 }
 
 .session-menu-btn:active {
