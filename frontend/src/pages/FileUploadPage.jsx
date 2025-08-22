@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabaseClient';
 import './FileUploadPage.css';
@@ -14,19 +15,20 @@ const FileUploadPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
+  // 인증 상태 확인 (리다이렉트 없이 상태만 체크)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkAuthStatus = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data?.session) {
-        try {
-          localStorage.setItem('auth_redirect_path', '/job-info');
-        } catch (_) {}
-        navigate('/login?next=/job-info', { replace: true });
+      if (!error && data?.session) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
       }
     };
-    checkAuthAndRedirect();
-  }, [navigate]);
+    checkAuthStatus();
+  }, []);
 
   useEffect(() => {
     if (location.state) {
@@ -44,10 +46,53 @@ const FileUploadPage = () => {
         setUploadedFiles(restoredFiles);
       }
     } else {
-      // 상태가 없으면 홈으로 이동
-      navigate('/');
+      // 로그인 후 임시 저장된 데이터 복원 시도
+      try {
+        const tempFileUpload = localStorage.getItem('temp_file_upload');
+        if (tempFileUpload && isAuthenticated) {
+          const parsed = JSON.parse(tempFileUpload);
+          const now = Date.now();
+          // 30분 이내의 데이터만 복원 (1800000ms = 30분)
+          if (now - parsed.timestamp < 1800000) {
+            console.log('로그인 후 파일업로드 임시 데이터 복원');
+            setJobInfo(parsed.jobInfo);
+            
+            // 건너뛰기였다면 바로 다음 페이지로 이동
+            if (parsed.skipped) {
+              console.log('건너뛰기 복원 - 다음 페이지로 이동');
+              localStorage.removeItem('temp_file_upload');
+              navigate('/question', { 
+                state: { 
+                  uploadedFiles: [],
+                  jobInfo: parsed.jobInfo,
+                  question: ''
+                } 
+              });
+              return;
+            }
+            
+            // 파일 메타데이터가 있다면 안내 메시지 표시 (실제 파일은 복원 불가)
+            if (parsed.uploadedFiles && parsed.uploadedFiles.length > 0) {
+              setError('로그인 전에 업로드한 파일은 보안상 다시 업로드해주세요.');
+            }
+            
+            // 사용한 임시 데이터 삭제
+            localStorage.removeItem('temp_file_upload');
+            return;
+          } else {
+            // 오래된 데이터 삭제
+            localStorage.removeItem('temp_file_upload');
+          }
+        }
+      } catch (e) {
+        console.error('파일업로드 임시 데이터 복원 실패:', e);
+        localStorage.removeItem('temp_file_upload');
+      }
+      
+      // 상태가 없어도 페이지를 표시 (SEO 최적화)
+      // 비로그인 상태에서도 콘텐츠를 볼 수 있어야 함
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, isAuthenticated]);
 
   const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
   const maxFileSize = 50 * 1024 * 1024; // 단일 파일 50MB 허용
@@ -157,6 +202,25 @@ const FileUploadPage = () => {
   };
 
   const handleNext = () => {
+    // 로그인 체크
+    if (!isAuthenticated) {
+      // 현재 업로드 데이터와 채용정보를 localStorage에 저장
+      try {
+        localStorage.setItem('auth_redirect_path', '/job-info');
+        localStorage.setItem('temp_file_upload', JSON.stringify({
+          jobInfo: jobInfo,
+          uploadedFiles: uploadedFiles.map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.file?.type || 'application/pdf'
+          })), // File 객체는 직렬화할 수 없으므로 메타데이터만 저장
+          timestamp: Date.now()
+        }));
+      } catch (_) {}
+      navigate('/login?next=/job-info', { replace: true });
+      return;
+    }
+
     // 업로드된 파일들의 실제 File 객체들을 전달
     const fileObjects = uploadedFiles.map(f => f.file);
     
@@ -175,6 +239,22 @@ const FileUploadPage = () => {
   };
 
   const handleConfirmSkip = () => {
+    // 로그인 체크
+    if (!isAuthenticated) {
+      // 현재 채용정보를 localStorage에 저장 (파일 없이 건너뛰기)
+      try {
+        localStorage.setItem('auth_redirect_path', '/job-info');
+        localStorage.setItem('temp_file_upload', JSON.stringify({
+          jobInfo: jobInfo,
+          uploadedFiles: [], // 건너뛰기이므로 빈 배열
+          skipped: true, // 건너뛰기 플래그
+          timestamp: Date.now()
+        }));
+      } catch (_) {}
+      navigate('/login?next=/job-info', { replace: true });
+      return;
+    }
+
     // 실제 건너뛰기 실행
     navigate('/question', { 
       state: { 
@@ -226,8 +306,20 @@ const FileUploadPage = () => {
 
   const canUploadMore = uploadedFiles.length < maxFiles;
 
-  return (
-    <div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
+  	// SEO 메타데이터 설정
+	useDocumentMeta({
+		title: "이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성",
+		description: "기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요. PDF, DOC, DOCX 파일 지원.",
+		robots: "noindex, nofollow",
+		ogTitle: "이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성",
+		ogDescription: "기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요.",
+		ogType: "website",
+		ogUrl: "https://www.sseojum.com/file-upload"
+	});
+
+	return (
+		<div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
+      
       <div className="page-content">
         <Navigation
           canGoBack={true}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabaseClient';
@@ -90,19 +91,20 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
     preferredQualifications: useRef(null)
   };
 
-  // 인증 상태 확인: 비로그인 시 로그인 페이지로 리다이렉트
+  // 인증 상태 확인 (리다이렉트 없이 상태만 체크)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkAuthStatus = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data?.session) {
-        try {
-          localStorage.setItem('auth_redirect_path', '/job-info');
-        } catch (_) {}
-        navigate('/login?next=/job-info', { replace: true });
+      if (!error && data?.session) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
       }
     };
-    checkAuthAndRedirect();
-  }, [navigate]);
+    checkAuthStatus();
+  }, []);
 
   // currentStep이 변경될 때마다 App.js의 currentStep 업데이트
   useEffect(() => {
@@ -134,6 +136,30 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
       console.log('Mock API 모드 - 자동 데이터 채우기');
       setFormData(mockJobData);
     } else {
+      // 로그인 후 임시 저장된 데이터 복원 시도
+      try {
+        const tempJobInfo = localStorage.getItem('temp_job_info');
+        if (tempJobInfo && isAuthenticated) {
+          const parsed = JSON.parse(tempJobInfo);
+          const now = Date.now();
+          // 30분 이내의 데이터만 복원 (1800000ms = 30분)
+          if (now - parsed.timestamp < 1800000) {
+            console.log('로그인 후 임시 데이터 복원');
+            setFormData(parsed.formData);
+            setCurrentStep(parsed.currentStep);
+            // 사용한 임시 데이터 삭제
+            localStorage.removeItem('temp_job_info');
+            return;
+          } else {
+            // 오래된 데이터 삭제
+            localStorage.removeItem('temp_job_info');
+          }
+        }
+      } catch (e) {
+        console.error('임시 데이터 복원 실패:', e);
+        localStorage.removeItem('temp_job_info');
+      }
+      
       // 일반적인 새 시작의 경우
       console.log('새로운 시작 - 첫 단계부터 시작');
       setCurrentStep(0);
@@ -144,9 +170,10 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
       fromFileUpload: location.state?.fromFileUpload,
       goToLastStep: location.state?.goToLastStep,
       scrollTo: location.state?.scrollTo,
-      currentStep: currentStep
+      currentStep: currentStep,
+      isAuthenticated: isAuthenticated
     });
-  }, [location.state]);
+  }, [location.state, isAuthenticated]);
 
   // 현재 단계의 입력 필드에 자동 포커스
   useEffect(() => {
@@ -302,6 +329,21 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
   };
 
   const handleSubmit = async () => {
+    // 로그인 체크
+    if (!isAuthenticated) {
+      // 현재 입력 데이터와 단계를 localStorage에 저장
+      try {
+        localStorage.setItem('auth_redirect_path', '/job-info');
+        localStorage.setItem('temp_job_info', JSON.stringify({
+          formData: formData,
+          currentStep: currentStep,
+          timestamp: Date.now()
+        }));
+      } catch (_) {}
+      navigate('/login?next=/job-info', { replace: true });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -370,8 +412,20 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
     );
   };
 
+    // SEO 메타데이터 설정
+  useDocumentMeta({
+    title: "채용정보 입력 | 써줌 - 맞춤형 자기소개서 생성",
+    description: "지원하고자 하는 회사와 직무 정보를 입력하여 해당 포지션에 최적화된 자기소개서를 생성하세요. 회사명, 직무, 주요업무, 자격요건 입력 지원.",
+    robots: "noindex, nofollow",
+    ogTitle: "채용정보 입력 | 써줌 - 맞춤형 자기소개서 생성",
+    ogDescription: "지원하고자 하는 회사와 직무 정보를 입력하여 해당 포지션에 최적화된 자기소개서를 생성하세요.",
+    ogType: "website",
+    ogUrl: "https://www.sseojum.com/job-info"
+  });
+
   return (
     <div className={`job-info-input-page`}>
+      
       <div className="page-content">
         <Navigation 
           canGoBack={true}

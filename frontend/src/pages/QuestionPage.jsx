@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
@@ -17,19 +18,20 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
+  // 인증 상태 확인 (리다이렉트 없이 상태만 체크)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkAuthStatus = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data?.session) {
-        try {
-          localStorage.setItem('auth_redirect_path', '/job-info');
-        } catch (_) {}
-        navigate('/login?next=/job-info', { replace: true });
+      if (!error && data?.session) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
       }
     };
-    checkAuthAndRedirect();
-  }, [navigate]);
+    checkAuthStatus();
+  }, []);
 
   useEffect(() => {
     if (location.state) {
@@ -41,10 +43,40 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         setQuestion(location.state.question);
       }
     } else {
-      // 상태가 없으면 홈으로 이동
-      navigate('/');
+      // 로그인 후 임시 저장된 데이터 복원 시도
+      try {
+        const tempQuestion = localStorage.getItem('temp_question');
+        if (tempQuestion && isAuthenticated) {
+          const parsed = JSON.parse(tempQuestion);
+          const now = Date.now();
+          // 30분 이내의 데이터만 복원 (1800000ms = 30분)
+          if (now - parsed.timestamp < 1800000) {
+            console.log('로그인 후 질문 임시 데이터 복원');
+            setQuestion(parsed.question);
+            setJobInfo(parsed.jobInfo);
+            
+            // 파일 메타데이터가 있다면 안내 (실제 파일은 복원 불가)
+            if (parsed.uploadedFiles && parsed.uploadedFiles.length > 0) {
+              setError('로그인 전에 업로드한 파일은 보안상 다시 업로드해주세요.');
+            }
+            
+            // 사용한 임시 데이터 삭제
+            localStorage.removeItem('temp_question');
+            return;
+          } else {
+            // 오래된 데이터 삭제
+            localStorage.removeItem('temp_question');
+          }
+        }
+      } catch (e) {
+        console.error('질문 임시 데이터 복원 실패:', e);
+        localStorage.removeItem('temp_question');
+      }
+      
+      // 상태가 없어도 페이지를 표시 (SEO 최적화)
+      // 비로그인 상태에서도 콘텐츠를 볼 수 있어야 함
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, isAuthenticated]);
 
   // 추천 질문 chip 버튼들 (Figma 디자인 기준)
   const recommendedQuestions = [
@@ -82,6 +114,26 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   };
 
   const handleGenerate = async () => {
+    // 로그인 체크
+    if (!isAuthenticated) {
+      // 현재 질문과 관련 데이터를 localStorage에 저장
+      try {
+        localStorage.setItem('auth_redirect_path', '/job-info');
+        localStorage.setItem('temp_question', JSON.stringify({
+          question: question,
+          jobInfo: jobInfo,
+          uploadedFiles: uploadedFiles ? uploadedFiles.map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type || 'application/pdf'
+          })) : [],
+          timestamp: Date.now()
+        }));
+      } catch (_) {}
+      navigate('/login?next=/job-info', { replace: true });
+      return;
+    }
+
     if (!question.trim()) {
       setError('문항을 입력해 주세요');
       setErrorKey(prev => prev + 1);
@@ -258,8 +310,20 @@ const QuestionPage = ({ onSidebarRefresh }) => {
 
   // handleGoForward 함수는 사용되지 않으므로 제거
 
+  // SEO 메타데이터 설정
+  useDocumentMeta({
+    title: "자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성",
+    description: "자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요. 다양한 추천 문항 제공.",
+    robots: "noindex, nofollow",
+    ogTitle: "자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성",
+    ogDescription: "자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요.",
+    ogType: "website",
+    ogUrl: "https://www.sseojum.com/question"
+  });
+
   return (
     <div className="question-page">
+      
       <div className="page-content">
         <Navigation
           canGoBack={true}

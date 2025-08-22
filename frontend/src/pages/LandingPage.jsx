@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { supabase } from '../services/supabaseClient';
 import { submitFeedback } from '../services/api';
 import { scrollToElement, scrollToTop } from '../utils/scrollUtils';
@@ -226,8 +227,48 @@ const LandingPage = () => {
 		}
 	};
 
+	// SEO 메타데이터 설정 (기본 페이지)
+	useDocumentMeta({
+		title: "써줌 | 3분 만에 완성하는 맞춤형 자소서",
+		description: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게.",
+		keywords: "자기소개서, 자소서, AI 자기소개서, 자소서 작성, 취업, 합격 자소서, 써줌",
+		robots: "index, follow",
+		ogTitle: "AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서",
+		ogDescription: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게.",
+		ogType: "website",
+		ogUrl: "https://www.sseojum.com",
+		ogImage: "https://www.sseojum.com/assets/sseojum_thumbnail.png",
+		ogImageWidth: "1200",
+		ogImageHeight: "630",
+		ogSiteName: "써줌",
+		ogLocale: "ko_KR",
+		twitterCard: "summary_large_image",
+		twitterTitle: "AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서",
+		twitterDescription: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요.",
+		twitterImage: "https://www.sseojum.com/assets/sseojum_thumbnail.png",
+		jsonLd: {
+			"@context": "https://schema.org",
+			"@type": "WebApplication",
+			"name": "써줌",
+			"description": "AI 기반 자기소개서 생성 서비스",
+			"url": "https://www.sseojum.com",
+			"applicationCategory": "BusinessApplication",
+			"operatingSystem": "Any",
+			"offers": {
+				"@type": "Offer",
+				"price": "0",
+				"priceCurrency": "KRW"
+			},
+			"creator": {
+				"@type": "Organization",
+				"name": "써줌"
+			}
+		}
+	});
+
 	return (
 		<div className="landing-root">
+			
 			{/* Main Content */}
 			<main className="landing-main">
 				{/* Hero Section */}
@@ -407,10 +448,7 @@ const LandingPage = () => {
 							navigate('/privacy', { replace: true });
 						}} className="footer-link">개인정보처리방침</button>
 						<button onClick={() => {
-							// 추후 이용약관 페이지 구현 예정
-							console.log('이용약관 페이지로 이동 (구현 예정)');
-							// navigate('/terms', { replace: true });
-							// window.scrollTo(0, 0);
+							navigate('/terms', { replace: true });
 						}} className="footer-link">이용약관</button>
 					</div>
 					

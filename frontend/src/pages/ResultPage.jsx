@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Button from '../components/Button';
 import Navigation from '../components/Navigation';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
@@ -29,6 +30,17 @@ function ResultPage({ onSidebarRefresh }) {
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
+
+    // SEO 메타데이터 설정
+    useDocumentMeta({
+        title: "자기소개서 결과 | 써줌 - AI 생성 완료",
+        description: "AI가 생성한 맞춤형 자기소개서 결과를 확인하고 수정하세요. 실시간 수정 요청과 추가 문항 생성 기능 제공.",
+        robots: "noindex, nofollow",
+        ogTitle: "자기소개서 결과 | 써줌 - AI 생성 완료",
+        ogDescription: "AI가 생성한 맞춤형 자기소개서 결과를 확인하고 수정하세요.",
+        ogType: "website",
+        ogUrl: "https://www.sseojum.com/result"
+    });
 
     // 인증 상태 확인: 비로그인 시 랜딩페이지로 리다이렉트
     useEffect(() => {
@@ -469,7 +481,7 @@ function ResultPage({ onSidebarRefresh }) {
     }
 
     return (
-        <div className="result-page">
+          <div className="result-page">
             
             <div className="page-content">
                 <Navigation
