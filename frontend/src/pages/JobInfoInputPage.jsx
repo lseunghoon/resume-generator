@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Input from '../components/Input';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabaseClient';
@@ -372,6 +373,18 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
 
   return (
     <div className={`job-info-input-page`}>
+      <Helmet>
+        <title>채용정보 입력 | 써줌 - 맞춤형 자기소개서 생성</title>
+        <meta name="description" content="지원하고자 하는 회사와 직무 정보를 입력하여 해당 포지션에 최적화된 자기소개서를 생성하세요. 회사명, 직무, 주요업무, 자격요건 입력 지원." />
+        <meta name="robots" content="noindex, nofollow" />
+        
+        {/* Open Graph 태그 */}
+        <meta property="og:title" content="채용정보 입력 | 써줌 - 맞춤형 자기소개서 생성" />
+        <meta property="og:description" content="지원하고자 하는 회사와 직무 정보를 입력하여 해당 포지션에 최적화된 자기소개서를 생성하세요." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.sseojum.com/job-info" />
+      </Helmet>
+      
       <div className="page-content">
         <Navigation 
           canGoBack={true}

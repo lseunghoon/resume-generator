@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { supabase } from '../services/supabaseClient';
 import { submitFeedback } from '../services/api';
 import { scrollToElement, scrollToTop } from '../utils/scrollUtils';
@@ -228,6 +229,51 @@ const LandingPage = () => {
 
 	return (
 		<div className="landing-root">
+			<Helmet>
+				<title>AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서</title>
+				<meta name="description" content="전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게." />
+				<meta name="keywords" content="자기소개서, 자소서, AI 자기소개서, 자소서 작성, 취업, 합격 자소서, 써줌" />
+				
+				{/* Open Graph 태그 */}
+				<meta property="og:title" content="AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서" />
+				<meta property="og:description" content="전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게." />
+				<meta property="og:type" content="website" />
+				<meta property="og:url" content="https://www.sseojum.com" />
+				<meta property="og:image" content="https://www.sseojum.com/assets/sseojum_thumbnail.png" />
+				<meta property="og:image:width" content="1200" />
+				<meta property="og:image:height" content="630" />
+				<meta property="og:site_name" content="써줌" />
+				<meta property="og:locale" content="ko_KR" />
+				
+				{/* Twitter 카드 */}
+				<meta name="twitter:card" content="summary_large_image" />
+				<meta name="twitter:title" content="AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서" />
+				<meta name="twitter:description" content="전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요." />
+				<meta name="twitter:image" content="https://www.sseojum.com/assets/sseojum_thumbnail.png" />
+				
+				{/* 구조화된 데이터 (JSON-LD) */}
+				<script type="application/ld+json">
+					{JSON.stringify({
+						"@context": "https://schema.org",
+						"@type": "WebApplication",
+						"name": "써줌",
+						"description": "AI 기반 자기소개서 생성 서비스",
+						"url": "https://www.sseojum.com",
+						"applicationCategory": "BusinessApplication",
+						"operatingSystem": "Any",
+						"offers": {
+							"@type": "Offer",
+							"price": "0",
+							"priceCurrency": "KRW"
+						},
+						"creator": {
+							"@type": "Organization",
+							"name": "써줌"
+						}
+					})}
+				</script>
+			</Helmet>
+			
 			{/* Main Content */}
 			<main className="landing-main">
 				{/* Hero Section */}

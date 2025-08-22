@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Button from '../components/Button';
 import Navigation from '../components/Navigation';
 import { getCoverLetter, addQuestion, reviseAnswer, deleteSession } from '../services/api';
@@ -470,6 +471,17 @@ function ResultPage({ onSidebarRefresh }) {
 
     return (
         <div className="result-page">
+            <Helmet>
+                <title>자기소개서 결과 | 써줌 - AI 생성 완료</title>
+                <meta name="description" content="AI가 생성한 맞춤형 자기소개서 결과를 확인하고 수정하세요. 실시간 수정 요청과 추가 문항 생성 기능 제공." />
+                <meta name="robots" content="noindex, nofollow" />
+                
+                {/* Open Graph 태그 */}
+                <meta property="og:title" content="자기소개서 결과 | 써줌 - AI 생성 완료" />
+                <meta property="og:description" content="AI가 생성한 맞춤형 자기소개서 결과를 확인하고 수정하세요." />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://www.sseojum.com/result" />
+            </Helmet>
             
             <div className="page-content">
                 <Navigation

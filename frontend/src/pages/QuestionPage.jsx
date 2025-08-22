@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navigation from '../components/Navigation';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
@@ -260,6 +261,18 @@ const QuestionPage = ({ onSidebarRefresh }) => {
 
   return (
     <div className="question-page">
+      <Helmet>
+        <title>자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성</title>
+        <meta name="description" content="자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요. 다양한 추천 문항 제공." />
+        <meta name="robots" content="noindex, nofollow" />
+        
+        {/* Open Graph 태그 */}
+        <meta property="og:title" content="자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성" />
+        <meta property="og:description" content="자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.sseojum.com/question" />
+      </Helmet>
+      
       <div className="page-content">
         <Navigation
           canGoBack={true}

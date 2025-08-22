@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabaseClient';
 import './FileUploadPage.css';
@@ -228,6 +229,18 @@ const FileUploadPage = () => {
 
   return (
     <div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
+      <Helmet>
+        <title>이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성</title>
+        <meta name="description" content="기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요. PDF, DOC, DOCX 파일 지원." />
+        <meta name="robots" content="noindex, nofollow" />
+        
+        {/* Open Graph 태그 */}
+        <meta property="og:title" content="이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성" />
+        <meta property="og:description" content="기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.sseojum.com/file-upload" />
+      </Helmet>
+      
       <div className="page-content">
         <Navigation
           canGoBack={true}
