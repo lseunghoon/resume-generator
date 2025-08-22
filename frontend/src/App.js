@@ -12,6 +12,7 @@ import Login from './components/Login';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 
+
 // Components
 import DevTools from './components/DevTools';
 import Header from './components/Header';
@@ -165,6 +166,7 @@ function AppContent() {
           <Route path="/result" element={<ResultPage onSidebarRefresh={() => setSidebarRefreshTrigger(prev => prev + 1)} />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+
         </Routes>
       </div>
       

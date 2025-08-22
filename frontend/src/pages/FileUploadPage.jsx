@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Title, Meta } from 'react-head'; // react-helmet-async에서 react-head로 변경
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabaseClient';
 import './FileUploadPage.css';
@@ -306,15 +306,19 @@ const FileUploadPage = () => {
 
   const canUploadMore = uploadedFiles.length < maxFiles;
 
-  return (
-    <div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
-      <Title>이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성</Title>
-      <Meta name="description" content="기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요. PDF, DOC, DOCX 파일 지원." />
-      <Meta name="robots" content="noindex, nofollow" />
-      <Meta property="og:title" content="이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성" />
-      <Meta property="og:description" content="기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요." />
-      <Meta property="og:type" content="website" />
-      <Meta property="og:url" content="https://www.sseojum.com/file-upload" />
+  	// SEO 메타데이터 설정
+	useDocumentMeta({
+		title: "이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성",
+		description: "기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요. PDF, DOC, DOCX 파일 지원.",
+		robots: "noindex, nofollow",
+		ogTitle: "이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성",
+		ogDescription: "기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요.",
+		ogType: "website",
+		ogUrl: "https://www.sseojum.com/file-upload"
+	});
+
+	return (
+		<div className="file-upload-page" onKeyPress={handleKeyPress} tabIndex={0}>
       
       <div className="page-content">
         <Navigation

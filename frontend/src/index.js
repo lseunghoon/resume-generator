@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { HeadProvider } from 'react-head';
 
 // Global console log suppression based on environment
 (() => {
@@ -24,9 +23,7 @@ import { HeadProvider } from 'react-head';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <HeadProvider>
-      <App />
-    </HeadProvider>
+    <App />
   </React.StrictMode>
 );
 

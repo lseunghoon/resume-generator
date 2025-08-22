@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Title, Meta } from 'react-head'; // react-helmet-async에서 react-head로 변경
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
 import Input from '../components/Input';
 import { createSession, getCoverLetter } from '../services/api';
@@ -310,15 +310,19 @@ const QuestionPage = ({ onSidebarRefresh }) => {
 
   // handleGoForward 함수는 사용되지 않으므로 제거
 
+  // SEO 메타데이터 설정
+  useDocumentMeta({
+    title: "자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성",
+    description: "자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요. 다양한 추천 문항 제공.",
+    robots: "noindex, nofollow",
+    ogTitle: "자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성",
+    ogDescription: "자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요.",
+    ogType: "website",
+    ogUrl: "https://www.sseojum.com/question"
+  });
+
   return (
     <div className="question-page">
-      <Title>자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성</Title>
-      <Meta name="description" content="자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요. 다양한 추천 문항 제공." />
-      <Meta name="robots" content="noindex, nofollow" />
-      <Meta property="og:title" content="자기소개서 문항 입력 | 써줌 - AI 자기소개서 생성" />
-      <Meta property="og:description" content="자기소개서 문항을 선택하거나 직접 입력하여 AI가 맞춤형 자기소개서를 생성하도록 하세요." />
-      <Meta property="og:type" content="website" />
-      <Meta property="og:url" content="https://www.sseojum.com/question" />
       
       <div className="page-content">
         <Navigation

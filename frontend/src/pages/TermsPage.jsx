@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Title, Meta } from 'react-head'; // react-helmet-async에서 react-head로 변경
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
 
 const TermsPage = () => {
@@ -15,24 +15,28 @@ const TermsPage = () => {
         } catch (_) {}
     }, []);
 
-    const handleGoBack = () => {
-        navigate('/', { replace: true });
-    };
+    	const handleGoBack = () => {
+		navigate('/', { replace: true });
+	};
 
-    return (
-        <div className="terms-page" style={{
-            maxWidth: 900,
-            margin: '0 auto',
-            padding: '24px',
-            paddingTop: '80px', // 헤더 여백
-            position: 'relative'
-        }}>
-            <Title>이용약관 | 써줌</Title>
-            <Meta name="description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다. 서비스 이용 조건, 금지행위, 책임의 한계, 분쟁 해결 절차 등을 확인하세요." />
-            <Meta property="og:title" content="이용약관 | 써줌" />
-            <Meta property="og:description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다." />
-            <Meta property="og:type" content="article" />
-            <Meta property="og:url" content="https://www.sseojum.com/terms" />
+	// SEO 메타데이터 설정
+	useDocumentMeta({
+		title: "이용약관 | 써줌",
+		description: "써줌 AI 자기소개서 생성 서비스 이용약관입니다. 서비스 이용 조건, 금지행위, 책임의 한계, 분쟁 해결 절차 등을 확인하세요.",
+		ogTitle: "이용약관 | 써줌",
+		ogDescription: "써줌 AI 자기소개서 생성 서비스 이용약관입니다.",
+		ogType: "article",
+		ogUrl: "https://www.sseojum.com/terms"
+	});
+
+	return (
+		<div className="terms-page" style={{
+			maxWidth: 900,
+			margin: '0 auto',
+			padding: '24px',
+			paddingTop: '80px', // 헤더 여백
+			position: 'relative'
+		}}>
 
             <Navigation
                 canGoBack={true}
