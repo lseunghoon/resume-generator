@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { Title, Meta } from 'react-head'; // react-helmet-async에서 react-head로 변경
 import Navigation from '../components/Navigation';
 
 const TermsPage = () => {
@@ -27,14 +27,12 @@ const TermsPage = () => {
             paddingTop: '80px', // 헤더 여백
             position: 'relative'
         }}>
-            <Helmet>
-                <title>이용약관 | 써줌</title>
-                <meta name="description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다. 서비스 이용 조건, 금지행위, 책임의 한계, 분쟁 해결 절차 등을 확인하세요." />
-                <meta property="og:title" content="이용약관 | 써줌" />
-                <meta property="og:description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다." />
-                <meta property="og:type" content="article" />
-                <meta property="og:url" content="https://www.sseojum.com/terms" />
-            </Helmet>
+            <Title>이용약관 | 써줌</Title>
+            <Meta name="description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다. 서비스 이용 조건, 금지행위, 책임의 한계, 분쟁 해결 절차 등을 확인하세요." />
+            <Meta property="og:title" content="이용약관 | 써줌" />
+            <Meta property="og:description" content="써줌 AI 자기소개서 생성 서비스 이용약관입니다." />
+            <Meta property="og:type" content="article" />
+            <Meta property="og:url" content="https://www.sseojum.com/terms" />
 
             <Navigation
                 canGoBack={true}

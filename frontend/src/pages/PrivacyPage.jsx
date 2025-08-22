@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { Title, Meta } from 'react-head'; // react-helmet-async에서 react-head로 변경
 import Navigation from '../components/Navigation';
 
 const PrivacyPage = () => {
@@ -53,17 +53,13 @@ const PrivacyPage = () => {
 			paddingTop: '80px', /* 헤더 높이 60px + 여백 20px */
 			position: 'relative'
 		}}>
-			<Helmet>
-				<title>개인정보처리방침 | 써줌</title>
-				<meta name="description" content="써줌 AI 자기소개서 생성 서비스의 개인정보처리방침을 확인하세요. 개인정보 보호 정책과 사용자 데이터 처리 방식에 대한 상세 안내." />
-				<meta name="robots" content="noindex, nofollow" />
-				
-				{/* Open Graph 태그 */}
-				<meta property="og:title" content="개인정보처리방침 | 써줌" />
-				<meta property="og:description" content="써줌 AI 자기소개서 생성 서비스의 개인정보처리방침을 확인하세요." />
-				<meta property="og:type" content="article" />
-				<meta property="og:url" content="https://www.sseojum.com/privacy" />
-			</Helmet>
+			<Title>개인정보처리방침 | 써줌</Title>
+			<Meta name="description" content="써줌 AI 자기소개서 생성 서비스의 개인정보처리방침을 확인하세요. 개인정보 보호 정책과 사용자 데이터 처리 방식에 대한 상세 안내." />
+			<Meta name="robots" content="noindex, nofollow" />
+			<Meta property="og:title" content="개인정보처리방침 | 써줌" />
+			<Meta property="og:description" content="써줌 AI 자기소개서 생성 서비스의 개인정보처리방침을 확인하세요." />
+			<Meta property="og:type" content="article" />
+			<Meta property="og:url" content="https://www.sseojum.com/privacy" />
 			
 			<Navigation 
 				canGoBack={true}
