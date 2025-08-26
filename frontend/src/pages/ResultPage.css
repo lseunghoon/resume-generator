@@ -927,30 +927,26 @@
 /* 수정 프롬프트 표시 */
 .revision-prompt-display {
   margin-bottom: 15px;
-  padding: 8px 12px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border-left: 3px solid #e0e6ed;
+  padding: 0;
+  background-color: transparent;
+  border: none;
 }
 
-.revision-prompt-header {
-  margin-bottom: 6px;
-}
-
-.revision-prompt-title {
-  font-size: 11px;
-  color: #495057;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: 'Pretendard Variable', sans-serif;
+.revision-prompt-arrow {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  opacity: 1;
+  filter: brightness(0.7);
 }
 
 .revision-prompt-content {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
 }
 
 .revision-prompt-text {
@@ -958,10 +954,9 @@
   color: #6c757d;
   font-style: italic;
   line-height: 1.4;
-  display: block;
+  display: inline;
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 400;
-  flex: 1;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -1137,20 +1132,18 @@
   /* 모바일에서 수정 프롬프트 표시 */
   .revision-prompt-display {
     margin-bottom: 12px;
-    padding: 6px 10px;
+    padding: 0;
     margin: 0 15px 12px 15px;
   }
 
-  .revision-prompt-header {
-    margin-bottom: 4px;
-  }
-
-  .revision-prompt-title {
-    font-size: 10px;
+  .revision-prompt-arrow {
+    width: 14px;
+    height: 14px;
   }
 
   .revision-prompt-content {
     gap: 6px;
+    align-items: center;
   }
 
   .revision-prompt-text {

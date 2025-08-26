@@ -8,6 +8,8 @@ import { extractSessionIdFromUrl } from '../utils/sessionUtils';
 import { supabase } from '../services/supabaseClient';
 import './ResultPage.css';
 
+const chatIcon = '/assets/chat_icon.svg';
+
 function ResultPage({ onSidebarRefresh }) {
     const location = useLocation();
     const navigate = useNavigate();
@@ -580,28 +582,26 @@ function ResultPage({ onSidebarRefresh }) {
                                 return (
                                     <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
                                         <div className="message-content">
-                                            {/* 수정 프롬프트 표시 (첫 번째 수정부터, 즉 historyIndex 1부터) */}
-                                            {promptText && historyIndex >= 1 && (
-                                                <div className="revision-prompt-display">
-                                                    <div className="revision-prompt-header">
-                                                        <span className="revision-prompt-title">직전 요청</span>
-                                                    </div>
-                                                    <div className="revision-prompt-content">
-                                                        <span className="revision-prompt-text">
-                                                            "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
-                                                        </span>
-                                                        {shouldTruncate && (
-                                                            <button 
-                                                                className="prompt-expand-button"
-                                                                onClick={() => togglePromptExpansion(questionId, historyIndex)}
-                                                                title={isExpanded ? "접기" : "전체 보기"}
-                                                            >
-                                                                {isExpanded ? "↑" : "↓"}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
+                                                                     {/* 수정 프롬프트 표시 (첫 번째 수정부터, 즉 historyIndex 1부터) */}
+                         {promptText && historyIndex >= 1 && (
+                             <div className="revision-prompt-display">
+                                 <div className="revision-prompt-content">
+                                     <img src={chatIcon} alt="수정 요청" className="revision-prompt-arrow" />
+                                     <span className="revision-prompt-text">
+                                         "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                     </span>
+                                     {shouldTruncate && (
+                                         <button 
+                                             className="prompt-expand-button"
+                                             onClick={() => togglePromptExpansion(questionId, historyIndex)}
+                                             title={isExpanded ? "접기" : "전체 보기"}
+                                         >
+                                             {isExpanded ? "↑" : "↓"}
+                                         </button>
+                                     )}
+                                 </div>
+                             </div>
+                         )}
                                             <div className="message-text">
                                                 {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
                                                     <p key={i}>{line}</p>
@@ -629,42 +629,40 @@ function ResultPage({ onSidebarRefresh }) {
                             <div className="message-item current-message">
                                 <div className="message-content">
                                     {/* 수정 프롬프트 표시 (현재 버전에 대한 것) */}
-                                    {answers[activeTab].revision_prompts && 
-                                     answers[activeTab].revision_prompts.length > 0 && 
-                                     answers[activeTab].current_version_index > 0 && (() => {
-                                        const currentPrompt = answers[activeTab].revision_prompts.find(prompt => 
-                                            prompt.version_index === answers[activeTab].current_version_index
-                                        );
-                                        const promptText = currentPrompt?.prompt || '';
-                                        const questionId = answers[activeTab].id;
-                                        const versionIndex = answers[activeTab].current_version_index;
-                                        const isExpanded = isPromptExpanded(questionId, versionIndex);
-                                        const shouldTruncate = shouldTruncatePrompt(promptText);
-                                        
-                                        if (!promptText) return null;
-                                        
-                                        return (
-                                            <div className="revision-prompt-display">
-                                                <div className="revision-prompt-header">
-                                                    <span className="revision-prompt-title">직전 요청</span>
-                                                </div>
-                                                <div className="revision-prompt-content">
-                                                    <span className="revision-prompt-text">
-                                                        "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
-                                                    </span>
-                                                    {shouldTruncate && (
-                                                        <button 
-                                                            className="prompt-expand-button"
-                                                            onClick={() => togglePromptExpansion(questionId, versionIndex)}
-                                                            title={isExpanded ? "접기" : "전체 보기"}
-                                                        >
-                                                            {isExpanded ? "↑" : "↓"}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                     })()}
+                                                             {answers[activeTab].revision_prompts && 
+                          answers[activeTab].revision_prompts.length > 0 && 
+                          answers[activeTab].current_version_index > 0 && (() => {
+                             const currentPrompt = answers[activeTab].revision_prompts.find(prompt => 
+                                 prompt.version_index === answers[activeTab].current_version_index
+                             );
+                             const promptText = currentPrompt?.prompt || '';
+                             const questionId = answers[activeTab].id;
+                             const versionIndex = answers[activeTab].current_version_index;
+                             const isExpanded = isPromptExpanded(questionId, versionIndex);
+                             const shouldTruncate = shouldTruncatePrompt(promptText);
+                             
+                             if (!promptText) return null;
+                             
+                             return (
+                                 <div className="revision-prompt-display">
+                                     <div className="revision-prompt-content">
+                                         <img src={chatIcon} alt="수정 요청" className="revision-prompt-arrow" />
+                                         <span className="revision-prompt-text">
+                                             "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                         </span>
+                                         {shouldTruncate && (
+                                             <button 
+                                                 className="prompt-expand-button"
+                                                 onClick={() => togglePromptExpansion(questionId, versionIndex)}
+                                                 title={isExpanded ? "접기" : "전체 보기"}
+                                             >
+                                                 {isExpanded ? "↑" : "↓"}
+                                             </button>
+                                         )}
+                                     </div>
+                                 </div>
+                             );
+                          })()}
                                     <div className="message-text">
                                         {removeMarkdownBold(answers[activeTab].answer).split('\n').map((line, i) => (
                                             <p key={i}>{line}</p>
