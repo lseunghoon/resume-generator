@@ -134,17 +134,112 @@ const LandingPage = () => {
 				window.history.replaceState(null, '', window.location.pathname);
 			}
 			
-			// 현재 세션 확인
-			const { data: { session } } = await supabase.auth.getSession();
-			console.log('LandingPage - 현재 세션 상태:', !!session);
+			// Supabase 클라이언트 상태 확인
+			console.log('LandingPage - Supabase 클라이언트 상태 확인...');
+			if (!supabase || typeof supabase.auth !== 'object') {
+				console.error('LandingPage - Supabase 클라이언트가 제대로 초기화되지 않음');
+				throw new Error('Supabase 클라이언트 초기화 실패');
+			}
 			
-			if (session) {
-				// 이미 로그인된 경우: 바로 job-info 페이지로 이동 (state 없이 새로 시작)
-				console.log('로그인된 사용자, job-info 페이지로 이동');
-				navigate('/job-info', { replace: true, state: null });
+			// 현재 세션 확인 - 더 엄격한 체크
+			console.log('LandingPage - Supabase 세션 확인 시작...');
+			const { data, error } = await supabase.auth.getSession();
+			
+			if (error) {
+				console.error('LandingPage - 세션 확인 중 Supabase 오류:', error);
+				throw error;
+			}
+			
+			const session = data?.session;
+			console.log('LandingPage - 세션 데이터 전체:', data);
+			console.log('LandingPage - 세션 객체:', session);
+			console.log('LandingPage - 세션 존재 여부:', !!session);
+			console.log('LandingPage - 세션 타입:', typeof session);
+			
+			// 세션이 존재하고 유효한지 더 엄격하게 체크
+			const isValidSession = !!(session && 
+				typeof session === 'object' && 
+				session.access_token && 
+				session.refresh_token &&
+				session.user &&
+				session.user.id);
+			
+			console.log('LandingPage - 유효한 세션인지:', isValidSession);
+			console.log('LandingPage - 세션 상세 정보:', {
+				hasSession: !!session,
+				hasAccessToken: !!session?.access_token,
+				hasRefreshToken: !!session?.refresh_token,
+				hasUser: !!session?.user,
+				hasUserId: !!session?.user?.id,
+				userId: session?.user?.id
+			});
+			
+			if (isValidSession) {
+				// Supabase 세션이 있는 경우, 백엔드에서 실제 사용자 인증 상태 확인
+				console.log('LandingPage - Supabase 세션 발견, 백엔드 인증 상태 확인 중...');
+				
+				try {
+					// 백엔드 API를 통해 실제 사용자 인증 상태 확인
+					// 개발 환경에서는 localhost:5000, 프로덕션에서는 상대 경로 사용
+					const backendUrl = process.env.NODE_ENV === 'development' 
+						? 'http://localhost:5000' 
+						: '';
+					
+					const apiUrl = `${backendUrl}/api/v1/auth/user`;
+					console.log('LandingPage - 백엔드 API 호출:', {
+						backendUrl,
+						apiUrl,
+						environment: process.env.NODE_ENV,
+						hasAccessToken: !!session.access_token
+					});
+					
+					const response = await fetch(apiUrl, {
+						method: 'GET',
+						headers: {
+							'Authorization': `Bearer ${session.access_token}`,
+							'Content-Type': 'application/json'
+						}
+					});
+					
+					console.log('LandingPage - 백엔드 응답:', {
+						status: response.status,
+						statusText: response.statusText,
+						ok: response.ok,
+						url: response.url
+					});
+					
+					if (response.ok) {
+						// 백엔드에서 인증된 사용자로 확인됨
+						console.log('LandingPage - 백엔드 인증 성공, job-info 페이지로 이동');
+						navigate('/job-info', { replace: true, state: null });
+					} else {
+						// 백엔드에서 인증 실패 (세션이 만료되었거나 유효하지 않음)
+						console.log('LandingPage - 백엔드 인증 실패, Supabase 세션 정리 후 로그인 페이지로 이동');
+						
+						// Supabase 세션 정리
+						await supabase.auth.signOut();
+						
+						// 로그인 페이지로 이동
+						localStorage.setItem('auth_redirect_path', '/job-info');
+						const loginUrl = '/login?next=/job-info';
+						navigate(loginUrl);
+					}
+				} catch (backendError) {
+					console.error('LandingPage - 백엔드 인증 확인 중 오류:', backendError);
+					
+					// 백엔드 연결 실패 시에도 안전하게 로그인 페이지로 이동
+					console.log('LandingPage - 백엔드 연결 실패, 로그인 페이지로 이동');
+					
+					// Supabase 세션 정리 (안전을 위해)
+					await supabase.auth.signOut();
+					
+					localStorage.setItem('auth_redirect_path', '/job-info');
+					const loginUrl = '/login?next=/job-info';
+					navigate(loginUrl);
+				}
 			} else {
 				// 로그인되지 않은 경우: 로그인 페이지로 이동하고, 로그인 완료 후 job-info로 이동
-				console.log('로그인되지 않은 사용자, 로그인 페이지로 이동');
+				console.log('LandingPage - 유효한 세션 없음, 로그인 페이지로 이동');
 				
 				// next 경로를 localStorage에 저장 (OAuth 콜백 후에도 접근 가능하도록)
 				localStorage.setItem('auth_redirect_path', '/job-info');
@@ -154,8 +249,23 @@ const LandingPage = () => {
 				navigate(loginUrl);
 			}
 		} catch (error) {
-			console.error('세션 확인 중 오류 발생:', error);
+			console.error('LandingPage - 세션 확인 중 오류 발생:', error);
+			console.error('LandingPage - 오류 상세:', {
+				message: error.message,
+				name: error.name,
+				stack: error.stack
+			});
+			
+			// 오류 발생 시 Supabase 세션 정리 시도
+			try {
+				console.log('LandingPage - 오류 발생으로 Supabase 세션 정리 시도');
+				await supabase.auth.signOut();
+			} catch (signOutError) {
+				console.error('LandingPage - Supabase 세션 정리 실패:', signOutError);
+			}
+			
 			// 오류 발생 시에도 로그인 페이지로 이동
+			console.log('LandingPage - 오류 발생으로 인해 로그인 페이지로 이동');
 			
 			// next 경로를 localStorage에 저장
 			localStorage.setItem('auth_redirect_path', '/job-info');

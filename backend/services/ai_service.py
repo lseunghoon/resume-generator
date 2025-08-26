@@ -257,7 +257,30 @@ class AIService(LoggerMixin):
             
             submitted_data_section = ""
             if resume_text and resume_text.strip():
-                if "--- 파일 구분선 ---" in resume_text:
+                # 가짜 이력서 내용인지 확인 (하드코딩된 텍스트)
+                fake_resume_indicators = [
+                    "사용자가 직접 입력한 이력서 내용입니다",
+                    "저는 다양한 프로젝트 경험을 통해",
+                    "웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며",
+                    "대학교에서 컴퓨터공학을 전공하며"
+                ]
+                
+                is_fake_resume = any(indicator in resume_text for indicator in fake_resume_indicators)
+                
+                if is_fake_resume:
+                    # 가짜 이력서인 경우 - 특별한 가이드 제공
+                    submitted_data_section = """### 정보 2: 지원자 제출 자료
+⚠️ 이력서가 제공되지 않았습니다.
+
+**현재 상황**: 사용자는 파일업로드를 건너뛰고 채용정보 입력 단계에서 제공한 정보만을 바탕으로 자기소개서를 작성하고자 합니다.
+
+**AI 작성 가이드**: 
+1. 채용공고의 요구사항과 자격요건을 중심으로 답변을 구성하세요
+2. 구체적인 경험 대신, 해당 직무에 필요한 역량과 자질을 강조하는 방향으로 작성하세요
+3. "이력서가 없어 구체적인 경험을 언급할 수 없지만" 같은 표현은 사용하지 마세요
+4. 지원자의 잠재력과 적성, 그리고 직무에 대한 이해도를 중심으로 답변하세요
+5. 채용공고의 내용을 바탕으로 지원자가 가질 수 있는 일반적인 역량과 자질을 추론하여 답변하세요"""
+                elif "--- 파일 구분선 ---" in resume_text:
                     submitted_data_section = f"""### 정보 2: 지원자 제출 자료 (이력서, 자기소개서, 포트폴리오 등)
 --- 자료 시작 ---
 {resume_text}

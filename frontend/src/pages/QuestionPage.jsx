@@ -15,6 +15,7 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
   const [error, setError] = useState(''); // 에러 메시지
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
+  const [skipResumeUpload, setSkipResumeUpload] = useState(false); // 이력서 업로드 건너뛰기 상태
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +38,7 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     if (location.state) {
       setUploadedFiles(location.state.uploadedFiles || []);
       setJobInfo(location.state.jobInfo || null);
+      setSkipResumeUpload(location.state.skipResumeUpload || false); // 건너뛰기 상태 설정
       
       // 이전에 입력한 질문이 있으면 복원
       if (location.state.question) {
@@ -169,7 +171,11 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         jobTitle: jobInfo ? jobInfo.jobTitle : '',
         mainResponsibilities: jobInfo ? jobInfo.mainResponsibilities : '',
         requirements: jobInfo ? jobInfo.requirements : '',
-        preferredQualifications: jobInfo ? jobInfo.preferredQualifications : ''
+        preferredQualifications: jobInfo ? jobInfo.preferredQualifications : '',
+        // 이력서 업로드 건너뛰기 관련 추가 정보
+        hasResume: uploadedFiles && uploadedFiles.length > 0,
+        resumeSource: uploadedFiles && uploadedFiles.length > 0 ? 'file_upload' : 'manual_input_only',
+        skipResumeUpload: skipResumeUpload
       };
       
       // 디버깅: FormData 크기 확인
@@ -337,6 +343,14 @@ const QuestionPage = ({ onSidebarRefresh }) => {
               <div className="form-header">
                 <h1>자기소개서 문항을 선택하거나<br/> 직접 입력해 주세요</h1>
                 <p>자주 쓰는 문항 중 하나를 골라 입력해보세요</p>
+                
+                          {/* 이력서 상태 안내 - 이력서 업로드 완료 시에만 표시 */}
+          {!skipResumeUpload && uploadedFiles && uploadedFiles.length > 0 && (
+            <div className="resume-status-notice success">
+              <span className="notice-icon">📄</span>
+              <span className="notice-text">이력서 업로드 완료 - 개인화된 자소서 생성</span>
+            </div>
+          )}
               </div>
 
               {/* 질문 직접 입력 */}

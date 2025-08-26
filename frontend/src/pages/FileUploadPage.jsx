@@ -228,7 +228,8 @@ const FileUploadPage = () => {
       state: { 
         uploadedFiles: fileObjects, // 다중 파일 배열로 전달
         jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
-        question: location.state?.question || '' // 이전에 입력한 질문 전달
+        question: location.state?.question || '', // 이전에 입력한 질문 전달
+        skipResumeUpload: uploadedFiles.length === 0 // 파일이 없으면 건너뛰기 플래그 추가
       } 
     });
   };
@@ -260,7 +261,8 @@ const FileUploadPage = () => {
       state: { 
         uploadedFiles: [], // 빈 배열
         jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
-        question: location.state?.question || '' // 이전에 입력한 질문 전달
+        question: location.state?.question || '', // 이전에 입력한 질문 전달
+        skipResumeUpload: true // 건너뛰기 플래그 추가
       } 
     });
   };
