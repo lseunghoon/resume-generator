@@ -82,6 +82,10 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // FileUploadPage와 QuestionPage에서 전달된 데이터 저장
+  const [fileUploadData, setFileUploadData] = useState(null);
+  const [questionData, setQuestionData] = useState(null);
+  
   // 각 입력 필드에 대한 ref 생성
   const inputRefs = {
     companyName: useRef(null),
@@ -121,6 +125,18 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
     if (location.state?.jobInfo && location.state?.fromFileUpload === true) {
       console.log('정상적인 뒤로가기 감지 - 데이터 복원');
       setFormData(location.state.jobInfo);
+      
+      // FileUploadPage에서 전달된 데이터 저장 (있을 경우)
+      if (location.state?.fileUploadData) {
+        setFileUploadData(location.state.fileUploadData);
+        console.log('FileUploadPage 데이터 저장:', location.state.fileUploadData);
+      }
+      
+      // QuestionPage에서 전달된 데이터 저장 (있을 경우)
+      if (location.state?.questionData) {
+        setQuestionData(location.state.questionData);
+        console.log('QuestionPage 데이터 저장:', location.state.questionData);
+      }
       
       // goToLastStep이 true인 경우, 마지막 단계로 이동
       if (location.state?.goToLastStep) {
@@ -347,11 +363,25 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
     setIsSubmitting(true);
 
     try {
-      // 채용정보를 다음 페이지로 전달
+      // 채용정보와 저장된 FileUpload, Question 데이터를 다음 페이지로 전달
+      const navigationState = {
+        jobInfo: formData
+      };
+      
+      // 저장된 FileUploadPage 데이터가 있으면 전달
+      if (fileUploadData) {
+        navigationState.uploadedFiles = fileUploadData.uploadedFiles || [];
+        navigationState.manualText = fileUploadData.manualText || '';
+        navigationState.activeTab = fileUploadData.activeTab || 'upload';
+      }
+      
+      // 저장된 QuestionPage 데이터가 있으면 전달
+      if (questionData) {
+        navigationState.question = questionData.question || '';
+      }
+      
       navigate('/file-upload', {
-        state: {
-          jobInfo: formData
-        }
+        state: navigationState
       });
     } catch (error) {
       console.error('채용정보 처리 오류:', error);

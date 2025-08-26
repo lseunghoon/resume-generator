@@ -12,6 +12,8 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const [question, setQuestion] = useState(''); // 직접 입력 질문
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [manualText, setManualText] = useState(''); // 직접 입력 텍스트
+  const [activeTab, setActiveTab] = useState('upload'); // 활성 탭
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
   const [error, setError] = useState(''); // 에러 메시지
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
@@ -39,6 +41,14 @@ const QuestionPage = ({ onSidebarRefresh }) => {
       setUploadedFiles(location.state.uploadedFiles || []);
       setJobInfo(location.state.jobInfo || null);
       setSkipResumeUpload(location.state.skipResumeUpload || false); // 건너뛰기 상태 설정
+      
+      // FileUploadPage에서 전달된 데이터 복원
+      if (location.state.manualText) {
+        setManualText(location.state.manualText);
+      }
+      if (location.state.activeTab) {
+        setActiveTab(location.state.activeTab);
+      }
       
       // 이전에 입력한 질문이 있으면 복원
       if (location.state.question) {
@@ -165,7 +175,18 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         uploadedFiles: uploadedFiles || [],
         questions: [question], // 사용자가 입력한 질문
         jobDescription: jobInfo ? `${jobInfo.companyName} - ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}` : '',
-        resumeText: uploadedFiles && uploadedFiles.length > 0 ? '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.' : '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.',
+        resumeText: (() => {
+          // 파일 업로드가 있는 경우
+          if (uploadedFiles && uploadedFiles.length > 0) {
+            return '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.';
+          }
+          // 직접 입력이 있는 경우
+          if (manualText && manualText.trim()) {
+            return `사용자가 직접 입력한 이력서 내용입니다.\n\n${manualText.trim()}`;
+          }
+          // 아무것도 없는 경우 (건너뛰기)
+          return '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.';
+        })(),
         // 사용자가 직접 입력한 개별 필드들 추가
         companyName: jobInfo ? jobInfo.companyName : '',
         jobTitle: jobInfo ? jobInfo.jobTitle : '',
@@ -173,8 +194,12 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         requirements: jobInfo ? jobInfo.requirements : '',
         preferredQualifications: jobInfo ? jobInfo.preferredQualifications : '',
         // 이력서 업로드 건너뛰기 관련 추가 정보
-        hasResume: uploadedFiles && uploadedFiles.length > 0,
-        resumeSource: uploadedFiles && uploadedFiles.length > 0 ? 'file_upload' : 'manual_input_only',
+        hasResume: (uploadedFiles && uploadedFiles.length > 0) || (manualText && manualText.trim()),
+        resumeSource: (() => {
+          if (uploadedFiles && uploadedFiles.length > 0) return 'file_upload';
+          if (manualText && manualText.trim()) return 'manual_input';
+          return 'none';
+        })(),
         skipResumeUpload: skipResumeUpload
       };
       
@@ -308,6 +333,8 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     navigate('/file-upload', { 
       state: { 
         uploadedFiles, // 업로드된 파일들 전달
+        manualText, // 직접 입력 텍스트 전달
+        activeTab, // 활성 탭 전달
         jobInfo, // 채용정보 전달
         question // 입력한 질문 전달
       } 
@@ -343,14 +370,6 @@ const QuestionPage = ({ onSidebarRefresh }) => {
               <div className="form-header">
                 <h1>자기소개서 문항을 선택하거나<br/> 직접 입력해 주세요</h1>
                 <p>자주 쓰는 문항 중 하나를 골라 입력해보세요</p>
-                
-                          {/* 이력서 상태 안내 - 이력서 업로드 완료 시에만 표시 */}
-          {!skipResumeUpload && uploadedFiles && uploadedFiles.length > 0 && (
-            <div className="resume-status-notice success">
-              <span className="notice-icon">📄</span>
-              <span className="notice-text">이력서 업로드 완료 - 개인화된 자소서 생성</span>
-            </div>
-          )}
               </div>
 
               {/* 질문 직접 입력 */}

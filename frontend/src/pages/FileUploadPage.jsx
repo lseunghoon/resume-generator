@@ -340,7 +340,17 @@ const FileUploadPage = () => {
       state: { 
         jobInfo: jobInfo,
         fromFileUpload: true,
-        goToLastStep: true // 우대사항 단계로 이동하기 위한 플래그
+        goToLastStep: true, // 우대사항 단계로 이동하기 위한 플래그
+        // FileUploadPage 데이터 전달
+        fileUploadData: {
+          uploadedFiles: uploadedFiles,
+          manualText: manualText,
+          activeTab: activeTab
+        },
+        // QuestionPage 데이터 전달 (location.state에서 가져온 경우)
+        questionData: location.state?.question ? {
+          question: location.state.question
+        } : null
       } 
     });
   };
@@ -348,6 +358,11 @@ const FileUploadPage = () => {
   // handleGoForward 함수는 사용되지 않으므로 제거
 
   const handleKeyPress = (e) => {
+    // textarea나 input이 포커스되어 있을 때는 전역 키보드 이벤트 무시
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+      return;
+    }
+    
     // Enter 키만 눌렀을 때는 다음 버튼 작동
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -519,13 +534,9 @@ const FileUploadPage = () => {
                       value={manualText}
                       onChange={(e) => setManualText(e.target.value)}
                       onKeyDown={(e) => {
-                        // Shift+Enter: 줄바꿈 허용
-                        if (e.key === 'Enter' && e.shiftKey) {
+                        // Enter: 줄바꿈 허용 (기본 동작)
+                        if (e.key === 'Enter') {
                           // 기본 동작 허용 (줄바꿈)
-                        }
-                        // Enter만: 다음 버튼 작동 방지
-                        else if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
                         }
                       }}
                       rows={12}
