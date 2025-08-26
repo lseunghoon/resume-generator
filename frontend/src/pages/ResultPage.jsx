@@ -30,6 +30,9 @@ function ResultPage({ onSidebarRefresh }) {
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
+    
+    // 긴 프롬프트 표시 관리
+    const [expandedPrompts, setExpandedPrompts] = useState({}); // {questionId_versionIndex: boolean}
 
     // SEO 메타데이터 설정
     useDocumentMeta({
@@ -105,6 +108,35 @@ function ResultPage({ onSidebarRefresh }) {
         if (!text || typeof text !== 'string') return 0;
         const cleanText = removeMarkdownBold(text);
         return cleanText.length;
+    };
+
+    // 프롬프트 축약/확장 관련 함수들
+    const PROMPT_TRUNCATE_LENGTH = 200; // 200자 이상이면 축약
+    
+    const shouldTruncatePrompt = (prompt) => {
+        return prompt && prompt.length > PROMPT_TRUNCATE_LENGTH;
+    };
+
+    const getTruncatedPrompt = (prompt) => {
+        if (!shouldTruncatePrompt(prompt)) return prompt;
+        return prompt.substring(0, PROMPT_TRUNCATE_LENGTH) + '...';
+    };
+
+    const getPromptKey = (questionId, versionIndex) => {
+        return `${questionId}_${versionIndex}`;
+    };
+
+    const togglePromptExpansion = (questionId, versionIndex) => {
+        const key = getPromptKey(questionId, versionIndex);
+        setExpandedPrompts(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const isPromptExpanded = (questionId, versionIndex) => {
+        const key = getPromptKey(questionId, versionIndex);
+        return expandedPrompts[key] || false;
     };
 
     useEffect(() => {
@@ -246,6 +278,7 @@ function ResultPage({ onSidebarRefresh }) {
                         answer: currentAnswer,
                         answer_history: answerHistory,
                         current_version_index: question.current_version_index || 0,
+                        revision_prompts: question.revision_prompts || [],
                         // length는 DB에 저장하지 않고 프론트에서 계산
                         length: calculateTextLength(currentAnswer),
                         has_undo: (question.current_version_index || 0) > 0,
@@ -533,34 +566,105 @@ function ResultPage({ onSidebarRefresh }) {
                             {/* 과거 버전들 (가장 오래된 것부터) */}
                             {answers[activeTab].answer_history && answers[activeTab].answer_history.length > 0 && 
                              answers[activeTab].current_version_index > 0 &&
-                             answers[activeTab].answer_history.slice(0, answers[activeTab].current_version_index).map((historyAnswer, historyIndex) => (
-                                <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
-                                    <div className="message-content">
-                                        <div className="message-text">
-                                            {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
-                                                <p key={i}>{line}</p>
-                                            ))}
-                                        </div>
-                                        <div className="message-meta">
-                                            <span className="message-character-count">공백포함 {calculateTextLength(historyAnswer)}자</span>
-                                            <button 
-                                                className="message-copy-button"
-                                                onClick={() => handleCopy(activeTab, true, historyIndex)}
-                                            >
-                                                <img 
-                                                    src="/assets/content_copy.svg" 
-                                                    alt="복사" 
-                                                    className="copy-icon"
-                                                />
-                                            </button>
+                             answers[activeTab].answer_history.slice(0, answers[activeTab].current_version_index).map((historyAnswer, historyIndex) => {
+                                // 해당 버전에 맞는 수정 프롬프트 찾기
+                                // historyIndex 0 = 원본(프롬프트 없음), historyIndex 1 = version_index 1, historyIndex 2 = version_index 2
+                                const revisionPrompt = answers[activeTab].revision_prompts?.find(prompt => 
+                                    prompt.version_index === historyIndex
+                                );
+                                const promptText = revisionPrompt?.prompt || '';
+                                const questionId = answers[activeTab].id;
+                                const isExpanded = isPromptExpanded(questionId, historyIndex);
+                                const shouldTruncate = shouldTruncatePrompt(promptText);
+
+                                return (
+                                    <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
+                                        <div className="message-content">
+                                            {/* 수정 프롬프트 표시 (첫 번째 수정부터, 즉 historyIndex 1부터) */}
+                                            {promptText && historyIndex >= 1 && (
+                                                <div className="revision-prompt-display">
+                                                    <div className="revision-prompt-header">
+                                                        <span className="revision-prompt-title">직전 요청</span>
+                                                    </div>
+                                                    <div className="revision-prompt-content">
+                                                        <span className="revision-prompt-text">
+                                                            "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                                        </span>
+                                                        {shouldTruncate && (
+                                                            <button 
+                                                                className="prompt-expand-button"
+                                                                onClick={() => togglePromptExpansion(questionId, historyIndex)}
+                                                                title={isExpanded ? "접기" : "전체 보기"}
+                                                            >
+                                                                {isExpanded ? "↑" : "↓"}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="message-text">
+                                                {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
+                                                    <p key={i}>{line}</p>
+                                                ))}
+                                            </div>
+                                            <div className="message-meta">
+                                                <span className="message-character-count">공백포함 {calculateTextLength(historyAnswer)}자</span>
+                                                <button 
+                                                    className="message-copy-button"
+                                                    onClick={() => handleCopy(activeTab, true, historyIndex)}
+                                                >
+                                                    <img 
+                                                        src="/assets/content_copy.svg" 
+                                                        alt="복사" 
+                                                        className="copy-icon"
+                                                    />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                             })}
                             
                             {/* 현재 버전 (가장 최신) */}
                             <div className="message-item current-message">
                                 <div className="message-content">
+                                    {/* 수정 프롬프트 표시 (현재 버전에 대한 것) */}
+                                    {answers[activeTab].revision_prompts && 
+                                     answers[activeTab].revision_prompts.length > 0 && 
+                                     answers[activeTab].current_version_index > 0 && (() => {
+                                        const currentPrompt = answers[activeTab].revision_prompts.find(prompt => 
+                                            prompt.version_index === answers[activeTab].current_version_index
+                                        );
+                                        const promptText = currentPrompt?.prompt || '';
+                                        const questionId = answers[activeTab].id;
+                                        const versionIndex = answers[activeTab].current_version_index;
+                                        const isExpanded = isPromptExpanded(questionId, versionIndex);
+                                        const shouldTruncate = shouldTruncatePrompt(promptText);
+                                        
+                                        if (!promptText) return null;
+                                        
+                                        return (
+                                            <div className="revision-prompt-display">
+                                                <div className="revision-prompt-header">
+                                                    <span className="revision-prompt-title">직전 요청</span>
+                                                </div>
+                                                <div className="revision-prompt-content">
+                                                    <span className="revision-prompt-text">
+                                                        "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                                    </span>
+                                                    {shouldTruncate && (
+                                                        <button 
+                                                            className="prompt-expand-button"
+                                                            onClick={() => togglePromptExpansion(questionId, versionIndex)}
+                                                            title={isExpanded ? "접기" : "전체 보기"}
+                                                        >
+                                                            {isExpanded ? "↑" : "↓"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                     })()}
                                     <div className="message-text">
                                         {removeMarkdownBold(answers[activeTab].answer).split('\n').map((line, i) => (
                                             <p key={i}>{line}</p>

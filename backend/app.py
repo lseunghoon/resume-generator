@@ -622,6 +622,15 @@ def register_routes(app):
                     answer_history=history
                 )
                 
+                # 수정 프롬프트를 revision_prompts 배열에 추가
+                revision_prompts = question.get('revision_prompts', [])
+                revision_prompts.append({
+                    'prompt': revision_request,
+                    'timestamp': int(time.time() * 1000),  # 밀리초 단위 타임스탬프
+                    'version_index': len(history)  # 새로 생성될 버전의 인덱스
+                })
+                question['revision_prompts'] = revision_prompts
+                
                 history.append(revised_text)
                 question['answer_history'] = history
                 question['current_version_index'] = len(history) - 1
@@ -729,6 +738,7 @@ def register_routes(app):
                     'answer': current_answer,
                     'answer_history': question['answer_history'],
                     'current_version_index': question['current_version_index'],
+                    'revision_prompts': question.get('revision_prompts', []),
                     'length': len(current_answer),
                     'question_number': question['question_number']
                 })
