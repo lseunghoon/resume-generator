@@ -102,7 +102,7 @@
 /* 직접 입력 섹션 스타일 */
 .manual-input-section {
   width: 100%;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -114,14 +114,14 @@
 
 .manual-text-input {
   width: 100%;
-  min-height: 240px;
-  padding: 20px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
   font-family: 'Pretendard Variable', sans-serif;
   font-size: 16px;
-  line-height: 1.6;
-  color: #1a1d29;
+  line-height: 1.5;
+  color: #333;
   background-color: #ffffff;
   resize: vertical;
   transition: all 0.3s ease;
@@ -130,8 +130,8 @@
 
 .manual-text-input:focus {
   outline: none;
-  border-color: #1e82ff;
-  box-shadow: 0 0 0 3px rgba(30, 130, 255, 0.1);
+  border-color: #667eea;
+  background: white;
 }
 
 .manual-text-input::placeholder {
