@@ -235,6 +235,10 @@ const FileUploadPage = () => {
       return;
     }
 
+    // method 판단 및 이벤트 발송
+    const method = determineMethod();
+    sendFileUploadEvent(method);
+
     // 로그인 체크
     if (!isAuthenticated) {
       // 현재 업로드 데이터와 채용정보를 localStorage에 저장
@@ -277,6 +281,9 @@ const FileUploadPage = () => {
   };
 
   const handleConfirmSkip = () => {
+    // 건너뛰기 이벤트 발송
+    sendFileUploadEvent('skip');
+
     // 로그인 체크
     if (!isAuthenticated) {
       // 현재 채용정보를 localStorage에 저장 (파일 없이 건너뛰기)
@@ -382,9 +389,29 @@ const FileUploadPage = () => {
     return uploadedFiles.reduce((total, file) => total + file.size, 0);
   };
 
-  const canUploadMore = uploadedFiles.length < maxFiles;
+    const canUploadMore = uploadedFiles.length < maxFiles;
 
-  	// SEO 메타데이터 설정
+  // Google Analytics 이벤트 발송 함수
+  const sendFileUploadEvent = (method) => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'submit_file_upload',
+      'method': method
+    });
+  };
+
+  // method 판단 함수
+  const determineMethod = () => {
+    const hasFiles = uploadedFiles.length > 0;
+    const hasManualText = manualText.trim().length > 0;
+    
+    if (hasFiles && hasManualText) return 'both';
+    if (hasFiles) return 'file_upload';
+    if (hasManualText) return 'manual_input';
+    return 'skip';
+  };
+
+	// SEO 메타데이터 설정
 	useDocumentMeta({
 		title: "이력서 업로드 | 써줌 - 맞춤형 자기소개서 생성",
 		description: "기존 이력서나 자기소개서를 업로드하여 더욱 개인화된 맞춤형 자기소개서를 생성하세요. PDF, DOC, DOCX 파일 지원.",
