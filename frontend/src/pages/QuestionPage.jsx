@@ -176,12 +176,20 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         questions: [question], // 사용자가 입력한 질문
         jobDescription: jobInfo ? `${jobInfo.companyName} - ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}` : '',
         resumeText: (() => {
-          // 파일 업로드가 있는 경우
-          if (uploadedFiles && uploadedFiles.length > 0) {
-            return '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.';
+          const hasFiles = uploadedFiles && uploadedFiles.length > 0;
+          const hasManualText = manualText && manualText.trim();
+          
+          // 파일과 직접 입력이 모두 있는 경우 (MX-001):
+          // 프론트에서는 수동 입력만 담고, 실제 파일 텍스트는 백엔드에서 병합합니다.
+          if (hasFiles && hasManualText) {
+            return `사용자가 직접 입력한 이력서 내용입니다.\n\n${manualText.trim()}`;
           }
-          // 직접 입력이 있는 경우
-          if (manualText && manualText.trim()) {
+          // 파일만 있는 경우
+          if (hasFiles) {
+            return '파일에서 추출된 이력서 내용이 있습니다. 업로드된 파일에서 텍스트가 추출됩니다.';
+          }
+          // 직접 입력만 있는 경우
+          if (hasManualText) {
             return `사용자가 직접 입력한 이력서 내용입니다.\n\n${manualText.trim()}`;
           }
           // 아무것도 없는 경우 (건너뛰기)
@@ -206,6 +214,9 @@ const QuestionPage = ({ onSidebarRefresh }) => {
       // 디버깅: FormData 크기 확인
       console.log('=== FormData 디버깅 ===');
       console.log('sessionData:', sessionData);
+      console.log('파일 개수:', uploadedFiles ? uploadedFiles.length : 0);
+      console.log('직접 입력 텍스트 길이:', manualText ? manualText.length : 0);
+      console.log('resumeText 길이:', sessionData.resumeText.length);
       const dataStr = JSON.stringify(sessionData);
       console.log(`JSON 데이터 크기: ${dataStr.length} bytes (${(dataStr.length / 1024 / 1024).toFixed(2)} MB)`);
       if (dataStr.length > 1024 * 1024) {

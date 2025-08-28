@@ -124,7 +124,7 @@ const FileUploadPage = () => {
 
   const validateFile = (file) => {
     if (!allowedTypes.includes(file.type)) {
-      setError('PDF, DOC, DOCX 파일만 업로드 가능합니다');
+      setError('pdf, docx 파일만 업로드 가능합니다.');
       return false;
     }
     
@@ -135,7 +135,7 @@ const FileUploadPage = () => {
     
     // 중복 파일 검사
     if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
-      setError('이미 업로드된 파일입니다');
+      setError('이미 업로드된 파일입니다.');
       return false;
     }
     
@@ -531,6 +531,13 @@ const FileUploadPage = () => {
                   <p>* pdf, docx 파일만 업로드 가능합니다.</p>
                 </div>
                 
+                {/* 에러 메시지를 upload-notes 바로 아래로 이동 */}
+                {error && (
+                  <div key={error} className="error-message">
+                    {error}
+                  </div>
+                )}
+                
                 {/* 문서 업로드 탭에도 가이드 섹션 추가 */}
                 <div className="manual-input-guide">
                   <h4>이런 내용을 포함하면 좋아요</h4>
@@ -542,12 +549,6 @@ const FileUploadPage = () => {
                     <li><strong>협업 경험 :</strong> 팀워크, 갈등 해결, 목표 달성 사례</li>
                   </ul>
                 </div>
-                
-                {error && (
-                  <div className="error-message">
-                    {error}
-                  </div>
-                )}
                 </div>
               )}
 
@@ -579,13 +580,14 @@ const FileUploadPage = () => {
                         <li><strong>협업 경험 :</strong> 팀워크, 갈등 해결, 목표 달성 사례</li>
                       </ul>
                     </div>
+                    
+                    {/* 에러 메시지를 가이드 바로 아래로 이동 */}
+                    {error && (
+                      <div key={error} className="error-message">
+                        {error}
+                      </div>
+                    )}
                   </div>
-                  
-                  {error && (
-                    <div className="error-message">
-                      {error}
-                    </div>
-                  )}
                 </div>
               )}
             </div>

@@ -378,7 +378,7 @@
 
 .upload-notes {
   margin-top: 24px;
-  margin-bottom: 64px;
+  margin-bottom: 44px;
   text-align: left;
 }
 
@@ -390,15 +390,28 @@
 }
 
 .error-message {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-top: 20px;
+  color: #e74c3c;
   font-size: 14px;
+  margin-top: 0px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   text-align: left;
   line-height: 1.5;
+  animation: shake 0.3s ease-in-out;
+}
+
+/* 에러 메시지 떨림 애니메이션 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 /* 반응형 디자인 */

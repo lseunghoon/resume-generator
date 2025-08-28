@@ -339,8 +339,17 @@ def register_routes(app):
                 app.logger.info(f"파일 처리 완료: {file_count}개 파일에서 총 {total_text_length}자 추출")
                 app.logger.info(f"파일에서 이력서 텍스트 추출 완료: {len(file_resume_text)}자")
                 
-                # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합
-                if resume_text and file_resume_text:
+                # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합 (플레이스홀더 안전 처리)
+                placeholder_indicators = [
+                    "파일에서 추출된 이력서 내용이 있습니다",
+                    "파일에서 추출된 이력서 내용입니다"
+                ]
+
+                # 프론트의 안내용 플레이스홀더 텍스트가 온 경우, 합치지 말고 파일 텍스트만 사용
+                if resume_text and any(ind in resume_text for ind in placeholder_indicators):
+                    resume_text = file_resume_text
+                    app.logger.info("플레이스홀더 이력서 텍스트 감지: 파일 텍스트만 사용")
+                elif resume_text and file_resume_text:
                     resume_text = f"{resume_text}\n\n=== 파일에서 추출한 내용 ===\n{file_resume_text}"
                     app.logger.info(f"사용자 입력과 파일 내용 결합: {len(resume_text)}자")
                 elif file_resume_text:
