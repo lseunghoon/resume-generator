@@ -385,7 +385,10 @@ const LandingPage = () => {
 				<section className="hero">
 					<div className="hero-card">
 						<h1 className="hero-title">자소서, 쉽고 완벽하게 「써줌」 에서</h1>
-						<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
+						<div className="hero-button-container">
+							<div className="free-bubble">100% 무료</div>
+							<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
+						</div>
 						<img src="/assets/example_image.png" alt="써줌 서비스 예시" className="hero-image" />
 					</div>
 				</section>
@@ -400,7 +403,7 @@ const LandingPage = () => {
 									AI 기술의 발전으로 글쓰기는 쉬워졌지만, 합격하는 자기소개서는 다릅니다.
 								</p>
 								<p className="service-intro-detail">
-									'써줌'은 수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴,<br/>
+									'써줌'은 수많은 서류 합격자를 배출한 자기소개서 전문가가 직접 만든,<br/>
 									오직 자기소개서만을 위한 서비스입니다.<br/>
 									전문가가 설계한 가이드라인이 각 문항의 의도를 정밀하게 파악하고,<br/>
 									지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다.
@@ -431,9 +434,9 @@ const LandingPage = () => {
 									<img src="/assets/upload_example.png" alt="문서 업로드 예시" className="step-image" />
 								</div>
 								<div className="how-step-text">
-									<h3 className="how-step-title">2. 기존 문서 업로드</h3>
+									<h3 className="how-step-title">2. 기존 경험 입력</h3>
 									<p className="how-step-desc">
-										나만의 경험과 역량이 담긴 문서를 업로드해 주세요.<br/>
+										나의 경험과 역량이 담긴 문서를 업로드하거나 입력해 주세요.<br/>
 										(이력서, 경력기술서, 포트폴리오 등)<br/>
 										문서에서 채용 정보와 맞닿은 연결고리를 찾아냅니다.
 									</p>
@@ -480,9 +483,12 @@ const LandingPage = () => {
 						<p className="cta-description">
 							써줌의 맞춤형 자기소개서로 취업 준비를 한 단계 업그레이드하세요
 						</p>
-						<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
-							자기소개서 작성하기
-						</button>
+						<div className="cta-button-container">
+							<div className="free-bubble">100% 무료</div>
+							<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
+								자기소개서 작성하기
+							</button>
+						</div>
 					</div>
 				</section>
 

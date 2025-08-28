@@ -338,6 +338,74 @@
 
 
 
+/* 건너뛰기 안내 섹션 - 카드형 레이아웃 */
+.skip-notice {
+  margin-top: 24px;
+  margin-bottom: 120px; /* 수정 입력창과 겹치지 않도록 하단 여백 추가 */
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.skip-notice-content {
+  display: flex;
+  align-items: center;
+  padding: 20px 24px;
+  gap: 16px;
+}
+
+.skip-notice-icon {
+  font-size: 24px;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.skip-notice-text {
+  flex: 1;
+  text-align: left;
+}
+
+.skip-notice-text p {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.add-experience-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: 
+    0 4px 12px rgba(59, 130, 246, 0.25),
+    0 2px 4px rgba(59, 130, 246, 0.15);
+}
+
+.add-experience-button:hover {
+  background: #2563eb;
+  box-shadow: 
+    0 8px 24px rgba(59, 130, 246, 0.35),
+    0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.add-experience-button:active {
+  background: #1d4ed8;
+  box-shadow: 
+    0 2px 8px rgba(59, 130, 246, 0.3),
+    0 1px 3px rgba(59, 130, 246, 0.15);
+}
+
 /* 질문 추가 모달 */
 .modal-overlay {
   position: fixed;

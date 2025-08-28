@@ -26,6 +26,7 @@ function ResultPage({ onSidebarRefresh }) {
   
     const [selectedJob, setSelectedJob] = useState('');
     const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식 데이터
+    const [generatedFromSkip, setGeneratedFromSkip] = useState(false); // 건너뛰기 생성 여부
     const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
@@ -243,6 +244,10 @@ function ResultPage({ onSidebarRefresh }) {
                     });
                     setSelectedJob(response.jobTitle);
                 }
+                // 건너뛰기 여부 수신
+                console.log('ResultPage - generatedFromSkip from API:', response.generatedFromSkip);
+                setGeneratedFromSkip(!!response.generatedFromSkip);
+                console.log('ResultPage - generatedFromSkip state set to:', !!response.generatedFromSkip);
                 
                 // 실제 API 응답 구조에 맞게 수정
                 const answers = response.questions.map((question, index) => {
@@ -339,21 +344,27 @@ function ResultPage({ onSidebarRefresh }) {
     };
 
     const handleRevisionRequestChange = (value) => {
-        setRevisionRequest(value);
-        
-        // textarea 높이 자동 조절
-        setTimeout(() => {
-            if (inputRef) {
-                inputRef.style.height = 'auto';
-                inputRef.style.height = Math.min(inputRef.scrollHeight, 200) + 'px';
-            }
-        }, 0);
-    };
+    setRevisionRequest(value);
+
+    // textarea 높이 자동 조절
+    setTimeout(() => {
+        if (inputRef) {
+            inputRef.style.height = 'auto';
+            inputRef.style.height = Math.min(inputRef.scrollHeight, 200) + 'px';
+        }
+    }, 0);
+};
 
     const handleSubmitRevision = async () => {
-        if (!revisionRequest.trim()) return;
-        
-        setIsRevising(true);
+    if (!revisionRequest.trim()) return;
+    
+    // 5000자 제한 체크
+    if (revisionRequest.length > 5000) {
+        alert('수정 요청은 5000자까지 입력이 가능합니다.');
+        return;
+    }
+    
+    setIsRevising(true)
         try {
             // 세션 내 질문 인덱스 사용 (1, 2, 3으로 변환)
             const questionIndex = activeTab + 1;
@@ -683,6 +694,33 @@ function ResultPage({ onSidebarRefresh }) {
                                     </div>
                                 </div>
                             </div>
+                                                        {(() => {
+                              console.log('ResultPage - Rendering skip notice check:', {
+                                generatedFromSkip,
+                                shouldShow: generatedFromSkip
+                              });
+                              return generatedFromSkip && (
+                                <div className="skip-notice">
+                                  <div className="skip-notice-content">
+                                    <div className="skip-notice-icon">⚡</div>
+                                    <div className="skip-notice-text">
+                                      <p>
+                                        맞춤형 자소서를 원하시나요?
+                                        <br />
+                                        내 경험을 추가하면 완성도가 2배 높아져요!
+                                      </p>
+                                    </div>
+                                    <button 
+                                      className="add-experience-button" 
+                                      onClick={() => navigate('/job-info')}
+                                      type="button"
+                                    >
+                                      경험 추가하러 가기
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                         </div>
                     )}
 

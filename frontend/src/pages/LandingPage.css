@@ -478,6 +478,18 @@
   }
 }
 
+/* 말풍선 전용 애니메이션 - X축 위치 유지 */
+@keyframes fadeInUpBubble {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* 모바일 반응형 */
 @media (max-width: 768px) {
   .hero {
@@ -683,4 +695,42 @@
   75% {
     transform: translateX(4px);
   }
+}
+
+/* 100% 무료 말풍선 스타일 */
+.hero-button-container,
+.cta-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.free-bubble {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(255, 68, 68, 0.3);
+  z-index: 10;
+  line-height: 1;
+  white-space: nowrap;
+  animation: fadeInUpBubble 1s ease-out 0.4s both;
+}
+
+.free-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ff4444;
 }

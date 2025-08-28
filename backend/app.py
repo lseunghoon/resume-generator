@@ -767,11 +767,26 @@ def register_routes(app):
 {session.get('preferred_qualifications', '')}
             """.strip()
 
+            # 건너뛰기 여부 판단: 실제 의미있는 이력서 데이터가 있는지 확인
+            resume_text_value = session.get('resume_text') or ''
+            
+            # 건너뛰기 케이스: 빈 문자열이거나 플레이스홀더만 있는 경우
+            is_skip_case = (
+                not resume_text_value.strip() or
+                resume_text_value.strip() in [
+                    "파일에서 추출된 이력서 내용이 있습니다. 업로드된 파일에서 텍스트가 추출됩니다.",
+                    "파일에서 추출된 이력서 내용입니다."
+                ]
+            )
+            
+            generated_from_skip = is_skip_case
+
             return jsonify({
                 'questions': questions_with_answers,
                 'jobDescription': jd_text,
                 'companyName': session['company_name'] or '',
                 'jobTitle': session['job_title'] or '',
+                'generatedFromSkip': generated_from_skip,
                 'message': '자기소개서 조회에 성공했습니다.'
             }), 200
 
