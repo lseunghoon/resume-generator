@@ -650,6 +650,7 @@ def register_routes(app):
             # 질문 업데이트
             question_model.update_question(question['id'], question)
             
+            # 응답 반환
             return jsonify({
                 'revisedAnswer': history[question['current_version_index']],
                 'message': '자기소개서가 성공적으로 수정되었습니다.'

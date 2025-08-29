@@ -77,6 +77,7 @@ function AppContent() {
         try {
           const userData = await getCurrentUser();
           if (userData && userData.user) {
+            console.log('✅ 사용자 정보 조회 성공:', userData.user);
             setUser(userData.user);
           }
         } catch (error) {

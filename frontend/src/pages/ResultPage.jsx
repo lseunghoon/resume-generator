@@ -402,6 +402,21 @@ function ResultPage({ onSidebarRefresh }) {
             }
         } catch (err) {
             console.error('수정 요청 실패:', err);
+            
+            // JSON 파싱 오류인 경우 특별 처리
+            if (err.message && err.message.includes('JSON')) {
+                console.error('JSON 파싱 오류 상세:', {
+                    error: err,
+                    message: err.message,
+                    stack: err.stack
+                });
+                
+                // 사용자에게 친화적인 메시지 표시
+                alert('서버 응답을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            } else {
+                // 기타 오류는 기존대로 처리
+                console.error('기타 오류:', err);
+            }
         } finally {
             setIsRevising(false);
             // 에러 발생 시에도 textarea 높이 초기화

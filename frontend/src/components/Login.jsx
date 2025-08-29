@@ -48,7 +48,7 @@ const Login = () => {
         <div className="login-content">
           <h1 className="welcome-title">자소서 퀄리티 200% 향상,<br/>바로 시작해 보세요!</h1>
           
-                     <p className="login-subtitle">별도의 가입 절차 없이,<br/>기존 계정으로 이용할 수 있습니다.</p>
+                     <p className="login-subtitle">별도의 가입 절차 없이<br/>기존 계정으로 이용할 수 있습니다.</p>
           
           <div className="social-login-buttons">
             <button 

@@ -149,18 +149,11 @@ input, textarea, [contenteditable] {
   width: 100%;
 }
 
-.page-content {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px 20px;
-  width: 100%;
-}
+
 
 .content-wrapper {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
 }
 

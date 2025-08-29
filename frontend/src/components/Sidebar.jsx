@@ -160,10 +160,14 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
             </div>
           ) : error ? (
             <div className="error-state">
-              <p>오류가 발생했습니다</p>
+              <div className="error-icon">⚠️</div>
+              <p className="error-message">{error}</p>
               <button onClick={loadSessions} className="retry-btn">
-                다시 시도
+                🔄 다시 시도
               </button>
+              <p className="error-hint">
+                문제가 지속되면 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.
+              </p>
             </div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">

@@ -169,23 +169,45 @@ const Header = ({ user, onLogout, sidebarOpen, onSidebarToggle, currentStep, onL
                 <div 
                   className="profile-icon"
                   onClick={handleProfileClick}
+                  title={user.name || user.email}
                 >
                   {user.picture ? (
                     <img 
                       src={user.picture} 
                       alt="프로필" 
                       className="profile-image"
+                      onError={(e) => {
+                        // 이미지 로드 실패 시 기본 아이콘으로 대체
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
                     />
-                  ) : (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
-                      <path d="M20 21C20 16.5817 16.4183 13 12 13C13 7.58172 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
-                    </svg>
-                  )}
+                  ) : null}
+                  
+                  {/* 기본 프로필 아이콘 (프로필 사진이 없거나 로드 실패 시) */}
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ display: user.picture ? 'none' : 'block' }}
+                  >
+                    <circle cx="12" cy="8" r="5" fill="#9CA3AF"/>
+                    <path d="M20 21C20 16.5817 16.4183 13 12 13C13 7.58172 4 16.5817 4 21" stroke="#9CA3AF" strokeWidth="2"/>
+                  </svg>
                 </div>
                 
                 {isDropdownOpen && (
                   <div className="dropdown-menu">
+                    {/* 사용자 정보 표시 */}
+                    <div className="dropdown-user-info">
+                      <div className="user-name">{user.name || '사용자'}</div>
+                      <div className="user-email">{user.email}</div>
+                    </div>
+                    
+                    <div className="dropdown-divider"></div>
+                    
                     <div 
                       className="dropdown-item"
                       onClick={handleLogoutClick}

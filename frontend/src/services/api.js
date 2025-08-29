@@ -68,7 +68,18 @@ const fetchWithAuth = async (url, options = {}) => {
     throw new Error(errorData.message || `API 호출 실패: ${response.status}`);
   }
 
-  return response.json();
+  // 4. 응답을 JSON으로 파싱
+  try {
+    const jsonData = await response.json();
+    return jsonData;
+  } catch (parseError) {
+    console.error('JSON 파싱 오류:', {
+      url,
+      status: response.status,
+      parseError: parseError.message
+    });
+    throw new Error(`응답 파싱 실패: ${parseError.message}`);
+  }
 };
 
 // 공통 API 호출 함수
@@ -150,8 +161,32 @@ export const getUserSessions = async () => {
     } catch (error) {
       console.log(`getUserSessions 시도 ${attempt}/${maxRetries} 실패:`, error.message);
       
+      // 에러 메시지 분석 및 사용자 친화적 메시지 생성
+      let userFriendlyMessage = '세션 목록을 불러오는데 실패했습니다.';
+      
+      if (error.message.includes('Server disconnected')) {
+        userFriendlyMessage = '데이터베이스 연결이 일시적으로 끊어졌습니다. 잠시 후 다시 시도해주세요.';
+      } else if (error.message.includes('timeout')) {
+        userFriendlyMessage = '요청 시간이 초과되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.';
+      } else if (error.message.includes('500')) {
+        userFriendlyMessage = '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      } else if (error.message.includes('인증')) {
+        userFriendlyMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+      }
+      
+      // 사용자에게 에러 메시지 표시 (선택사항)
       if (attempt === maxRetries) {
-        throw error; // 마지막 시도에서도 실패하면 에러 던지기
+        // 마지막 시도에서 실패한 경우에만 사용자에게 알림
+        console.error('최종 실패:', userFriendlyMessage);
+        // 여기에 사용자 알림 로직을 추가할 수 있습니다 (예: toast, alert 등)
+      }
+      
+      if (attempt === maxRetries) {
+        // 마지막 시도에서도 실패하면 사용자 친화적 에러 메시지와 함께 에러 던지기
+        const enhancedError = new Error(userFriendlyMessage);
+        enhancedError.originalError = error;
+        enhancedError.attempts = attempt;
+        throw enhancedError;
       }
       
       // 1초 대기 후 재시도

@@ -17,7 +17,7 @@
 
 .content-wrapper {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -66,7 +66,7 @@
   top: 0; /* 상단에 고정 */
   background: white; /* 배경색 설정 */
   z-index: 10; /* 다른 요소들 위에 표시 */
-  padding: 8px 0; /* 상하 여백 추가 */
+  padding: 0; /* 상하 여백 제거 */
 }
 
 .tab-button {
@@ -91,14 +91,13 @@
 
 .tab-button.active {
   color: #1e82ff;
-  border-bottom-color: #1e82ff;
   font-weight: 600;
 }
 
 .tab-button.active::after {
   content: '';
   position: absolute;
-  bottom: -1px;
+  bottom: -3px;
   left: 0;
   right: 0;
   height: 3px;
