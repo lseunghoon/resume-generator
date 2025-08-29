@@ -47,7 +47,7 @@
 }
 
 .hero-title {
-  font-size: clamp(32px, 6vw, 64px);
+  font-size: clamp(32px, 6vw, 44px);
   font-weight: 600;
   line-height: 1.2;
   margin: 0 0 40px;
@@ -706,18 +706,18 @@
 
 .free-bubble {
   position: absolute;
-  top: -10px;
+  top: -20px;
   left: 50%;
   transform: translateX(-50%);
   background: #ff4444;
   color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(255, 68, 68, 0.3);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 16px;
+  box-shadow: 0 3px 8px rgba(255, 68, 68, 0.4);
   z-index: 10;
-  line-height: 1;
+  line-height: 1.2;
   white-space: nowrap;
   animation: fadeInUpBubble 1s ease-out 0.4s both;
 }
@@ -730,7 +730,7 @@
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #ff4444;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #ff4444;
 }

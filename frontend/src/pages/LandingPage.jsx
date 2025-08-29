@@ -384,7 +384,7 @@ const LandingPage = () => {
 				{/* Hero Section */}
 				<section className="hero">
 					<div className="hero-card">
-						<h1 className="hero-title">자소서, 쉽고 완벽하게 「써줌」 에서</h1>
+						<h1 className="hero-title">취준생 필수템, 자소서 AI 써줌으로 3분 만에 완성!</h1>
 						<div className="hero-button-container">
 							<div className="free-bubble">100% 무료</div>
 							<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
@@ -486,7 +486,7 @@ const LandingPage = () => {
 						<div className="cta-button-container">
 							<div className="free-bubble">100% 무료</div>
 							<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
-								자기소개서 작성하기
+							자소서 퀄리티 200% 높여보기
 							</button>
 						</div>
 					</div>
