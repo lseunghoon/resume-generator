@@ -384,7 +384,7 @@ const LandingPage = () => {
 				{/* Hero Section */}
 				<section className="hero">
 					<div className="hero-card">
-						<h1 className="hero-title">취준생 필수템, 자소서 AI 써줌으로 3분 만에 완성!</h1>
+						<h1 className="hero-title">취준생 필수템,<br/> 자소서 AI 써줌으로 3분 만에 완성!</h1>
 						<div className="hero-button-container">
 							<div className="free-bubble">100% 무료</div>
 							<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>

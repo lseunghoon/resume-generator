@@ -104,6 +104,26 @@ export const signInWithGoogle = async () => {
   }
 };
 
+// Kakao OAuth 로그인
+export const signInWithKakao = async () => {
+  try {
+    console.debug('Kakao OAuth 로그인 시작 (supabase-js)');
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo }
+    });
+    if (error) throw error;
+    // 일부 환경에서 자동 리다이렉트가 되지 않으면 수동으로 이동
+    if (data?.url) {
+      window.location.href = data.url;
+    }
+  } catch (error) {
+    console.error('Kakao OAuth 오류:', error);
+    throw error;
+  }
+};
+
 // 로그아웃
 export const signOut = async () => {
   try {

@@ -56,6 +56,12 @@
   position: relative;
   z-index: 2;
   animation: fadeInUp 1s ease-out 0.2s both;
+  white-space: normal; /* PC에서 줄바꿈 숨김 */
+}
+
+/* PC에서 <br> 태그 숨김 */
+.hero-title br {
+  display: none;
 }
 
 .hero-button {
@@ -658,6 +664,16 @@
     font-size: 16px;
     width: 100%;
     max-width: 300px;
+  }
+  
+  /* 모바일에서 히어로 제목 줄바꿈 */
+  .hero-title {
+    white-space: pre-line;
+  }
+  
+  /* 모바일에서 <br> 태그 표시 */
+  .hero-title br {
+    display: inline;
   }
 }
 
