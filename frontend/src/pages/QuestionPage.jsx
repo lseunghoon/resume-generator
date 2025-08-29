@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
@@ -20,6 +20,9 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const [skipResumeUpload, setSkipResumeUpload] = useState(false); // 이력서 업로드 건너뛰기 상태
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // 질문 입력 필드에 대한 ref
+  const questionInputRef = useRef(null);
 
   // 인증 상태 확인 (리다이렉트 없이 상태만 체크)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -90,6 +93,15 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     }
   }, [location.state, navigate, isAuthenticated]);
 
+  // 페이지 로드 시 질문 입력 필드에 자동 포커스
+  useEffect(() => {
+    setTimeout(() => {
+      if (questionInputRef.current) {
+        questionInputRef.current.focus();
+      }
+    }, 100);
+  }, []);
+
   // 추천 질문 chip 버튼들 (Figma 디자인 기준)
   const recommendedQuestions = [
     '성격의 장단점은 무엇인가요',
@@ -149,12 +161,26 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     if (!question.trim()) {
       setError('문항을 입력해 주세요');
       setErrorKey(prev => prev + 1);
+      
+      // 에러 발생 시 입력 필드에 포커스
+      setTimeout(() => {
+        if (questionInputRef.current) {
+          questionInputRef.current.focus();
+        }
+      }, 100);
       return;
     }
 
     if (question.trim().length < 5) {
       setError('문항은 최소 5자 이상 입력해 주세요');
       setErrorKey(prev => prev + 1);
+      
+      // 에러 발생 시 입력 필드에 포커스
+      setTimeout(() => {
+        if (questionInputRef.current) {
+          questionInputRef.current.focus();
+        }
+      }, 100);
       return;
     }
 
@@ -386,16 +412,14 @@ const QuestionPage = ({ onSidebarRefresh }) => {
               {/* 질문 직접 입력 */}
               <div className="question-input">
                 <Input
+                  ref={questionInputRef}
                   placeholder="예시) 직무 역량을 쌓기 위해 어떤 노력을 했나요"
                   value={question}
                   onChange={handleQuestionChange}
                   onKeyPress={handleKeyPress}
                   disabled={isGenerating}
+                  error={error}
                 />
-                {/* 에러 메시지 */}
-                {error && (
-                  <div key={`error-${errorKey}`} className="input-error-message">{error}</div>
-                )}
               </div>
 
               {/* 추천 질문 chips */}

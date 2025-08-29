@@ -58,7 +58,7 @@ const FileUploadPage = () => {
         setActiveTab(location.state.activeTab);
       }
     } else {
-      // 로그인 후 임시 저장된 데이터 복원 시도
+      // 로그인 후 임시 저장된 데이터 복원 시도 (기존 로직)
       try {
         const tempFileUpload = localStorage.getItem('temp_file_upload');
         if (tempFileUpload) {
@@ -327,20 +327,8 @@ const FileUploadPage = () => {
   };
 
   const handleGoBack = () => {
-    // 현재 입력된 데이터를 localStorage에 저장
-    try {
-      localStorage.setItem('temp_file_upload', JSON.stringify({
-        jobInfo: jobInfo,
-        activeTab: activeTab,
-        uploadedFiles: uploadedFiles.map(f => ({
-          name: f.name,
-          size: f.size,
-          type: f.file?.type || 'application/pdf'
-        })),
-        manualText: manualText,
-        timestamp: Date.now()
-      }));
-    } catch (_) {}
+    // 뒤로가기 시 파일 업로드 기록은 저장하지 않음 (사용자가 다시 업로드하도록)
+    // 채용정보와 직접 입력 텍스트만 전달
 
     // JobInfoInputPage의 우대사항 단계(마지막 단계)로 돌아가기
     navigate('/job-info', { 
@@ -348,9 +336,9 @@ const FileUploadPage = () => {
         jobInfo: jobInfo,
         fromFileUpload: true,
         goToLastStep: true, // 우대사항 단계로 이동하기 위한 플래그
-        // FileUploadPage 데이터 전달
+        // FileUploadPage 데이터 전달 (파일 업로드 기록은 제외)
         fileUploadData: {
-          uploadedFiles: uploadedFiles,
+          uploadedFiles: [], // 파일 업로드 기록은 전달하지 않음
           manualText: manualText,
           activeTab: activeTab
         },
