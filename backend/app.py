@@ -2,8 +2,23 @@
 sseojum(써줌) 백엔드 메인 애플리케이션 (리팩토링 버전)
 분리된 모듈들을 사용하여 깔끔하게 정리된 Flask 애플리케이션
 """
-
+import os
+import logging
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+
+# .env 파일 로드를 가장 먼저 실행합니다.
+load_dotenv()
+
+# --- 1. Flask 앱 인스턴스를 먼저 생성합니다. ---
+app = Flask(__name__)
+
+# --- 2. 로깅 설정 함수를 import 하고, 생성된 app 인스턴스를 전달하여 즉시 실행합니다. ---
+# 이 시점에서 애플리케이션의 전역 로깅 규칙이 설정됩니다.
+from utils import setup_flask_logger
+setup_flask_logger(app)
+
+# --- 3. 이제 로깅이 완벽히 설정되었으니, 나머지 모든 모듈을 import 합니다. ---
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -11,32 +26,26 @@ import traceback
 import json
 import werkzeug
 import uuid
-import os
-from dotenv import load_dotenv
 import threading
 import time
-
-# .env 파일 로드
-load_dotenv()
 
 # 설정 및 유틸리티 모듈
 from config import get_cors_config, validate_settings
 from config.settings import get_database_config, get_vertex_ai_config
 from utils import (
-    setup_flask_logger, get_logger,
+    get_logger,
     validate_session_data, validate_question_data, validate_revision_request,
     validate_session_id, validate_question_index, ValidationError,
     FileProcessingError
 )
-# FileProcessingError는 이제 서비스에서 처리됨
 
 # 새로운 서비스 모듈들
+# 이 서비스 모듈들은 import 되는 시점에 내부적으로 로거를 생성하며,
+# 이미 설정된 전역 로깅 규칙을 상속받게 됩니다.
 from services import AIService, OCRService, FileService
 from services.auth_service import AuthService
 from services.mail_service import MailService
 from supabase_models import get_session_model, get_question_model, get_user_model, get_feedback_model
-
-
 
 
 class APIError(Exception):
