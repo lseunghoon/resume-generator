@@ -50,15 +50,31 @@ function ResultPage({ onSidebarRefresh }) {
 
         const containerWidth = tabNavigation.offsetWidth;
         
-        // 실제 문항추가 버튼 너비 측정 (더 안전한 방법)
+        // 실제 문항추가 버튼 너비 측정 (모바일 환경 고려)
         const addButton = document.querySelector('.add-tab');
         let addButtonWidth = 150; // 기본값
         
+        // 화면 크기에 따른 여유분 조정
+        const isMobile = window.innerWidth <= 768;
+        const isSmallMobile = window.innerWidth <= 480;
+        
         if (addButton) {
-            addButtonWidth = addButton.offsetWidth + 20; // 20px 여유분 추가
+            if (isSmallMobile) {
+                addButtonWidth = addButton.offsetWidth + 30; // 480px 이하: 30px 여유분
+            } else if (isMobile) {
+                addButtonWidth = addButton.offsetWidth + 25; // 768px 이하: 25px 여유분
+            } else {
+                addButtonWidth = addButton.offsetWidth + 20; // 데스크톱: 20px 여유분
+            }
         } else {
-            // 버튼이 아직 렌더링되지 않은 경우, 텍스트 길이로 추정
-            addButtonWidth = 160; // "문항 추가" 텍스트 + 패딩 + 여유분
+            // 버튼이 아직 렌더링되지 않은 경우, 화면 크기별 추정
+            if (isSmallMobile) {
+                addButtonWidth = 90; // 480px 이하: 60px + 30px 여유분
+            } else if (isMobile) {
+                addButtonWidth = 95; // 768px 이하: 70px + 25px 여유분
+            } else {
+                addButtonWidth = 140; // 데스크톱: 100px + 40px 여유분
+            }
         }
         
         const gapSize = 8; // 탭 간격
@@ -70,11 +86,13 @@ function ResultPage({ onSidebarRefresh }) {
         
         answers.forEach((_, index) => {
             if (index === activeTab) {
-                // 선택된 탭은 사용 가능한 공간의 대부분 사용 (최소 200px)
-                newTabWidths[index] = Math.max(availableWidth - (inactiveTabCount * 50), 200);
+                // 선택된 탭은 사용 가능한 공간의 대부분 사용 (화면 크기별 최소값)
+                const minWidth = isSmallMobile ? 120 : (isMobile ? 150 : 200);
+                newTabWidths[index] = Math.max(availableWidth - (inactiveTabCount * 50), minWidth);
             } else {
-                // 선택되지 않은 탭은 고정된 작은 너비 (50px)
-                newTabWidths[index] = 50;
+                // 선택되지 않은 탭은 화면 크기별 고정 너비
+                const inactiveWidth = isSmallMobile ? 40 : (isMobile ? 45 : 50);
+                newTabWidths[index] = inactiveWidth;
             }
         });
 

@@ -83,6 +83,17 @@
     font-size: 13px;
     flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
     min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 아이패드에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
   }
   
   /* 아이패드에서 수정 입력창 반응형 조정 - 사이드바와 겹치지 않도록 */
@@ -195,14 +206,12 @@
   gap: 8px;
   margin-bottom: 24px;
   border-bottom: 1px solid #f1f5f9;
-  overflow-x: auto;
+  overflow-x: visible; /* 모바일에서 스크롤 대신 visible로 변경 */
   overflow-y: hidden; /* 세로 스크롤 및 화살표 제거 */
-  padding: 0 0 6px 0;
+  padding: 0 12px 6px 12px; /* 좌우 패딩 증가로 버튼 잘림 방지 */
   /* 스크롤바 숨김 (브라우저별) */
   scrollbar-width: none;          /* Firefox */
   -ms-overflow-style: none;       /* IE/Edge */
-  /* 문항 추가 버튼 공간 확보 */
-  padding-right: 8px; /* 오른쪽 여백으로 버튼이 잘리지 않도록 */
 }
 
 .tab-navigation::-webkit-scrollbar { /* Chrome/Safari */
@@ -278,13 +287,19 @@
   z-index: 1; /* 다른 요소 위에 표시 */
 }
 
-.add-tab:hover:not(:disabled) {
-  background: #2563eb;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+/* 마우스가 있는 디바이스에서만 hover 효과 적용 */
+@media (hover: hover) {
+  .add-tab:hover:not(:disabled) {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
 }
 
+/* 터치 디바이스에서 터치 시 시각적 피드백 */
 .add-tab:active:not(:disabled) {
+  background: #2563eb;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(1px);
 }
 
 /* 탭 콘텐츠 */
@@ -625,65 +640,7 @@
 
 /* 첫 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
-@media (max-width: 480px) {
-  .page-content {
-    padding: 16px 16px;
-  }
-
-  .job-info-section {
-    padding: 20px 16px;
-  }
-
-  .tab-content {
-    padding: 24px 16px;
-  }
-
-  .answer-header h3 {
-    font-size: 20px;
-  }
-
-  .tab {
-    padding: 10px 16px;
-    font-size: 14px;
-    /* 동적 너비 - JavaScript에서 계산 */
-    flex: 0 0 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap; /* 한 줄로 제한 */
-  }
-  
-  /* 선택된 탭 스타일 - 너비는 JavaScript에서 제어 */
-  .tab.active {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* 문항이 2개 이상일 때 동적 너비 조정 */
-  .tab.multiple-tabs {
-    max-width: none; /* 고정 너비 제거 */
-    min-width: 0; /* 최소 너비 제한 해제 */
-    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* 문항이 1개일 때는 전체 텍스트 표시 */
-  .tab.single-tab {
-    max-width: none;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-  }
-
-  .add-tab {
-    padding: 8px 16px;
-    font-size: 14px;
-    min-height: 40px;
-    background: #3b82f6;
-    color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
+/* 첫 번째 480px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
   .add-question-modal {
     padding: 28px 20px;
@@ -692,7 +649,6 @@
   .add-question-modal h3 {
     font-size: 20px;
   }
-} 
 
 /* 두 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
@@ -724,25 +680,22 @@
 
   .tab-navigation {
     gap: 6px;
-    padding: 0 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    padding: 0 12px 10px 12px; /* 모바일에서 패딩 증가 + 아래 패딩 추가 */
+    overflow-x: visible; /* 스크롤 대신 visible로 변경 */
   }
 
-  .tab-navigation::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tab-button {
+  .tab {
     padding: 6px 10px;
     font-size: 12px;
     min-width: 50px;
     flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* 한 줄로 제한 */
   }
 
   /* 문항이 2개 이상일 때 동적 너비 조정 */
-  .tab-button.multiple-tabs {
+  .tab.multiple-tabs {
     max-width: none; /* 고정 너비 제거 */
     min-width: 50px; /* 최소 너비만 보장 */
     flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
@@ -752,7 +705,7 @@
   }
 
   /* 문항이 1개일 때는 전체 텍스트 표시 */
-  .tab-button.single-tab {
+  .tab.single-tab {
     max-width: none;
     overflow: visible;
     text-overflow: clip;
@@ -764,10 +717,19 @@
     font-size: 12px;
     min-height: 36px;
     flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
-    min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
-    background: #3b82f6;
+    min-width: 60px; /* 모바일에서 최소 너비 고정 */
+    max-width: 60px; /* 모바일에서 최대 너비 제한 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
     color: #ffffff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 480px 이하 모바일에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
   }
 
   .answer-header {
@@ -1396,7 +1358,8 @@
 
   .tab-navigation {
     gap: 8px;
-    padding: 0 8px;
+    padding: 0 12px 12px 12px; /* 모바일에서 패딩 증가 + 아래 패딩 추가 */
+    overflow-x: visible; /* 스크롤 대신 visible로 변경 */
   }
 
   .tab {
@@ -1438,10 +1401,19 @@
     font-size: 12px;
     min-height: 40px;
     flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
-    min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
-    background: #3b82f6;
+    min-width: 70px; /* 모바일에서 최소 너비 고정 */
+    max-width: 70px; /* 모바일에서 최대 너비 제한 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
     color: #ffffff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 모바일에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
   }
 
   .tab-content {
@@ -1685,7 +1657,7 @@
 /* 탭 네비게이션 보조 컨트롤 (문항 추가) */
 .add-tab {
   margin-left: auto;
-  background: #3b82f6;
+  background: #3b82f6 !important; /* 배경색 강제 적용 */
   border: none;
   padding: 8px 12px;
   appearance: none;
@@ -1705,13 +1677,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
-  min-width: 120px; /* 최소 너비 보장 */
-  max-width: 120px; /* 최대 너비 제한 */
+  min-width: 100px; /* 최소 너비 보장 */
+  max-width: 100px; /* 최대 너비 제한 */
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
 }
 
-.add-tab:hover:not(:disabled) {
-  background: #2563eb;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+/* 마우스가 있는 디바이스에서만 hover 효과 적용 */
+@media (hover: hover) {
+  .add-tab:hover:not(:disabled) {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
 }
 
 .add-tab:disabled {
