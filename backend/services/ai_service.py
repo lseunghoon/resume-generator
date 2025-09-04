@@ -17,23 +17,22 @@ class AIService(LoggerMixin):
     def __init__(self):
         self.logger.info("AI 서비스 초기화 시작...")
         self.generation_model = generation_model
-        self.embedding_model = TextEmbeddingModel.from_pretrained("text-embedding-005")
+        self.embedding_model = TextEmbeddingModel.from_pretrained("text-multilingual-embedding-002")
         
         try:
             base_dir = os.path.dirname(__file__)
             embeddings_path = os.path.join(base_dir, "canonical_embeddings.json")
             with open(embeddings_path, 'r', encoding='utf-8') as f:
                 self.canonical_embeddings = json.load(f)
+
             self.logger.info("기준 임베딩 데이터를 성공적으로 로드했습니다.")
         except FileNotFoundError:
             self.logger.error("치명적 오류: canonical_embeddings.json 파일을 찾을 수 없습니다! generate_embeddings.py를 먼저 실행하세요.")
             self.canonical_embeddings = []
 
-        # ================== [추가된 웜업 코드] ================== #
-        # 임베딩 모델 '웜업' (Cold Start 문제 해결)
+        # ================== [웜업 코드] ================== #
         try:
             self.logger.info("임베딩 모델 웜업을 시작합니다...")
-            # 실제 API를 호출하여 모델을 미리 활성화시킵니다.
             self.embedding_model.get_embeddings(["웜업용 테스트 문장"])
             self.logger.info("임베딩 모델 웜업이 성공적으로 완료되었습니다.")
         except Exception as e:
@@ -55,28 +54,35 @@ class AIService(LoggerMixin):
 
 ---
 
-### 맞춤형 자기소개서 작성을 위한 6단계 사고 과정 (Internal Thought Process)
-**[1단계: 질문의 핵심 의도 분석]**
-1.  이 질문이 표면적으로 묻는 것은 무엇인가?
-2.  더 깊게 파고들면, 이 질문을 통해 회사가 진짜 알고 싶어 하는 지원자의 역량이나 자질은 무엇인가?
+### 맞춤형 자기소개서 작성을 위한 思考 과정 (Internal Thought Process)
 
-**[2단계: 전략적 경험 선별 (가장 중요)]**
-1.  '정보 2: 지원자 제출 자료' 전체를 스캔하여 질문 의도 및 '정보 3: 채용공고'와 관련성 높은 경험 후보군을 파악한다.
-2.  **선택 기준 (매우 중요):**
-    -   **1순위: '정보 3: 채용공고'와의 직접적 관련성.** 관련성이 없다면 아무리 인상적인 경험이라도 절대 선택해서는 안 된다.
-    -   **2순위: 질문 의도와의 부합성.** 관련성이 확보된 경험들 중에서, 질문의 의도를 가장 강력하고 압축적으로 보여줄 수 있는 단 1~2개의 핵심 경험을 선택한다.
+**[0단계: 질문 유형 판단 및 접근 전략 수립 (매우 중요)]**
+1.  이 질문은 주로 **(A) 지원자의 경험과 역량**을 묻고 있는가, 아니면 **(B) 지원자의 가치관, 지식, 견해**를 묻고 있는가?
+2.  **만약 (A) 유형이라면 (예: "가장 큰 성과는?", "실패 경험은?"):** 아래의 [2단계: 전략적 경험 선별]을 핵심 임무로 삼고, 경험을 중심으로 답변을 구성한다.
+3.  **만약 (B) 유형이라면 (예: "중요한 사회 이슈는?", "당신의 인생관은?"):** 지원자의 **논리적인 생각과 견해를 서술하는 것을 최우선 목표**로 삼는다. [2단계: 전략적 경험 선별]은 부차적인 요소로, 견해를 뒷받침할 수 있는 아주 적절한 경험이 있을 경우에만 **간결하게** 인용하고, 억지로 경험과 연결하지 않는다.
+
+**[1단계: 질문의 핵심 의도 분석]**
+-   [0단계]의 판단을 바탕으로, 회사가 이 질문을 통해 진짜 알고 싶어 하는 지원자의 자질이 무엇인지 깊게 파악한다.
+
+**[2단계: 전략적 경험 선별]**
+-   '정보 2: 지원자 제출 자료' 전체를 스캔하여 질문 의도 및 '정보 3: 채용공고'와 관련성 높은 경험을 찾는다.
+-   **선택 기준:**
+    -   1순위: '정보 3: 채용공고'와의 직접적 관련성.
+    -   2순위: 질문 의도와의 부합성.
+-   **주의:** [0단계]에서 (B) 유형으로 판단했다면, 이 단계는 필수적이지 않다.
 
 **[3단계: 답변 구조 설계]**
--   아래에 제공될 **'<부록>'**을 참조하여, [2단계]에서 선택된 핵심 경험이 가장 빛날 수 있도록 이야기 구조를 설계한다.
+-   만약 '<부록>'이 제공되고 질문 유형과 일치한다면, 해당 부록을 참조하여 이야기 구조를 설계한다.
+-   만약 '<부록>'이 없다면, [0단계]에서 판단한 질문 유형에 가장 적합한 방식으로 (예: 경험 중심의 STAR 기법 또는 견해 중심의 논리적 서술) 답변을 구성한다.
 
 **[4단계: 초안 작성]**
 -   위 분석 및 설계에 따라, 구체적이고 진정성 있는 문체로 초안을 작성한다.
 
 **[5단계: 자기 비판 및 검토 (Self-Criticism)]**
 -   작성된 초안이 아래의 '품질 저하 체크리스트'에 해당하지는 않는지 비판적으로 검토한다.
-    -   **[ ] 사실 왜곡/창작 오류 (최우선 검토):** 제출 자료에 명시되지 않은 구체적인 수치나 성과를 만들어내지는 않았는가?
-    -   **[ ] 맥락 이탈 오류 (중요):** 작성된 내용이 지원하는 회사나 직무의 성격과 동떨어져 있지는 않은가?
-    -   **[ ] 동문서답 오류:** 질문의 핵심 의도에 정확히 부합하는 답변인가?
+    -   [ ] 사실 왜곡/창작 오류 (최우선 검토)
+    -   [ ] 동문서답 오류: [0단계]에서 파악한 질문 유형의 핵심에 정확히 부합하는 답변인가? (예: 견해를 물었는데 경험만 나열하지는 않았는가?)
+    -   [ ] 맥락 이탈 오류
 
 **[6단계: 최종 답변 생성]**
 -   발견된 문제점들을 모두 개선하여, 군더더기 없는 최종 결과물을 완성한다.
@@ -142,34 +148,65 @@ class AIService(LoggerMixin):
         }
         return main_guide, appendices
 
-    def _classify_question_by_similarity(self, question: str) -> str:
+    def _match_question_to_chip(self, question: str) -> Optional[str]:
         """
-        사용자의 질문을 '검색어'로 임베딩하여 가장 유사한 기준 '문서' 유형을 찾습니다.
+        질문이 프론트엔드의 추천 chip과 정확히 일치하는지 확인하고, 
+        해당하는 백엔드 카테고리를 반환합니다.
         """
+        chip_mapping = {
+            '성격의 장단점은 무엇인가요': 'strength_weakness',
+            '입사 후 포부는 무엇인가요': 'aspiration',
+            '직무와 관련된 경험을 설명해주세요': 'job_experience',
+            '실패 경험과 극복 과정에 대해 말해주세요': 'failure_experience',
+            '지원 동기는 무엇인가요': 'motivation'
+        }
+        matched_category = chip_mapping.get(question.strip())
+        if matched_category:
+            self.logger.info(f"Chip 매칭 성공: '{question}' -> {matched_category}")
+            return matched_category
+        return None
+
+    def classify_question_hybrid(self, question: str) -> Optional[str]:
+        """
+        하이브리드 방식으로 질문을 분류합니다.
+        1. Chip 매칭 (정확히 일치)
+        2. 임베딩 분류 (유사도 기반)
+        분류 성공 시 카테고리(str) 반환, 실패 시 None 반환.
+        """
+        # 1단계: Chip 매칭 시도
+        if (chip_category := self._match_question_to_chip(question)):
+            return chip_category
+        
+        # 2단계: 임베딩 분류 시도
         if not self.canonical_embeddings:
-            self.logger.warning("기준 임베딩이 로드되지 않아 'job_experience' 유형으로 처리합니다.")
-            return "job_experience"
+            self.logger.warning("기준 임베딩이 없어 분류를 건너뛰고 None을 반환합니다.")
+            return None
+
+        SIMILARITY_THRESHOLD = 0.75  # 신뢰도 임계점 (필요시 조정)
 
         try:
-             # [수정 2] 사용자의 질문과 task_type을 TextEmbeddingInput 객체로 감싸서 전달합니다.
             inputs = [TextEmbeddingInput(text=question, task_type="RETRIEVAL_QUERY")]
             response = self.embedding_model.get_embeddings(inputs)
             question_vector = response[0].values
             
-            # 모든 기준 '문서' 벡터와의 코사인 유사도를 계산합니다.
             similarities = [(1 - cosine(question_vector, item['vector']), item['key']) for item in self.canonical_embeddings]
             
-            # 가장 높은 유사도를 가진 유형을 찾아 반환합니다.
-            if similarities:
-                best_match = max(similarities, key=lambda x: x[0])
-                self.logger.info(f"질문 분류 결과: '{best_match[1]}' (유사도: {best_match[0]:.4f})")
-                return best_match[1]
+            if not similarities:
+                return None
+            
+            best_match = max(similarities, key=lambda x: x[0])
+            similarity_score, category = best_match[0], best_match[1]
+            
+            if similarity_score >= SIMILARITY_THRESHOLD:
+                self.logger.info(f"임베딩 분류 성공: '{question[:20]}...' -> {category} (유사도: {similarity_score:.3f})")
+                return category
+            else:
+                self.logger.warning(f"임계점 미달: '{question[:20]}...' -> 가장 유사한 항목 '{category}' (유사도: {similarity_score:.3f} < {SIMILARITY_THRESHOLD}). 분류되지 않은 질문으로 처리합니다.")
+                return None
 
         except Exception as e:
-            self.logger.error(f"질문 분류 중 오류 발생: {e}", exc_info=True)
-        
-        # 오류 발생 시 가장 보편적인 '직무 경험' 유형으로 안전하게 처리합니다.
-        return "job_experience"
+            self.logger.error(f"임베딩 분류 중 오류 발생: {e}", exc_info=True)
+            return None
 
     def _handle_response(self, response) -> str:
         """ generate_content 응답 처리 헬퍼 """
@@ -195,11 +232,8 @@ class AIService(LoggerMixin):
     def _log_token_usage(self, response, operation_type: str, question_preview: str = "", prompt_data: dict = None):
         """ AI 모델 응답에서 토큰 사용량을 추출하고 로깅합니다. """
         try:
-            # response 객체에서 usage_metadata 속성을 직접 가져옵니다.
             usage_metadata = getattr(response, 'usage_metadata', None)
-            
             if usage_metadata:
-                # [수정] .get() 메서드 대신, 객체의 속성에 직접 접근합니다.
                 prompt_token_count = usage_metadata.prompt_token_count
                 candidates_token_count = usage_metadata.candidates_token_count
                 total_token_count = usage_metadata.total_token_count
@@ -223,9 +257,19 @@ class AIService(LoggerMixin):
         try:
             self.logger.info(f"단일 자기소개서 생성 시작: {question[:50]}...")
             
-            question_type = self._classify_question_by_similarity(question)
-            specific_appendix = self.APPENDICES.get(question_type, self.APPENDICES['job_experience'])
-            custom_guideline = f"{self.MAIN_GUIDE}\n\n{specific_appendix}"
+            # 하이브리드 분류기 호출 (결과는 '카테고리 문자열' 또는 None)
+            question_type = self.classify_question_hybrid(question)
+            
+            # 분류 결과에 따라 가이드라인을 동적으로 구성
+            if question_type:
+                # 분류 성공: 핵심 가이드 + 특정 부록
+                specific_appendix = self.APPENDICES.get(question_type, "")
+                custom_guideline = f"{self.MAIN_GUIDE}\n\n{specific_appendix}"
+                self.logger.info(f"'{question_type}' 유형으로 분류되어 해당 부록을 사용합니다.")
+            else:
+                # 분류 실패: 핵심 가이드만 사용
+                custom_guideline = self.MAIN_GUIDE
+                self.logger.info("질문이 특정 유형으로 분류되지 않아, 핵심 가이드라인만 사용합니다.")
 
             company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
             cleaned_resume_text = self._clean_resume_text(resume_text)
