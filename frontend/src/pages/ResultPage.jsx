@@ -36,6 +36,73 @@ function ResultPage({ onSidebarRefresh }) {
     
     // 긴 프롬프트 표시 관리
     const [expandedPrompts, setExpandedPrompts] = useState({}); // {questionId_versionIndex: boolean}
+    
+    // 동적 탭 너비 계산을 위한 상태
+    const [tabWidths, setTabWidths] = useState({});
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    // 동적 탭 너비 계산 함수
+    const calculateTabWidths = useCallback(() => {
+        if (answers.length === 0) return;
+
+        const tabNavigation = document.querySelector('.tab-navigation');
+        if (!tabNavigation) return;
+
+        const containerWidth = tabNavigation.offsetWidth;
+        
+        // 실제 문항추가 버튼 너비 측정 (더 안전한 방법)
+        const addButton = document.querySelector('.add-tab');
+        let addButtonWidth = 150; // 기본값
+        
+        if (addButton) {
+            addButtonWidth = addButton.offsetWidth + 20; // 20px 여유분 추가
+        } else {
+            // 버튼이 아직 렌더링되지 않은 경우, 텍스트 길이로 추정
+            addButtonWidth = 160; // "문항 추가" 텍스트 + 패딩 + 여유분
+        }
+        
+        const gapSize = 8; // 탭 간격
+        const availableWidth = containerWidth - addButtonWidth - (gapSize * answers.length);
+        
+        // 각 탭의 너비 계산
+        const newTabWidths = {};
+        const inactiveTabCount = answers.length - 1;
+        
+        answers.forEach((_, index) => {
+            if (index === activeTab) {
+                // 선택된 탭은 사용 가능한 공간의 대부분 사용 (최소 200px)
+                newTabWidths[index] = Math.max(availableWidth - (inactiveTabCount * 50), 200);
+            } else {
+                // 선택되지 않은 탭은 고정된 작은 너비 (50px)
+                newTabWidths[index] = 50;
+            }
+        });
+
+        setTabWidths(newTabWidths);
+        setContainerWidth(containerWidth);
+    }, [answers.length, activeTab]);
+
+    // 화면 크기 변경 감지
+    useEffect(() => {
+        const handleResize = () => {
+            calculateTabWidths();
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [calculateTabWidths]);
+
+    // 탭 변경 시 너비 재계산
+    useEffect(() => {
+        calculateTabWidths();
+    }, [calculateTabWidths]);
+
+    // 탭 클릭 핸들러 (너비 재계산 포함)
+    const handleTabClick = (index) => {
+        setActiveTab(index);
+        // 즉시 너비 재계산
+        calculateTabWidths();
+    };
 
     // SEO 메타데이터 설정
     useDocumentMeta({
@@ -569,9 +636,15 @@ function ResultPage({ onSidebarRefresh }) {
                                 key={index}
                                 role="tab"
                                 aria-selected={activeTab === index}
-                                className={`tab ${activeTab === index ? 'active' : ''} ${answers.length >= 2 ? 'multiple-tabs' : 'single-tab'}`}
-                                onClick={() => setActiveTab(index)}
+                                className={`tab ${activeTab === index ? 'active' : ''}`}
+                                onClick={() => handleTabClick(index)}
                                 type="button"
+                                style={{
+                                    width: tabWidths[index] ? `${tabWidths[index]}px` : 'auto',
+                                    minWidth: tabWidths[index] ? `${tabWidths[index]}px` : '60px',
+                                    maxWidth: tabWidths[index] ? `${tabWidths[index]}px` : 'none',
+                                    transition: 'none' // 너비 변화 시 transition 비활성화
+                                }}
                             >
                                 {item.question}
                             </button>
