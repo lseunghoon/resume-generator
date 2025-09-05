@@ -188,10 +188,11 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  min-width: 120px;
+  min-width: 200px;
   width: fit-content;
   z-index: 1001;
   animation: dropdownFadeIn 0.2s ease;
+  padding: 0.5rem 0;
 }
 
 .dropdown-item {
@@ -212,6 +213,32 @@
 
 .dropdown-item:hover {
   background: #f9fafb;
+}
+
+/* 사용자 정보 섹션 */
+.dropdown-user-info {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  color: #6b7280;
+  word-break: break-all;
+}
+
+/* 구분선 */
+.dropdown-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 0.5rem 0;
 }
 
 @keyframes dropdownFadeIn {

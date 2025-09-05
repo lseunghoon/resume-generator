@@ -36,6 +36,19 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
     }
   }, [user, refreshTrigger]);
 
+  // 화면 크기 변경 시 사이드바 상태 조정
+  useEffect(() => {
+    const handleResize = () => {
+      // PC 환경(1200px 이상)에서 모바일/태블릿 환경으로 변경될 때 사이드바 자동 닫기
+      if (window.innerWidth < 1200 && isOpen) {
+        onToggle();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen, onToggle]);
+
   const loadSessions = async () => {
     try {
       setLoading(true);
@@ -103,8 +116,8 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
   const handleSessionClick = (sessionId) => {
     navigate(createSessionUrl(sessionId));
     
-    // 모바일에서 사이드바 자동 닫기
-    if (window.innerWidth <= 768 && isOpen) {
+    // 모바일/태블릿에서 사이드바 자동 닫기
+    if (window.innerWidth <= 1199 && isOpen) {
       onToggle();
     }
   };
@@ -121,6 +134,15 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
 
   return (
     <>
+      {/* 모바일/태블릿 환경에서 사이드바 오버레이 */}
+      {isOpen && window.innerWidth <= 1199 && (
+        <div 
+          className="sidebar-overlay"
+          onClick={onToggle}
+          aria-label="사이드바 닫기"
+        />
+      )}
+      
       <div className={`sidebar ${isOpen ? 'open' : ''} ${isResizing ? 'resizing' : ''} ${sidebarWidth <= 280 ? 'min-width-reached' : ''}`} style={{ width: sidebarWidth }}>
         {/* 좌측 리사이저 핸들 */}
         <div
@@ -138,10 +160,14 @@ const Sidebar = ({ user, isOpen, onToggle, refreshTrigger }) => {
             </div>
           ) : error ? (
             <div className="error-state">
-              <p>오류가 발생했습니다</p>
+              <div className="error-icon">⚠️</div>
+              <p className="error-message">{error}</p>
               <button onClick={loadSessions} className="retry-btn">
-                다시 시도
+                🔄 다시 시도
               </button>
+              <p className="error-hint">
+                문제가 지속되면 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.
+              </p>
             </div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">

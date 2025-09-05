@@ -50,21 +50,52 @@ input, textarea, [contenteditable] {
   min-height: calc(100vh - 60px); /* 헤더 높이 60px에 맞춤 */
 }
 
-.main-content.sidebar-open {
-  margin-right: 280px; /* 사이드바 너비만큼 여백 */
-}
-
-.main-content.sidebar-closed {
-  margin-right: 0;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
+/* PC 환경에서만 사이드바 반응형 적용 */
+@media (min-width: 1200px) {
   .main-content.sidebar-open {
-    margin-right: 0; /* 모바일에서는 사이드바가 오버레이로 표시 */
+    margin-right: 280px; /* 사이드바 너비만큼 여백 */
+  }
+}
+
+/* PC 환경에서만 사이드바 닫힌 상태 스타일 적용 */
+@media (min-width: 1200px) {
+  .main-content.sidebar-closed {
+    margin-right: 0;
+  }
+}
+
+/* 모바일/태블릿 환경에서는 사이드바가 오버레이로 표시 */
+@media (max-width: 1199px) {
+  .main-content.sidebar-open {
+    margin-right: 0; /* 사이드바가 오버레이로 표시되어 페이지 크기 변화 없음 */
   }
   
-  /* 모바일에서 토글 버튼 - 헤더로 이동됨 */
+  .main-content.sidebar-open .button-container {
+    margin-right: 0; /* 버튼 컨테이너도 이동하지 않음 */
+  }
+  
+  .main-content.sidebar-open .chat-input-section {
+    left: 50%; /* 수정입력창도 이동하지 않음 */
+  }
+  
+  /* 사이드바 오버레이 - 바깥 영역 터치 시 닫기 */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 998; /* 사이드바보다 낮고, 메인 콘텐츠보다 높음 */
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  
+  .sidebar-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 /* 버튼 컨테이너 사이드바 반응형 스타일 */
@@ -72,40 +103,42 @@ input, textarea, [contenteditable] {
   transition: margin-right 0.3s ease;
 }
 
-.main-content.sidebar-open .button-container {
-  margin-right: 280px;
-}
-
-.main-content.sidebar-closed .button-container {
-  margin-right: 0;
-}
-
-/* 모바일에서는 버튼 컨테이너 이동 안함 */
-@media (max-width: 768px) {
+/* PC 환경에서만 버튼 컨테이너 사이드바 반응형 적용 */
+@media (min-width: 1200px) {
   .main-content.sidebar-open .button-container {
+    margin-right: 280px;
+  }
+}
+
+/* PC 환경에서만 사이드바 닫힌 상태 버튼 컨테이너 스타일 적용 */
+@media (min-width: 1200px) {
+  .main-content.sidebar-closed .button-container {
     margin-right: 0;
   }
 }
+
+
 
 /* chat-input-section 영역 사이드바 반응형 스타일 */
 .chat-input-section {
   transition: left 0.3s ease;
 }
 
-.main-content.sidebar-open .chat-input-section {
-  left: calc(50% - 140px);
-}
-
-.main-content.sidebar-closed .chat-input-section {
-  left: 50%;
-}
-
-/* 모바일에서는 chat-input-section 영역 이동 안함 */
-@media (max-width: 768px) {
+/* PC 환경에서만 chat-input-section 사이드바 반응형 적용 */
+@media (min-width: 1200px) {
   .main-content.sidebar-open .chat-input-section {
+    left: calc(50% - 140px);
+  }
+}
+
+/* PC 환경에서만 사이드바 닫힌 상태 chat-input-section 스타일 적용 */
+@media (min-width: 1200px) {
+  .main-content.sidebar-closed .chat-input-section {
     left: 50%;
   }
 }
+
+
 
 /* 페이지 공통 스타일 */
 .page-layout {
@@ -116,18 +149,11 @@ input, textarea, [contenteditable] {
   width: 100%;
 }
 
-.page-content {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px 20px;
-  width: 100%;
-}
+
 
 .content-wrapper {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
 }
 

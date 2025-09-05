@@ -134,17 +134,112 @@ const LandingPage = () => {
 				window.history.replaceState(null, '', window.location.pathname);
 			}
 			
-			// 현재 세션 확인
-			const { data: { session } } = await supabase.auth.getSession();
-			console.log('LandingPage - 현재 세션 상태:', !!session);
+			// Supabase 클라이언트 상태 확인
+			console.log('LandingPage - Supabase 클라이언트 상태 확인...');
+			if (!supabase || typeof supabase.auth !== 'object') {
+				console.error('LandingPage - Supabase 클라이언트가 제대로 초기화되지 않음');
+				throw new Error('Supabase 클라이언트 초기화 실패');
+			}
 			
-			if (session) {
-				// 이미 로그인된 경우: 바로 job-info 페이지로 이동 (state 없이 새로 시작)
-				console.log('로그인된 사용자, job-info 페이지로 이동');
-				navigate('/job-info', { replace: true, state: null });
+			// 현재 세션 확인 - 더 엄격한 체크
+			console.log('LandingPage - Supabase 세션 확인 시작...');
+			const { data, error } = await supabase.auth.getSession();
+			
+			if (error) {
+				console.error('LandingPage - 세션 확인 중 Supabase 오류:', error);
+				throw error;
+			}
+			
+			const session = data?.session;
+			console.log('LandingPage - 세션 데이터 전체:', data);
+			console.log('LandingPage - 세션 객체:', session);
+			console.log('LandingPage - 세션 존재 여부:', !!session);
+			console.log('LandingPage - 세션 타입:', typeof session);
+			
+			// 세션이 존재하고 유효한지 더 엄격하게 체크
+			const isValidSession = !!(session && 
+				typeof session === 'object' && 
+				session.access_token && 
+				session.refresh_token &&
+				session.user &&
+				session.user.id);
+			
+			console.log('LandingPage - 유효한 세션인지:', isValidSession);
+			console.log('LandingPage - 세션 상세 정보:', {
+				hasSession: !!session,
+				hasAccessToken: !!session?.access_token,
+				hasRefreshToken: !!session?.refresh_token,
+				hasUser: !!session?.user,
+				hasUserId: !!session?.user?.id,
+				userId: session?.user?.id
+			});
+			
+			if (isValidSession) {
+				// Supabase 세션이 있는 경우, 백엔드에서 실제 사용자 인증 상태 확인
+				console.log('LandingPage - Supabase 세션 발견, 백엔드 인증 상태 확인 중...');
+				
+				try {
+					// 백엔드 API를 통해 실제 사용자 인증 상태 확인
+					// 개발 환경에서는 localhost:5000, 프로덕션에서는 상대 경로 사용
+					const backendUrl = process.env.NODE_ENV === 'development' 
+						? 'http://localhost:5000' 
+						: '';
+					
+					const apiUrl = `${backendUrl}/api/v1/auth/user`;
+					console.log('LandingPage - 백엔드 API 호출:', {
+						backendUrl,
+						apiUrl,
+						environment: process.env.NODE_ENV,
+						hasAccessToken: !!session.access_token
+					});
+					
+					const response = await fetch(apiUrl, {
+						method: 'GET',
+						headers: {
+							'Authorization': `Bearer ${session.access_token}`,
+							'Content-Type': 'application/json'
+						}
+					});
+					
+					console.log('LandingPage - 백엔드 응답:', {
+						status: response.status,
+						statusText: response.statusText,
+						ok: response.ok,
+						url: response.url
+					});
+					
+					if (response.ok) {
+						// 백엔드에서 인증된 사용자로 확인됨
+						console.log('LandingPage - 백엔드 인증 성공, job-info 페이지로 이동');
+						navigate('/job-info', { replace: true, state: null });
+					} else {
+						// 백엔드에서 인증 실패 (세션이 만료되었거나 유효하지 않음)
+						console.log('LandingPage - 백엔드 인증 실패, Supabase 세션 정리 후 로그인 페이지로 이동');
+						
+						// Supabase 세션 정리
+						await supabase.auth.signOut();
+						
+						// 로그인 페이지로 이동
+						localStorage.setItem('auth_redirect_path', '/job-info');
+						const loginUrl = '/login?next=/job-info';
+						navigate(loginUrl);
+					}
+				} catch (backendError) {
+					console.error('LandingPage - 백엔드 인증 확인 중 오류:', backendError);
+					
+					// 백엔드 연결 실패 시에도 안전하게 로그인 페이지로 이동
+					console.log('LandingPage - 백엔드 연결 실패, 로그인 페이지로 이동');
+					
+					// Supabase 세션 정리 (안전을 위해)
+					await supabase.auth.signOut();
+					
+					localStorage.setItem('auth_redirect_path', '/job-info');
+					const loginUrl = '/login?next=/job-info';
+					navigate(loginUrl);
+				}
 			} else {
 				// 로그인되지 않은 경우: 로그인 페이지로 이동하고, 로그인 완료 후 job-info로 이동
-				console.log('로그인되지 않은 사용자, 로그인 페이지로 이동');
+				console.log('LandingPage - 유효한 세션 없음, 로그인 페이지로 이동');
 				
 				// next 경로를 localStorage에 저장 (OAuth 콜백 후에도 접근 가능하도록)
 				localStorage.setItem('auth_redirect_path', '/job-info');
@@ -154,8 +249,23 @@ const LandingPage = () => {
 				navigate(loginUrl);
 			}
 		} catch (error) {
-			console.error('세션 확인 중 오류 발생:', error);
+			console.error('LandingPage - 세션 확인 중 오류 발생:', error);
+			console.error('LandingPage - 오류 상세:', {
+				message: error.message,
+				name: error.name,
+				stack: error.stack
+			});
+			
+			// 오류 발생 시 Supabase 세션 정리 시도
+			try {
+				console.log('LandingPage - 오류 발생으로 Supabase 세션 정리 시도');
+				await supabase.auth.signOut();
+			} catch (signOutError) {
+				console.error('LandingPage - Supabase 세션 정리 실패:', signOutError);
+			}
+			
 			// 오류 발생 시에도 로그인 페이지로 이동
+			console.log('LandingPage - 오류 발생으로 인해 로그인 페이지로 이동');
 			
 			// next 경로를 localStorage에 저장
 			localStorage.setItem('auth_redirect_path', '/job-info');
@@ -229,12 +339,12 @@ const LandingPage = () => {
 
 	// SEO 메타데이터 설정 (기본 페이지)
 	useDocumentMeta({
-		title: "써줌 | 3분 만에 완성하는 맞춤형 자소서",
-		description: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게.",
-		keywords: "자기소개서, 자소서, AI 자기소개서, 자소서 작성, 취업, 합격 자소서, 써줌",
+		title: "써줌 | 맞춤형 자기소개서 생성 서비스",
+		description: "수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴 자기소개서 생성 서비스. 직무 적합성을 정밀하게 분석하여 지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다. 4단계 간편 프로세스로 맞춤형 자소서를 작성해보세요!",
+		keywords: "자기소개서, 자소서, 자소서 작성, 취업, 합격 자소서, 써줌, 직무 적합성, 전문가 노하우, 맞춤형 자소서, 자소서 팁",
 		robots: "index, follow",
-		ogTitle: "AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서",
-		ogDescription: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요. 채용정보 분석부터 맞춤형 작성까지, 써줌에서 쉽고 완벽하게.",
+		ogTitle: "써줌 | 맞춤형 자기소개서 생성 서비스",
+		ogDescription: "수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴 서비스. 직무 적합성을 정밀하게 분석하여 지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다.",
 		ogType: "website",
 		ogUrl: "https://www.sseojum.com",
 		ogImage: "https://www.sseojum.com/assets/sseojum_thumbnail.png",
@@ -243,14 +353,14 @@ const LandingPage = () => {
 		ogSiteName: "써줌",
 		ogLocale: "ko_KR",
 		twitterCard: "summary_large_image",
-		twitterTitle: "AI 자기소개서 생성기 써줌 | 3분 만에 완성하는 맞춤형 자소서",
-		twitterDescription: "전문가 노하우가 담긴 AI로 3분 만에 합격 자기소개서를 완성하세요.",
+		twitterTitle: "써줌 | 전문가 노하우로 완성하는 맞춤형 자기소개서",
+		twitterDescription: "수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴 서비스. 직무 적합성을 정밀하게 분석하여 지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다.",
 		twitterImage: "https://www.sseojum.com/assets/sseojum_thumbnail.png",
 		jsonLd: {
 			"@context": "https://schema.org",
 			"@type": "WebApplication",
 			"name": "써줌",
-			"description": "AI 기반 자기소개서 생성 서비스",
+			"description": "전문가 노하우 기반 맞춤형 자기소개서 생성 서비스",
 			"url": "https://www.sseojum.com",
 			"applicationCategory": "BusinessApplication",
 			"operatingSystem": "Any",
@@ -274,8 +384,11 @@ const LandingPage = () => {
 				{/* Hero Section */}
 				<section className="hero">
 					<div className="hero-card">
-						<h1 className="hero-title">자소서, 쉽고 완벽하게 「써줌」 에서</h1>
-						<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
+						<h1 className="hero-title">취준생 필수템,<br/> 자소서 AI 써줌으로 3분 만에 완성!</h1>
+						<div className="hero-button-container">
+							<div className="free-bubble">100% 무료</div>
+							<button id="start-creation-btn_hero" data-tracking-id="start-funnel" onClick={handleStart} className="hero-button">시작하기</button>
+						</div>
 						<img src="/assets/example_image.png" alt="써줌 서비스 예시" className="hero-image" />
 					</div>
 				</section>
@@ -290,7 +403,7 @@ const LandingPage = () => {
 									AI 기술의 발전으로 글쓰기는 쉬워졌지만, 합격하는 자기소개서는 다릅니다.
 								</p>
 								<p className="service-intro-detail">
-									'써줌'은 수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴,<br/>
+									'써줌'은 수많은 서류 합격자를 배출한 자기소개서 전문가가 직접 만든,<br/>
 									오직 자기소개서만을 위한 서비스입니다.<br/>
 									전문가가 설계한 가이드라인이 각 문항의 의도를 정밀하게 파악하고,<br/>
 									지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다.
@@ -321,9 +434,9 @@ const LandingPage = () => {
 									<img src="/assets/upload_example.png" alt="문서 업로드 예시" className="step-image" />
 								</div>
 								<div className="how-step-text">
-									<h3 className="how-step-title">2. 기존 문서 업로드</h3>
+									<h3 className="how-step-title">2. 기존 경험 입력</h3>
 									<p className="how-step-desc">
-										나만의 경험과 역량이 담긴 문서를 업로드해 주세요.<br/>
+										나의 경험과 역량이 담긴 문서를 업로드하거나 입력해 주세요.<br/>
 										(이력서, 경력기술서, 포트폴리오 등)<br/>
 										문서에서 채용 정보와 맞닿은 연결고리를 찾아냅니다.
 									</p>
@@ -370,9 +483,12 @@ const LandingPage = () => {
 						<p className="cta-description">
 							써줌의 맞춤형 자기소개서로 취업 준비를 한 단계 업그레이드하세요
 						</p>
-						<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
-							자기소개서 작성하기
-						</button>
+						<div className="cta-button-container">
+							<div className="free-bubble">100% 무료</div>
+							<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
+							자소서 퀄리티 2배로 올리기
+							</button>
+						</div>
 					</div>
 				</section>
 

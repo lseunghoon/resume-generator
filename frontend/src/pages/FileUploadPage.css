@@ -17,7 +17,7 @@
 
 .content-wrapper {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -44,11 +44,169 @@
 
 .form-content {
   text-align: center;
+  min-height: 700px; /* 탭 전환 시 높이 안정화를 위한 최소 높이 설정 */
+  position: relative; /* 자식 요소들의 절대 위치 기준점 */
 }
 
 .form-header {
   margin-bottom: 48px;
   text-align: center;
+}
+
+/* 탭 메뉴 스타일 */
+.tab-menu {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  position: sticky; /* 탭 메뉴를 상단에 고정 */
+  top: 0; /* 상단에 고정 */
+  background: white; /* 배경색 설정 */
+  z-index: 10; /* 다른 요소들 위에 표시 */
+  padding: 0; /* 상하 여백 제거 */
+}
+
+.tab-button {
+  flex: 1;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  font-family: 'Pretendard Variable', sans-serif;
+}
+
+.tab-button:hover {
+  color: #334155;
+  background-color: #f8fafc;
+}
+
+.tab-button.active {
+  color: #1e82ff;
+  font-weight: 600;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #1e82ff 0%, #54a3ff 100%);
+  border-radius: 3px 3px 0 0;
+}
+
+/* 직접 입력 섹션 스타일 */
+.manual-input-section {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 600px; /* 직접 입력 섹션 최소 높이 설정 */
+}
+
+.manual-input-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.manual-text-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #ffffff;
+  resize: vertical;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.manual-text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+}
+
+.manual-text-input::placeholder {
+  color: #94a3b8;
+  font-style: normal;
+}
+
+.manual-input-guide {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 24px 0;
+  margin-top: 32px;
+  text-align: left;
+}
+
+.manual-input-guide h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manual-input-guide ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+.manual-input-guide li {
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #475569;
+  position: relative;
+  padding-left: 16px;
+}
+
+.manual-input-guide li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #1e82ff;
+  font-weight: bold;
+}
+
+.manual-input-guide li strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+.guide-note {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+  text-align: center;
+}
+
+.guide-note strong {
+  color: #1e82ff;
+  font-weight: 600;
 }
 
 .form-header h1 {
@@ -69,6 +227,7 @@
 
 .upload-section {
   margin-bottom: 48px;
+  min-height: 600px; /* 업로드 섹션 최소 높이 설정 */
 }
 
 .upload-stats {
@@ -227,6 +386,7 @@
 
 .upload-notes {
   margin-top: 24px;
+  margin-bottom: 44px;
   text-align: left;
 }
 
@@ -238,21 +398,45 @@
 }
 
 .error-message {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-top: 20px;
+  color: #e74c3c;
   font-size: 14px;
+  margin-top: 0px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   text-align: left;
   line-height: 1.5;
+  animation: shake 0.3s ease-in-out;
+}
+
+/* 에러 메시지 떨림 애니메이션 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
     padding: 40px 16px 100px 16px; /* 하단 navigation 여백 추가 */
+  }
+  
+  /* 모바일에서 form-content 높이 조정 */
+  .form-content {
+    min-height: 600px;
+  }
+  
+  /* 모바일에서 탭 섹션 높이 조정 */
+  .upload-section,
+  .manual-input-section {
+    min-height: 500px;
   }
   
   .content-wrapper {
@@ -602,5 +786,51 @@
   .modal-button {
     max-width: 300px; /* 작은 화면에서는 더 넓게 */
     width: 100%;
+  }
+
+  /* 탭 메뉴 모바일 스타일 */
+  .tab-menu {
+    max-width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .tab-button {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  /* 직접 입력 섹션 모바일 스타일 */
+  .manual-input-section {
+    max-width: 100%;
+  }
+
+  .manual-input-content {
+    gap: 20px;
+  }
+
+  .manual-text-input {
+    min-height: 200px;
+    padding: 16px;
+    font-size: 15px;
+  }
+
+  .manual-input-guide {
+    padding: 20px 0;
+    margin-top: 24px;
+  }
+
+  .manual-input-guide h4 {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .manual-input-guide li {
+    font-size: 13px;
+    padding: 6px 0;
+  }
+
+  .guide-note {
+    padding: 10px 14px;
+    font-size: 13px;
   }
 }

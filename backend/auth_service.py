@@ -111,11 +111,42 @@ class AuthService:
             user = self.client.auth.get_user()
             
             if user.user:
-                return {
+                user_data = {
                     "id": user.user.id,
                     "email": user.user.email,
                     "created_at": user.user.created_at
                 }
+                
+                # Google OAuth 사용자의 경우 추가 정보 포함
+                if hasattr(user.user, 'user_metadata') and user.user.user_metadata:
+                    metadata = user.user.user_metadata
+                    
+                    # 프로필 사진 (Google OAuth에서 제공)
+                    if metadata.get('picture'):
+                        user_data["picture"] = metadata['picture']
+                    
+                    # 사용자 이름 (Google OAuth에서 제공)
+                    if metadata.get('name'):
+                        user_data["name"] = metadata['name']
+                    
+                    # 아바타 (Google OAuth에서 제공)
+                    if metadata.get('avatar_url'):
+                        user_data["picture"] = metadata['avatar_url']
+                
+                # Supabase의 기본 user_metadata도 확인
+                if hasattr(user.user, 'user_metadata') and user.user.user_metadata:
+                    metadata = user.user.user_metadata
+                    
+                    # 프로필 사진이 아직 설정되지 않은 경우
+                    if 'picture' not in user_data and metadata.get('picture'):
+                        user_data["picture"] = metadata['picture']
+                    
+                    # 사용자 이름이 아직 설정되지 않은 경우
+                    if 'name' not in user_data and metadata.get('name'):
+                        user_data["name"] = metadata['name']
+                
+                print(f"사용자 정보 조회 성공: {user_data}")
+                return user_data
             return None
             
         except Exception as e:

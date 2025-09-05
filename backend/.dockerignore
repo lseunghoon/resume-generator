@@ -1,4 +1,22 @@
-# flyctl launch added from venv\.gitignore
-# Created by venv; see https://docs.python.org/3/library/venv.html
-venv\**\*
+# Python 가상 환경 폴더를 정확히 무시합니다.
+.venv/
+venv/
+
+# Python 캐시 파일 및 바이트코드
+*.pyc
+__pycache__/
+
+# Git 관련 폴더 및 파일
+.git/
+.gitignore
+
+# IDE 및 에디터 설정 파일
+.vscode/
+.idea/
+
+# Fly.io 설정 파일 (이미지에 포함될 필요 없음)
+.fly/
 fly.toml
+
+# 기타 불필요한 폴더 (필요시 추가)
+# node_modules/

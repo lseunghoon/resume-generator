@@ -10,7 +10,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 40px 20px 20px 20px; /* 상단 패딩 줄임 */
+  padding: 40px 20px 120px 20px; /* 하단 패딩 추가로 입력창과 간격 확보 */
   width: 100%;
   align-content: flex-start;
 }
@@ -23,6 +23,103 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+/* 모바일에서 뒤로가기 버튼과 겹치지 않도록 상단 여백 조정 */
+@media (max-width: 768px) {
+  .content-wrapper {
+    margin-top: 24px;
+  }
+}
+
+/* 아이패드 환경 (768px ~ 1024px) 최적화 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .content-wrapper {
+    margin-top: 20px;
+  }
+  
+  /* 아이패드에서 문항 탭 간격 조정 */
+  .tab-navigation {
+    gap: 16px;
+    padding: 0 0 8px 0;
+  }
+  
+  .tab {
+    padding: 10px 16px;
+    font-size: 15px;
+    /* 동적 너비 - JavaScript에서 계산 */
+    flex: 0 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* 한 줄로 제한 */
+  }
+  
+  /* 선택된 탭 스타일 - 너비는 JavaScript에서 제어 */
+  .tab.active {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* 문항이 2개 이상일 때 동적 너비 조정 */
+  .tab.multiple-tabs {
+    max-width: none; /* 고정 너비 제거 */
+    min-width: 0; /* 최소 너비 제한 해제 */
+    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* 문항이 1개일 때는 전체 텍스트 표시 */
+  .tab.single-tab {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+  
+  .add-tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+    min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 아이패드에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
+  }
+  
+  /* 아이패드에서 수정 입력창 반응형 조정 - 사이드바와 겹치지 않도록 */
+  .chat-input-section {
+    width: min(calc(100% - 80px), 880px); /* page-content 기준으로 제한 */
+    max-width: 880px; /* page-content와 동일 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 997; /* 사이드바 오버레이(998)보다 낮은 z-index */
+  }
+  
+  .revision-input {
+    padding: 8px;
+  }
+  
+  .revision-input textarea {
+    font-size: 16px;
+    padding: 14px 18px;
+    min-height: 44px; /* 아이패드 터치 최적화 */
+  }
+  
+  .send-revision {
+    min-width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
 }
 
 /* 채용공고 정보 섹션 */
@@ -106,12 +203,12 @@
 .tab-navigation {
   display: flex;
   align-items: flex-end;
-  gap: 24px;
+  gap: 8px;
   margin-bottom: 24px;
   border-bottom: 1px solid #f1f5f9;
-  overflow-x: auto;
+  overflow-x: visible; /* 모바일에서 스크롤 대신 visible로 변경 */
   overflow-y: hidden; /* 세로 스크롤 및 화살표 제거 */
-  padding: 0 0 6px 0;
+  padding: 0 12px 6px 12px; /* 좌우 패딩 증가로 버튼 잘림 방지 */
   /* 스크롤바 숨김 (브라우저별) */
   scrollbar-width: none;          /* Firefox */
   -ms-overflow-style: none;       /* IE/Edge */
@@ -130,8 +227,12 @@
   font-size: 16px;
   font-weight: 500; /* 비활성 탭: bold 제거 */
   cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.2s ease;
+  white-space: nowrap; /* 한 줄로 제한 */
+  transition: color 0.2s ease, background-color 0.2s ease; /* 너비 변화 제외 */
+  /* 동적 너비 - JavaScript에서 계산 */
+  flex: 0 0 auto; /* 고정 너비 제거 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab:hover {
@@ -139,7 +240,10 @@
   background: transparent;
 }
 
+/* 선택된 탭 스타일 - 너비는 JavaScript에서 제어 */
 .tab.active {
+  overflow: hidden; /* 텍스트 잘림 유지 */
+  text-overflow: ellipsis; /* ellipsis 유지 */
   color: #343435;
   font-weight: 600; /* 활성 탭만 약간 굵게 */
 }
@@ -156,21 +260,46 @@
 }
 
 .add-tab {
-  padding: 14px 24px;
-  border: 1px dashed #343435;
-  background-color: transparent;
-  color: #343435;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
   border-radius: 12px;
-  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.5;
+  cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s ease;
+  min-height: 48px;
+  padding: 12px 24px;
+  position: relative;
+  overflow: hidden;
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
   margin-left: auto;
+  flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+  min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
+  z-index: 1; /* 다른 요소 위에 표시 */
 }
 
-.add-tab:hover {
-  background-color: #f1f5f9;
+/* 마우스가 있는 디바이스에서만 hover 효과 적용 */
+@media (hover: hover) {
+  .add-tab:hover:not(:disabled) {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* 터치 디바이스에서 터치 시 시각적 피드백 */
+.add-tab:active:not(:disabled) {
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(1px);
 }
 
 /* 탭 콘텐츠 */
@@ -338,6 +467,74 @@
 
 
 
+/* 건너뛰기 안내 섹션 - 카드형 레이아웃 */
+.skip-notice {
+  margin-top: 24px;
+  margin-bottom: 120px; /* 수정 입력창과 겹치지 않도록 하단 여백 추가 */
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.skip-notice-content {
+  display: flex;
+  align-items: center;
+  padding: 20px 24px;
+  gap: 16px;
+}
+
+.skip-notice-icon {
+  font-size: 24px;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.skip-notice-text {
+  flex: 1;
+  text-align: left;
+}
+
+.skip-notice-text p {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.add-experience-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: 
+    0 4px 12px rgba(59, 130, 246, 0.25),
+    0 2px 4px rgba(59, 130, 246, 0.15);
+}
+
+.add-experience-button:hover {
+  background: #2563eb;
+  box-shadow: 
+    0 8px 24px rgba(59, 130, 246, 0.35),
+    0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.add-experience-button:active {
+  background: #1d4ed8;
+  box-shadow: 
+    0 2px 8px rgba(59, 130, 246, 0.3),
+    0 1px 3px rgba(59, 130, 246, 0.15);
+}
+
 /* 질문 추가 모달 */
 .modal-overlay {
   position: fixed;
@@ -443,48 +640,7 @@
 
 /* 첫 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
-@media (max-width: 480px) {
-  .page-content {
-    padding: 16px 16px;
-  }
-
-  .job-info-section {
-    padding: 20px 16px;
-  }
-
-  .tab-content {
-    padding: 24px 16px;
-  }
-
-  .answer-header h3 {
-    font-size: 20px;
-  }
-
-  .tab {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-
-  /* 문항이 2개 이상일 때만 ellipsis 적용 */
-  .tab.multiple-tabs {
-    max-width: 100px; /* 더 작은 화면에서는 더 작은 최대 너비 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* 문항이 1개일 때는 전체 텍스트 표시 */
-  .tab.single-tab {
-    max-width: none;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-  }
-
-  .add-tab {
-    padding: 10px 16px;
-    font-size: 12px;
-  }
+/* 첫 번째 480px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
   .add-question-modal {
     padding: 28px 20px;
@@ -493,13 +649,12 @@
   .add-question-modal h3 {
     font-size: 20px;
   }
-} 
 
 /* 두 번째 768px 미디어 쿼리 제거됨 - 아래 통합된 미디어 쿼리로 대체 */
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 16px 12px;
+    padding: 16px 12px 120px 12px;
   }
 
   .result-header h1 {
@@ -525,33 +680,32 @@
 
   .tab-navigation {
     gap: 6px;
-    padding: 0 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    padding: 0 12px 10px 12px; /* 모바일에서 패딩 증가 + 아래 패딩 추가 */
+    overflow-x: visible; /* 스크롤 대신 visible로 변경 */
   }
 
-  .tab-navigation::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tab-button {
+  .tab {
     padding: 6px 10px;
     font-size: 12px;
     min-width: 50px;
     flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* 한 줄로 제한 */
   }
 
-  /* 문항이 2개 이상일 때만 ellipsis 적용 */
-  .tab-button.multiple-tabs {
-    max-width: 80px; /* 매우 작은 화면에서는 더 작은 최대 너비 */
+  /* 문항이 2개 이상일 때 동적 너비 조정 */
+  .tab.multiple-tabs {
+    max-width: none; /* 고정 너비 제거 */
+    min-width: 50px; /* 최소 너비만 보장 */
+    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   /* 문항이 1개일 때는 전체 텍스트 표시 */
-  .tab-button.single-tab {
+  .tab.single-tab {
     max-width: none;
     overflow: visible;
     text-overflow: clip;
@@ -560,8 +714,22 @@
 
   .add-tab {
     padding: 6px 10px;
-    font-size: 11px;
-    flex-shrink: 0;
+    font-size: 12px;
+    min-height: 36px;
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+    min-width: 60px; /* 모바일에서 최소 너비 고정 */
+    max-width: 60px; /* 모바일에서 최대 너비 제한 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 480px 이하 모바일에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
   }
 
   .answer-header {
@@ -596,6 +764,54 @@
     font-size: 13px;
     padding: 8px 10px;
     max-height: 160px;
+  }
+  
+           /* 480px 이하에서 입력창 너비 최적화 */
+    .chat-input-section {
+      width: min(calc(100% - 28px), 880px); /* page-content 기준으로 제한 */
+      max-width: 880px; /* page-content와 동일 */
+      bottom: 18px;
+      z-index: 997; /* 사이드바 오버레이(998)보다 낮은 z-index */
+    }
+  
+  .revision-input {
+    padding: 0;
+  }
+  
+  .revision-input textarea {
+    padding: 10px 14px 10px 0;
+    font-size: 15px;
+    min-height: 38px;
+  }
+  
+  .revision-notice {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  
+  .tooltip-icon img {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .tooltip-content {
+    min-width: 280px;
+    max-width: 320px;
+    padding: 12px;
+  }
+  
+  .tooltip-title {
+    font-size: 13px;
+  }
+  
+  .tooltip-body li {
+    font-size: 12px;
+  }
+  
+  .send-revision {
+    min-width: 26px;
+    height: 26px;
+    font-size: 13px;
   }
 
 
@@ -646,7 +862,7 @@
 /* 웹뷰 최적화 */
 @media (max-width: 390px) {
   .page-content {
-    padding: 8px 8px;
+    padding: 8px 8px 120px 8px;
   }
 
   .result-header h1 {
@@ -661,11 +877,18 @@
     padding: 5px 8px;
     font-size: 11px;
     min-width: 45px;
+    /* 동적 너비 조정으로 문항 추가 버튼 공간 확보 */
+    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
+    min-width: 0; /* 최소 너비 제한 해제 */
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  /* 문항이 2개 이상일 때 동적 너비 조정 */
   .tab-button.multiple-tabs {
-    max-width: 70px; /* 390px 이하에서는 더욱 작은 최대 너비 */
+    max-width: none; /* 고정 너비 제거 */
+    min-width: 0; /* 최소 너비 제한 해제 */
+    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -681,7 +904,13 @@
 
   .add-tab {
     padding: 5px 8px;
-    font-size: 10px;
+    font-size: 11px;
+    min-height: 32px;
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+    min-width: fit-content; /* 텍스트에 맞는 최소 너비 보장 */
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .answer-header h3 {
@@ -696,6 +925,54 @@
     font-size: 12px;
     padding: 8px 10px;
     max-height: 140px;
+  }
+  
+           /* 작은 화면에서 입력창 너비 최적화 */
+    .chat-input-section {
+      width: min(calc(100% - 24px), 880px); /* page-content 기준으로 제한 */
+      max-width: 880px; /* page-content와 동일 */
+      bottom: 16px;
+      z-index: 997; /* 사이드바 오버레이(998)보다 낮은 z-index */
+    }
+  
+  .revision-input {
+    padding: 0;
+  }
+  
+  .revision-input textarea {
+    padding: 8px 12px 8px 0;
+    font-size: 14px;
+    min-height: 36px;
+  }
+  
+  .revision-notice {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+  
+  .tooltip-icon img {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .tooltip-content {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 10px;
+  }
+  
+  .tooltip-title {
+    font-size: 12px;
+  }
+  
+  .tooltip-body li {
+    font-size: 11px;
+  }
+  
+  .send-revision {
+    min-width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 
   .add-question-modal {
@@ -816,15 +1093,206 @@
   opacity: 1;
 }
 
-/* 고정된 입력창 - Figma 디자인에 맞게 */
+/* 고정된 입력창 - page-content 기준으로 정렬 */
 .chat-input-section {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 40px);
-  max-width: 800px;
+  width: min(calc(100% - 40px), 880px); /* page-content max-width와 동일 */
+  max-width: 880px; /* page-content와 동일한 최대 너비 */
+  z-index: 997; /* 사이드바 오버레이(998)보다 낮은 z-index */
+  box-sizing: border-box;
+}
+
+/* 수정 안내 문구 */
+.revision-notice {
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* 툴팁 스타일 */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+.tooltip-icon {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooltip-icon img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) saturate(100%) invert(45%) sepia(8%) saturate(1018%) hue-rotate(185deg) brightness(95%) contrast(89%);
+}
+
+.tooltip-icon:hover {
+  opacity: 1;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 300px;
+  max-width: 400px;
   z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  margin-bottom: 8px;
+}
+
+/* 모바일/태블릿에서 툴팁을 툴팁 버튼 기준으로 위치 조정 */
+@media (max-width: 1024px) {
+  .tooltip-content {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    transform: none;
+    margin-bottom: 8px;
+    z-index: 1001;
+  }
+  
+  /* 터치 디바이스에서 툴팁 활성화 */
+  .tooltip-container:active .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.tooltip-container:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.tooltip-body ul {
+  margin: 0;
+  padding-left: 16px;
+  list-style: none;
+}
+
+.tooltip-body li {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.tooltip-body li:before {
+  content: "•";
+  color: #3b82f6;
+  font-weight: bold;
+  position: absolute;
+  left: -16px;
+}
+
+.tooltip-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* 사이드바가 열린 상태일 때 입력창 너비 조정 - PC 환경에서만 */
+@media (min-width: 1200px) {
+  .chat-input-section.sidebar-open {
+    width: min(calc(100% - 60px), 700px); /* page-content 기준으로 제한 */
+    max-width: 700px;
+  }
+}
+
+/* 사이드바가 열린 상태에서의 추가 최적화 - PC 환경에서만 */
+@media (min-width: 1200px) {
+  .chat-input-section.sidebar-open .revision-input {
+    padding: 6px;
+  }
+  
+  .chat-input-section.sidebar-open .revision-input textarea {
+    font-size: 16px;
+    padding: 14px 18px;
+  }
+  
+  .chat-input-section.sidebar-open .send-revision {
+    min-width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+}
+
+/* 사이드바가 열린 상태에서 더 넓은 화면일 때 - PC 환경에서만 */
+@media (min-width: 1200px) {
+  .chat-input-section.sidebar-open {
+    width: min(calc(100% - 80px), 600px); /* page-content 기준으로 제한 */
+    max-width: 600px;
+  }
+}
+
+/* 대형 화면 (1200px 이상) 최적화 */
+@media (min-width: 1200px) {
+  .chat-input-section {
+    max-width: 900px;
+    bottom: 24px;
+  }
+  
+  .revision-input {
+    padding: 6px;
+  }
+  
+  .revision-input textarea {
+    font-size: 18px;
+    padding: 16px 20px;
+    min-height: 48px;
+  }
+  
+  .send-revision {
+    min-width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+}
+
+/* 초대형 화면 (1600px 이상) 최적화 */
+@media (min-width: 1600px) {
+  .chat-input-section {
+    max-width: 1000px;
+    bottom: 28px;
+  }
+  
+  .revision-input textarea {
+    font-size: 20px;
+    padding: 18px 24px;
+    min-height: 52px;
+  }
+  
+  .send-revision {
+    min-width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
 }
 
 .revision-input {
@@ -833,13 +1301,13 @@
   background: #ffffff;
   border: 1px solid #ebebeb;
   border-radius: 12px;
-  padding: 4px;
+  padding: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .revision-input textarea {
   flex: 1;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 0;
   border: none;
   border-radius: 8px;
   font-size: 18px;
@@ -924,6 +1392,67 @@
   100% { transform: rotate(360deg); }
 }
 
+/* 수정 프롬프트 표시 */
+.revision-prompt-display {
+  margin-bottom: 15px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+}
+
+.revision-prompt-arrow {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  opacity: 1;
+  filter: brightness(0.7);
+}
+
+.revision-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.revision-prompt-text {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+  line-height: 1.4;
+  display: inline;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 400;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.prompt-expand-button {
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-left: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  line-height: 1;
+}
+
+.prompt-expand-button:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
 /* 애니메이션 */
 @keyframes fadeIn {
   from {
@@ -958,7 +1487,7 @@
 /* 통합된 모바일 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 16px 16px;
+    padding: 16px 16px 120px 16px;
   }
   
   .content-wrapper {
@@ -989,18 +1518,31 @@
 
   .tab-navigation {
     gap: 8px;
-    padding: 0 8px;
+    padding: 0 12px 12px 12px; /* 모바일에서 패딩 증가 + 아래 패딩 추가 */
+    overflow-x: visible; /* 스크롤 대신 visible로 변경 */
   }
 
   .tab {
     padding: 8px 12px;
     font-size: 13px;
-    min-width: 60px;
+    /* 동적 너비 - JavaScript에서 계산 */
+    flex: 0 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* 한 줄로 제한 */
+  }
+  
+  /* 선택된 탭 스타일 - 너비는 JavaScript에서 제어 */
+  .tab.active {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* 문항이 2개 이상일 때만 ellipsis 적용 */
+  /* 문항이 2개 이상일 때 동적 너비 조정 */
   .tab.multiple-tabs {
-    max-width: 120px; /* 최대 너비 제한 */
+    max-width: none; /* 고정 너비 제거 */
+    min-width: 0; /* 최소 너비 제한 해제 */
+    flex: 1; /* 사용 가능한 공간을 균등하게 분배 */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1017,6 +1559,21 @@
   .add-tab {
     padding: 8px 12px;
     font-size: 12px;
+    min-height: 40px;
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+    min-width: 70px; /* 모바일에서 최소 너비 고정 */
+    max-width: 70px; /* 모바일에서 최대 너비 제한 */
+    background: #3b82f6 !important; /* 배경색 강제 적용 */
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* 모바일에서 터치 시 시각적 피드백 */
+  .add-tab:active:not(:disabled) {
+    background: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(1px);
   }
 
   .tab-content {
@@ -1068,6 +1625,35 @@
     line-height: 20px;
   }
 
+  /* 모바일에서 수정 프롬프트 표시 */
+  .revision-prompt-display {
+    margin-bottom: 12px;
+    padding: 0;
+    margin: 0 15px 12px 15px;
+  }
+
+  .revision-prompt-arrow {
+    width: 14px;
+    height: 14px;
+  }
+
+  .revision-prompt-content {
+    gap: 6px;
+    align-items: center;
+  }
+
+  .revision-prompt-text {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .prompt-expand-button {
+    font-size: 11px;
+    min-width: 18px;
+    height: 18px;
+    padding: 1px 3px;
+  }
+
   .message-meta {
     flex-direction: row;
     justify-content: space-between;
@@ -1087,12 +1673,12 @@
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: calc(100% - 40px);
-    max-width: 800px;
+    width: min(calc(100% - 32px), 880px); /* page-content 기준으로 제한 */
+    max-width: 880px; /* page-content와 동일 */
     padding: 0;
     background: transparent;
     border: none;
-    z-index: 1000;
+    z-index: 997; /* 사이드바 오버레이(998)보다 낮은 z-index */
     box-sizing: border-box;
   }
 
@@ -1231,22 +1817,37 @@
 /* 탭 네비게이션 보조 컨트롤 (문항 추가) */
 .add-tab {
   margin-left: auto;
-  background: transparent;
+  background: #3b82f6 !important; /* 배경색 강제 적용 */
   border: none;
   padding: 8px 12px;
   appearance: none;
   -webkit-appearance: none; /* Safari의 기본 화살표 제거 */
-  font-family: 'Pretendard Variable', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-weight: 600;
   font-size: 14px;
-  line-height: 20px;
-  color: #9ca3af;
+  line-height: 1.5;
+  color: #ffffff;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* 버튼이 줄어들지 않도록 고정 */
+  min-width: 100px; /* 최소 너비 보장 */
+  max-width: 100px; /* 최대 너비 제한 */
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
 }
 
-.add-tab:hover:not(:disabled) {
-  color: #343435;
+/* 마우스가 있는 디바이스에서만 hover 효과 적용 */
+@media (hover: hover) {
+  .add-tab:hover:not(:disabled) {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
 }
 
 .add-tab:disabled {

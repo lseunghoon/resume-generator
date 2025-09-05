@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import Navigation from '../components/Navigation';
@@ -12,11 +12,17 @@ const QuestionPage = ({ onSidebarRefresh }) => {
   const [question, setQuestion] = useState(''); // 직접 입력 질문
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [manualText, setManualText] = useState(''); // 직접 입력 텍스트
+  const [activeTab, setActiveTab] = useState('upload'); // 활성 탭
   const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식
   const [error, setError] = useState(''); // 에러 메시지
   const [errorKey, setErrorKey] = useState(0); // 에러 애니메이션을 위한 key
+  const [skipResumeUpload, setSkipResumeUpload] = useState(false); // 이력서 업로드 건너뛰기 상태
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // 질문 입력 필드에 대한 ref
+  const questionInputRef = useRef(null);
 
   // 인증 상태 확인 (리다이렉트 없이 상태만 체크)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,6 +43,15 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     if (location.state) {
       setUploadedFiles(location.state.uploadedFiles || []);
       setJobInfo(location.state.jobInfo || null);
+      setSkipResumeUpload(location.state.skipResumeUpload || false); // 건너뛰기 상태 설정
+      
+      // FileUploadPage에서 전달된 데이터 복원
+      if (location.state.manualText) {
+        setManualText(location.state.manualText);
+      }
+      if (location.state.activeTab) {
+        setActiveTab(location.state.activeTab);
+      }
       
       // 이전에 입력한 질문이 있으면 복원
       if (location.state.question) {
@@ -77,6 +92,15 @@ const QuestionPage = ({ onSidebarRefresh }) => {
       // 비로그인 상태에서도 콘텐츠를 볼 수 있어야 함
     }
   }, [location.state, navigate, isAuthenticated]);
+
+  // 페이지 로드 시 질문 입력 필드에 자동 포커스
+  useEffect(() => {
+    setTimeout(() => {
+      if (questionInputRef.current) {
+        questionInputRef.current.focus();
+      }
+    }, 100);
+  }, []);
 
   // 추천 질문 chip 버튼들 (Figma 디자인 기준)
   const recommendedQuestions = [
@@ -137,12 +161,26 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     if (!question.trim()) {
       setError('문항을 입력해 주세요');
       setErrorKey(prev => prev + 1);
+      
+      // 에러 발생 시 입력 필드에 포커스
+      setTimeout(() => {
+        if (questionInputRef.current) {
+          questionInputRef.current.focus();
+        }
+      }, 100);
       return;
     }
 
     if (question.trim().length < 5) {
       setError('문항은 최소 5자 이상 입력해 주세요');
       setErrorKey(prev => prev + 1);
+      
+      // 에러 발생 시 입력 필드에 포커스
+      setTimeout(() => {
+        if (questionInputRef.current) {
+          questionInputRef.current.focus();
+        }
+      }, 100);
       return;
     }
 
@@ -163,18 +201,48 @@ const QuestionPage = ({ onSidebarRefresh }) => {
         uploadedFiles: uploadedFiles || [],
         questions: [question], // 사용자가 입력한 질문
         jobDescription: jobInfo ? `${jobInfo.companyName} - ${jobInfo.jobTitle}\n\n주요업무:\n${jobInfo.mainResponsibilities}\n\n자격요건:\n${jobInfo.requirements}\n\n우대사항:\n${jobInfo.preferredQualifications}` : '',
-        resumeText: uploadedFiles && uploadedFiles.length > 0 ? '파일에서 추출된 이력서 내용입니다. 이 내용은 사용자가 업로드한 파일에서 OCR을 통해 추출된 텍스트입니다. 실제 이력서 내용이 여기에 포함되어 있으며, 이를 바탕으로 AI가 개인화된 자기소개서를 생성합니다.' : '사용자가 직접 입력한 이력서 내용입니다. 저는 다양한 프로젝트 경험을 통해 문제 해결 능력과 팀워크를 기를 수 있었습니다. 특히 웹 개발과 데이터 분석 분야에서 실무 경험을 쌓았으며, 새로운 기술을 빠르게 습득하고 적용하는 능력을 가지고 있습니다. 대학교에서 컴퓨터공학을 전공하며 알고리즘과 자료구조에 대한 깊은 이해를 바탕으로 효율적인 솔루션을 개발할 수 있습니다.',
+        resumeText: (() => {
+          const hasFiles = uploadedFiles && uploadedFiles.length > 0;
+          const hasManualText = manualText && manualText.trim();
+          
+          // 파일과 직접 입력이 모두 있는 경우 (MX-001):
+          // 프론트에서는 수동 입력만 담고, 실제 파일 텍스트는 백엔드에서 병합합니다.
+          if (hasFiles && hasManualText) {
+            return `사용자가 직접 입력한 이력서 내용입니다.\n\n${manualText.trim()}`;
+          }
+          // 파일만 있는 경우
+          if (hasFiles) {
+            return '파일에서 추출된 이력서 내용이 있습니다. 업로드된 파일에서 텍스트가 추출됩니다.';
+          }
+          // 직접 입력만 있는 경우
+          if (hasManualText) {
+            return `사용자가 직접 입력한 이력서 내용입니다.\n\n${manualText.trim()}`;
+          }
+          // 아무것도 없는 경우 (건너뛰기) - 빈 문자열 전송
+          return '';
+        })(),
         // 사용자가 직접 입력한 개별 필드들 추가
         companyName: jobInfo ? jobInfo.companyName : '',
         jobTitle: jobInfo ? jobInfo.jobTitle : '',
         mainResponsibilities: jobInfo ? jobInfo.mainResponsibilities : '',
         requirements: jobInfo ? jobInfo.requirements : '',
-        preferredQualifications: jobInfo ? jobInfo.preferredQualifications : ''
+        preferredQualifications: jobInfo ? jobInfo.preferredQualifications : '',
+        // 이력서 업로드 건너뛰기 관련 추가 정보
+        hasResume: (uploadedFiles && uploadedFiles.length > 0) || (manualText && manualText.trim()),
+        resumeSource: (() => {
+          if (uploadedFiles && uploadedFiles.length > 0) return 'file_upload';
+          if (manualText && manualText.trim()) return 'manual_input';
+          return 'none';
+        })(),
+        skipResumeUpload: skipResumeUpload
       };
       
       // 디버깅: FormData 크기 확인
       console.log('=== FormData 디버깅 ===');
       console.log('sessionData:', sessionData);
+      console.log('파일 개수:', uploadedFiles ? uploadedFiles.length : 0);
+      console.log('직접 입력 텍스트 길이:', manualText ? manualText.length : 0);
+      console.log('resumeText 길이:', sessionData.resumeText.length);
       const dataStr = JSON.stringify(sessionData);
       console.log(`JSON 데이터 크기: ${dataStr.length} bytes (${(dataStr.length / 1024 / 1024).toFixed(2)} MB)`);
       if (dataStr.length > 1024 * 1024) {
@@ -302,6 +370,8 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     navigate('/file-upload', { 
       state: { 
         uploadedFiles, // 업로드된 파일들 전달
+        manualText, // 직접 입력 텍스트 전달
+        activeTab, // 활성 탭 전달
         jobInfo, // 채용정보 전달
         question // 입력한 질문 전달
       } 
@@ -342,16 +412,14 @@ const QuestionPage = ({ onSidebarRefresh }) => {
               {/* 질문 직접 입력 */}
               <div className="question-input">
                 <Input
+                  ref={questionInputRef}
                   placeholder="예시) 직무 역량을 쌓기 위해 어떤 노력을 했나요"
                   value={question}
                   onChange={handleQuestionChange}
                   onKeyPress={handleKeyPress}
                   disabled={isGenerating}
+                  error={error}
                 />
-                {/* 에러 메시지 */}
-                {error && (
-                  <div key={`error-${errorKey}`} className="input-error-message">{error}</div>
-                )}
               </div>
 
               {/* 추천 질문 chips */}

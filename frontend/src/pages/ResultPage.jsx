@@ -8,6 +8,8 @@ import { extractSessionIdFromUrl } from '../utils/sessionUtils';
 import { supabase } from '../services/supabaseClient';
 import './ResultPage.css';
 
+const chatIcon = '/assets/chat_icon.svg';
+
 function ResultPage({ onSidebarRefresh }) {
     const location = useLocation();
     const navigate = useNavigate();
@@ -24,12 +26,101 @@ function ResultPage({ onSidebarRefresh }) {
   
     const [selectedJob, setSelectedJob] = useState('');
     const [jobInfo, setJobInfo] = useState(null); // 새로운 채용정보 입력 방식 데이터
+    const [generatedFromSkip, setGeneratedFromSkip] = useState(false); // 건너뛰기 생성 여부
     const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isRevising, setIsRevising] = useState(false);
     const [inputRef, setInputRef] = useState(null); // 입력창 포커스를 위한 ref
+    
+    // 긴 프롬프트 표시 관리
+    const [expandedPrompts, setExpandedPrompts] = useState({}); // {questionId_versionIndex: boolean}
+    
+    // 동적 탭 너비 계산을 위한 상태
+    const [tabWidths, setTabWidths] = useState({});
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    // 동적 탭 너비 계산 함수
+    const calculateTabWidths = useCallback(() => {
+        if (answers.length === 0) return;
+
+        const tabNavigation = document.querySelector('.tab-navigation');
+        if (!tabNavigation) return;
+
+        const containerWidth = tabNavigation.offsetWidth;
+        
+        // 실제 문항추가 버튼 너비 측정 (모바일 환경 고려)
+        const addButton = document.querySelector('.add-tab');
+        let addButtonWidth = 150; // 기본값
+        
+        // 화면 크기에 따른 여유분 조정
+        const isMobile = window.innerWidth <= 768;
+        const isSmallMobile = window.innerWidth <= 480;
+        
+        if (addButton) {
+            if (isSmallMobile) {
+                addButtonWidth = addButton.offsetWidth + 30; // 480px 이하: 30px 여유분
+            } else if (isMobile) {
+                addButtonWidth = addButton.offsetWidth + 25; // 768px 이하: 25px 여유분
+            } else {
+                addButtonWidth = addButton.offsetWidth + 20; // 데스크톱: 20px 여유분
+            }
+        } else {
+            // 버튼이 아직 렌더링되지 않은 경우, 화면 크기별 추정
+            if (isSmallMobile) {
+                addButtonWidth = 90; // 480px 이하: 60px + 30px 여유분
+            } else if (isMobile) {
+                addButtonWidth = 95; // 768px 이하: 70px + 25px 여유분
+            } else {
+                addButtonWidth = 140; // 데스크톱: 100px + 40px 여유분
+            }
+        }
+        
+        const gapSize = 8; // 탭 간격
+        const availableWidth = containerWidth - addButtonWidth - (gapSize * answers.length);
+        
+        // 각 탭의 너비 계산
+        const newTabWidths = {};
+        const inactiveTabCount = answers.length - 1;
+        
+        answers.forEach((_, index) => {
+            if (index === activeTab) {
+                // 선택된 탭은 사용 가능한 공간의 대부분 사용 (화면 크기별 최소값)
+                const minWidth = isSmallMobile ? 120 : (isMobile ? 150 : 200);
+                newTabWidths[index] = Math.max(availableWidth - (inactiveTabCount * 50), minWidth);
+            } else {
+                // 선택되지 않은 탭은 화면 크기별 고정 너비
+                const inactiveWidth = isSmallMobile ? 40 : (isMobile ? 45 : 50);
+                newTabWidths[index] = inactiveWidth;
+            }
+        });
+
+        setTabWidths(newTabWidths);
+        setContainerWidth(containerWidth);
+    }, [answers.length, activeTab]);
+
+    // 화면 크기 변경 감지
+    useEffect(() => {
+        const handleResize = () => {
+            calculateTabWidths();
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [calculateTabWidths]);
+
+    // 탭 변경 시 너비 재계산
+    useEffect(() => {
+        calculateTabWidths();
+    }, [calculateTabWidths]);
+
+    // 탭 클릭 핸들러 (너비 재계산 포함)
+    const handleTabClick = (index) => {
+        setActiveTab(index);
+        // 즉시 너비 재계산
+        calculateTabWidths();
+    };
 
     // SEO 메타데이터 설정
     useDocumentMeta({
@@ -105,6 +196,35 @@ function ResultPage({ onSidebarRefresh }) {
         if (!text || typeof text !== 'string') return 0;
         const cleanText = removeMarkdownBold(text);
         return cleanText.length;
+    };
+
+    // 프롬프트 축약/확장 관련 함수들
+    const PROMPT_TRUNCATE_LENGTH = 200; // 200자 이상이면 축약
+    
+    const shouldTruncatePrompt = (prompt) => {
+        return prompt && prompt.length > PROMPT_TRUNCATE_LENGTH;
+    };
+
+    const getTruncatedPrompt = (prompt) => {
+        if (!shouldTruncatePrompt(prompt)) return prompt;
+        return prompt.substring(0, PROMPT_TRUNCATE_LENGTH) + '...';
+    };
+
+    const getPromptKey = (questionId, versionIndex) => {
+        return `${questionId}_${versionIndex}`;
+    };
+
+    const togglePromptExpansion = (questionId, versionIndex) => {
+        const key = getPromptKey(questionId, versionIndex);
+        setExpandedPrompts(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const isPromptExpanded = (questionId, versionIndex) => {
+        const key = getPromptKey(questionId, versionIndex);
+        return expandedPrompts[key] || false;
     };
 
     useEffect(() => {
@@ -209,6 +329,10 @@ function ResultPage({ onSidebarRefresh }) {
                     });
                     setSelectedJob(response.jobTitle);
                 }
+                // 건너뛰기 여부 수신
+                console.log('ResultPage - generatedFromSkip from API:', response.generatedFromSkip);
+                setGeneratedFromSkip(!!response.generatedFromSkip);
+                console.log('ResultPage - generatedFromSkip state set to:', !!response.generatedFromSkip);
                 
                 // 실제 API 응답 구조에 맞게 수정
                 const answers = response.questions.map((question, index) => {
@@ -246,6 +370,7 @@ function ResultPage({ onSidebarRefresh }) {
                         answer: currentAnswer,
                         answer_history: answerHistory,
                         current_version_index: question.current_version_index || 0,
+                        revision_prompts: question.revision_prompts || [],
                         // length는 DB에 저장하지 않고 프론트에서 계산
                         length: calculateTextLength(currentAnswer),
                         has_undo: (question.current_version_index || 0) > 0,
@@ -304,28 +429,30 @@ function ResultPage({ onSidebarRefresh }) {
     };
 
     const handleRevisionRequestChange = (value) => {
-        setRevisionRequest(value);
-        
-        // textarea 높이 자동 조절
-        setTimeout(() => {
-            if (inputRef) {
-                inputRef.style.height = 'auto';
-                inputRef.style.height = Math.min(inputRef.scrollHeight, 200) + 'px';
-            }
-        }, 0);
-    };
+    setRevisionRequest(value);
+
+    // textarea 높이 자동 조절
+    setTimeout(() => {
+        if (inputRef) {
+            inputRef.style.height = 'auto';
+            inputRef.style.height = Math.min(inputRef.scrollHeight, 200) + 'px';
+        }
+    }, 0);
+};
 
     const handleSubmitRevision = async () => {
-        if (!revisionRequest.trim()) return;
-        
-        setIsRevising(true);
+    if (!revisionRequest.trim()) return;
+    
+    // 5000자 제한 체크
+    if (revisionRequest.length > 5000) {
+        alert('수정 요청은 5000자까지 입력이 가능합니다.');
+        return;
+    }
+    
+    setIsRevising(true)
         try {
             // 세션 내 질문 인덱스 사용 (1, 2, 3으로 변환)
             const questionIndex = activeTab + 1;
-            console.log('수정 요청 - 현재 탭:', activeTab);
-            console.log('수정 요청 - answers:', answers);
-            console.log('수정 요청 - 선택된 질문:', answers[activeTab]);
-            console.log('수정 요청 - 질문 인덱스:', questionIndex);
             
             if (questionIndex < 1 || questionIndex > answers.length) {
                 console.error('유효하지 않은 질문 인덱스입니다.');
@@ -356,6 +483,21 @@ function ResultPage({ onSidebarRefresh }) {
             }
         } catch (err) {
             console.error('수정 요청 실패:', err);
+            
+            // JSON 파싱 오류인 경우 특별 처리
+            if (err.message && err.message.includes('JSON')) {
+                console.error('JSON 파싱 오류 상세:', {
+                    error: err,
+                    message: err.message,
+                    stack: err.stack
+                });
+                
+                // 사용자에게 친화적인 메시지 표시
+                alert('서버 응답을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            } else {
+                // 기타 오류는 기존대로 처리
+                console.error('기타 오류:', err);
+            }
         } finally {
             setIsRevising(false);
             // 에러 발생 시에도 textarea 높이 초기화
@@ -508,9 +650,15 @@ function ResultPage({ onSidebarRefresh }) {
                                 key={index}
                                 role="tab"
                                 aria-selected={activeTab === index}
-                                className={`tab ${activeTab === index ? 'active' : ''} ${answers.length >= 2 ? 'multiple-tabs' : 'single-tab'}`}
-                                onClick={() => setActiveTab(index)}
+                                className={`tab ${activeTab === index ? 'active' : ''}`}
+                                onClick={() => handleTabClick(index)}
                                 type="button"
+                                style={{
+                                    width: tabWidths[index] ? `${tabWidths[index]}px` : 'auto',
+                                    minWidth: tabWidths[index] ? `${tabWidths[index]}px` : '60px',
+                                    maxWidth: tabWidths[index] ? `${tabWidths[index]}px` : 'none',
+                                    transition: 'none' // 너비 변화 시 transition 비활성화
+                                }}
                             >
                                 {item.question}
                             </button>
@@ -533,34 +681,101 @@ function ResultPage({ onSidebarRefresh }) {
                             {/* 과거 버전들 (가장 오래된 것부터) */}
                             {answers[activeTab].answer_history && answers[activeTab].answer_history.length > 0 && 
                              answers[activeTab].current_version_index > 0 &&
-                             answers[activeTab].answer_history.slice(0, answers[activeTab].current_version_index).map((historyAnswer, historyIndex) => (
-                                <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
-                                    <div className="message-content">
-                                        <div className="message-text">
-                                            {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
-                                                <p key={i}>{line}</p>
-                                            ))}
-                                        </div>
-                                        <div className="message-meta">
-                                            <span className="message-character-count">공백포함 {calculateTextLength(historyAnswer)}자</span>
-                                            <button 
-                                                className="message-copy-button"
-                                                onClick={() => handleCopy(activeTab, true, historyIndex)}
-                                            >
-                                                <img 
-                                                    src="/assets/content_copy.svg" 
-                                                    alt="복사" 
-                                                    className="copy-icon"
-                                                />
-                                            </button>
+                             answers[activeTab].answer_history.slice(0, answers[activeTab].current_version_index).map((historyAnswer, historyIndex) => {
+                                // 해당 버전에 맞는 수정 프롬프트 찾기
+                                // historyIndex 0 = 원본(프롬프트 없음), historyIndex 1 = version_index 1, historyIndex 2 = version_index 2
+                                const revisionPrompt = answers[activeTab].revision_prompts?.find(prompt => 
+                                    prompt.version_index === historyIndex
+                                );
+                                const promptText = revisionPrompt?.prompt || '';
+                                const questionId = answers[activeTab].id;
+                                const isExpanded = isPromptExpanded(questionId, historyIndex);
+                                const shouldTruncate = shouldTruncatePrompt(promptText);
+
+                                return (
+                                    <div key={`history-${activeTab}-${historyIndex}`} className="message-item history-message">
+                                        <div className="message-content">
+                                                                     {/* 수정 프롬프트 표시 (첫 번째 수정부터, 즉 historyIndex 1부터) */}
+                         {promptText && historyIndex >= 1 && (
+                             <div className="revision-prompt-display">
+                                 <div className="revision-prompt-content">
+                                     <img src={chatIcon} alt="수정 요청" className="revision-prompt-arrow" />
+                                     <span className="revision-prompt-text">
+                                         "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                     </span>
+                                     {shouldTruncate && (
+                                         <button 
+                                             className="prompt-expand-button"
+                                             onClick={() => togglePromptExpansion(questionId, historyIndex)}
+                                             title={isExpanded ? "접기" : "전체 보기"}
+                                         >
+                                             {isExpanded ? "↑" : "↓"}
+                                         </button>
+                                     )}
+                                 </div>
+                             </div>
+                         )}
+                                            <div className="message-text">
+                                                {removeMarkdownBold(historyAnswer).split('\n').map((line, i) => (
+                                                    <p key={i}>{line}</p>
+                                                ))}
+                                            </div>
+                                            <div className="message-meta">
+                                                <span className="message-character-count">공백포함 {calculateTextLength(historyAnswer)}자</span>
+                                                <button 
+                                                    className="message-copy-button"
+                                                    onClick={() => handleCopy(activeTab, true, historyIndex)}
+                                                >
+                                                    <img 
+                                                        src="/assets/content_copy.svg" 
+                                                        alt="복사" 
+                                                        className="copy-icon"
+                                                    />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                             })}
                             
                             {/* 현재 버전 (가장 최신) */}
                             <div className="message-item current-message">
                                 <div className="message-content">
+                                    {/* 수정 프롬프트 표시 (현재 버전에 대한 것) */}
+                                                             {answers[activeTab].revision_prompts && 
+                          answers[activeTab].revision_prompts.length > 0 && 
+                          answers[activeTab].current_version_index > 0 && (() => {
+                             const currentPrompt = answers[activeTab].revision_prompts.find(prompt => 
+                                 prompt.version_index === answers[activeTab].current_version_index
+                             );
+                             const promptText = currentPrompt?.prompt || '';
+                             const questionId = answers[activeTab].id;
+                             const versionIndex = answers[activeTab].current_version_index;
+                             const isExpanded = isPromptExpanded(questionId, versionIndex);
+                             const shouldTruncate = shouldTruncatePrompt(promptText);
+                             
+                             if (!promptText) return null;
+                             
+                             return (
+                                 <div className="revision-prompt-display">
+                                     <div className="revision-prompt-content">
+                                         <img src={chatIcon} alt="수정 요청" className="revision-prompt-arrow" />
+                                         <span className="revision-prompt-text">
+                                             "{isExpanded || !shouldTruncate ? promptText : getTruncatedPrompt(promptText)}"
+                                         </span>
+                                         {shouldTruncate && (
+                                             <button 
+                                                 className="prompt-expand-button"
+                                                 onClick={() => togglePromptExpansion(questionId, versionIndex)}
+                                                 title={isExpanded ? "접기" : "전체 보기"}
+                                             >
+                                                 {isExpanded ? "↑" : "↓"}
+                                             </button>
+                                         )}
+                                     </div>
+                                 </div>
+                             );
+                          })()}
                                     <div className="message-text">
                                         {removeMarkdownBold(answers[activeTab].answer).split('\n').map((line, i) => (
                                             <p key={i}>{line}</p>
@@ -581,12 +796,57 @@ function ResultPage({ onSidebarRefresh }) {
                                     </div>
                                 </div>
                             </div>
+                                                        {(() => {
+                              console.log('ResultPage - Rendering skip notice check:', {
+                                generatedFromSkip,
+                                shouldShow: generatedFromSkip
+                              });
+                              return generatedFromSkip && (
+                                <div className="skip-notice">
+                                  <div className="skip-notice-content">
+                                    <div className="skip-notice-icon">⚡</div>
+                                    <div className="skip-notice-text">
+                                      <p>
+                                        맞춤형 자소서를 원하시나요?
+                                        <br />
+                                        내 경험을 추가하면 완성도가 2배 높아져요!
+                                      </p>
+                                    </div>
+                                    <button 
+                                      className="add-experience-button" 
+                                      onClick={() => navigate('/job-info')}
+                                      type="button"
+                                    >
+                                      경험 추가하러 가기
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                         </div>
                     )}
 
                     {/* 고정된 수정 입력창 */}
                     <div className="chat-input-section">
                         <div className="revision-input">
+                            {/* 툴팁 아이콘 */}
+                            <div className="tooltip-container">
+                                <div className="tooltip-icon">
+                                    <img src="/assets/tooltip.svg" alt="도움말" />
+                                </div>
+                                <div className="tooltip-content">
+                                    <div className="tooltip-title">맞춤형 자소서 작성을 위한 팁!</div>
+                                    <div className="tooltip-body">
+                                        <ul>
+                                            <li>대외활동 경험 대신 OOO 인턴 경험을 중심으로 작성해줘</li>
+                                            <li>OOO 프로젝트에서 제가 맡았던 역할과 성과를 더 구체적으로 강조해줘</li>
+                                            <li>결과 부분에 대한 설명을 더 자세하게 늘려줘</li>
+                                            <li>더 확실하고 와닿는 지원동기로 작성해줘</li>
+                                            <li>두괄식으로 핵심 주장이 문단 맨 앞에 오도록 구조를 바꿔줘</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                             <textarea
                                 placeholder="수정할 내용을 입력해 주세요"
                                 value={revisionRequest || ''}
@@ -618,6 +878,10 @@ function ResultPage({ onSidebarRefresh }) {
                                     '→'
                                 )}
                             </button>
+                        </div>
+                        {/* 안내 문구 */}
+                        <div className="revision-notice">
+                            써줌은 실수를 할 수 있습니다. 수정하고 싶은 내용을 작성해 주세요.
                         </div>
                     </div>
                 </div>

@@ -37,11 +37,16 @@ def validate_session_data(data: Dict[str, Any]) -> Dict[str, Any]:
         if field not in data:
             raise ValidationError(f"필수 필드가 누락되었습니다: {field}")
         
-        if not data[field] or not isinstance(data[field], str):
+        if not isinstance(data[field], str):
+            raise ValidationError(f"필드 {field}는 문자열이어야 합니다.")
+        
+        # jobDescription은 항상 비어있지 않아야 함
+        if field == 'jobDescription' and not data[field]:
             raise ValidationError(f"필드 {field}는 비어있지 않은 문자열이어야 합니다.")
     
     # 텍스트 길이 검증
-    if len(data['resumeText'].strip()) < 20:
+    # resumeText가 비어있지 않은 경우에만 20자 최소 요구사항 적용 (건너뛰기 케이스 허용)
+    if data['resumeText'].strip() and len(data['resumeText'].strip()) < 20:
         raise ValidationError("이력서 텍스트는 최소 20자 이상이어야 합니다.")
     
     if len(data['jobDescription'].strip()) < 19:
@@ -116,8 +121,8 @@ def validate_revision_request(revision_text: str) -> str:
     if len(revision_text) < 5:
         raise ValidationError("수정 요청은 최소 5자 이상이어야 합니다.")
     
-    if len(revision_text) > 1000:
-        raise ValidationError("수정 요청은 최대 1000자까지 입력 가능합니다.")
+    if len(revision_text) > 5000:
+        raise ValidationError("수정 요청은 최대 5000자까지 입력 가능합니다.")
     
     return sanitize_text(revision_text)
 

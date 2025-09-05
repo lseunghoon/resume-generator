@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
 
   <!-- Google Tag Manager -->
@@ -11,15 +11,20 @@
     <!-- End Google Tag Manager -->
 
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/assets/logo_sseojum.svg" />
+    <!-- 파비콘 설정 -->
+    <link rel="icon" type="image/x-icon" href="%PUBLIC_URL%/assets/favicon_io/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/assets/favicon_io/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/assets/favicon_io/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/assets/favicon_io/apple-touch-icon.png" />
+    
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/assets/logo_sseojum.svg" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.sseojum.com/" />
+    
+    <!-- PWA 매니페스트 -->
+    <link rel="manifest" href="%PUBLIC_URL%/site.webmanifest" />
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -30,6 +35,61 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>써줌</title>
+    
+    <!-- Open Graph 메타 태그 (카카오톡 등 소셜 공유용) -->
+    <meta property="og:title" content="써줌 | 맞춤형 자기소개서 생성 서비스" />
+    <meta property="og:description" content="수많은 서류 합격자를 배출한 자기소개서 전문가의 노하우가 담긴 서비스. 직무 적합성을 정밀하게 분석하여 지원자의 경험과 역량을 합격에 가장 가까운 이야기로 완성합니다." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.sseojum.com" />
+    <meta property="og:image" content="https://www.sseojum.com/assets/sseojum_thumbnail.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="써줌" />
+    <meta property="og:locale" content="ko_KR" />
+    
+    <!-- Twitter 카드 메타 태그 -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="써줌 | 전문가 노하우로 완성하는 맞춤형 자기소개서" />
+    <meta name="twitter:description" content="AI 자기소개서 생성 서비스 써줌. 전문가 노하우로 3분 만에 완성하는 맞춤형 자소서. 직무 적합성 분석으로 합격률을 높여보세요!" />
+    <meta name="twitter:image" content="https://www.sseojum.com/assets/sseojum_thumbnail.png" />
+    
+    <!-- 기본 메타 태그 -->
+    <meta name="description" content="AI 자기소개서 생성 서비스 써줌. 전문가 노하우로 3분 만에 완성하는 맞춤형 자소서. 직무 적합성 분석으로 합격률을 높여보세요!" />
+    <meta name="keywords" content="자기소개서, 자소서, 자소서 작성, 취업, 합격 자소서, 써줌, 직무 적합성, 전문가 노하우, 맞춤형 자소서, 자소서 팁" />
+    <meta name="author" content="써줌" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- 구조화된 데이터 (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "써줌",
+      "alternateName": "Sseojum",
+      "description": "AI 자기소개서 생성 서비스 써줌. 전문가 노하우로 3분 만에 완성하는 맞춤형 자소서. 직무 적합성 분석으로 합격률을 높여보세요!",
+      "url": "https://www.sseojum.com",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW",
+        "description": "무료 AI 자기소개서 생성 서비스"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "써줌",
+        "url": "https://www.sseojum.com"
+      },
+      "inLanguage": "ko",
+      "isAccessibleForFree": true,
+      "screenshot": "https://www.sseojum.com/assets/sseojum_thumbnail.png",
+      "softwareVersion": "1.0",
+      "datePublished": "2024-01-01",
+      "dateModified": "2024-12-19"
+    }
+    </script>
     
     <!-- Google OAuth 스크립트 -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>

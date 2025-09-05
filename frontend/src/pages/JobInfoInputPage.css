@@ -1,9 +1,20 @@
 .job-info-input-page {
   min-height: calc(100vh - 60px); /* 헤더 높이 60px 제외 */
-  display: flex;
+  display: flex; /* 자식인 .page-content가 flex: 1을 적용받기 위해 필수 */
   flex-direction: column;
   background: white;
   transition: filter 0.3s ease;
+  /* justify-content 와 align-items 를 여기서 삭제합니다. */
+}
+
+.page-content {
+  flex: 1; /* 부모 공간을 꽉 채움 (App.css에도 있지만 명시적으로 추가) */
+  display: flex;
+  justify-content: center; /* 수직 중앙 정렬 */
+  align-items: flex-start; /* QuestionPage와 동일하게 변경 */
+  padding: 80px 20px 100px 20px; /* QuestionPage와 동일한 패딩 */
+  width: 100%;
+  position: relative; /* Navigation의 기준점 설정 */
 }
 
 .job-info-input-page.modal-open {
@@ -24,16 +35,6 @@
   filter: none;
 }
 
-.page-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  padding-top: 80px; /* 헤더 높이 60px + 여백 20px */
-  position: relative; /* Navigation의 기준점 설정 */
-}
-
 .content-wrapper {
   width: 100%;
   max-width: 600px;
@@ -42,11 +43,15 @@
 
 .form-section {
   background: white;
-  padding: 40px;
+  margin-bottom: 40px;
+  width: 100%;
 }
 
 .form-content {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Input 컴포넌트 스타일 겹침 해결 */
@@ -157,7 +162,6 @@
 
 .form-header {
   text-align: center;
-  margin-bottom: 40px;
 }
 
 .form-header h1 {

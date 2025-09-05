@@ -2,8 +2,23 @@
 sseojum(써줌) 백엔드 메인 애플리케이션 (리팩토링 버전)
 분리된 모듈들을 사용하여 깔끔하게 정리된 Flask 애플리케이션
 """
-
+import os
+import logging
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+
+# .env 파일 로드를 가장 먼저 실행합니다.
+load_dotenv()
+
+# --- 1. Flask 앱 인스턴스를 먼저 생성합니다. ---
+app = Flask(__name__)
+
+# --- 2. 로깅 설정 함수를 import 하고, 생성된 app 인스턴스를 전달하여 즉시 실행합니다. ---
+# 이 시점에서 애플리케이션의 전역 로깅 규칙이 설정됩니다.
+from utils import setup_flask_logger
+setup_flask_logger(app)
+
+# --- 3. 이제 로깅이 완벽히 설정되었으니, 나머지 모든 모듈을 import 합니다. ---
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -11,32 +26,26 @@ import traceback
 import json
 import werkzeug
 import uuid
-import os
-from dotenv import load_dotenv
 import threading
 import time
-
-# .env 파일 로드
-load_dotenv()
 
 # 설정 및 유틸리티 모듈
 from config import get_cors_config, validate_settings
 from config.settings import get_database_config, get_vertex_ai_config
 from utils import (
-    setup_flask_logger, get_logger,
+    get_logger,
     validate_session_data, validate_question_data, validate_revision_request,
     validate_session_id, validate_question_index, ValidationError,
     FileProcessingError
 )
-# FileProcessingError는 이제 서비스에서 처리됨
 
 # 새로운 서비스 모듈들
+# 이 서비스 모듈들은 import 되는 시점에 내부적으로 로거를 생성하며,
+# 이미 설정된 전역 로깅 규칙을 상속받게 됩니다.
 from services import AIService, OCRService, FileService
 from services.auth_service import AuthService
 from services.mail_service import MailService
 from supabase_models import get_session_model, get_question_model, get_user_model, get_feedback_model
-
-
 
 
 class APIError(Exception):
@@ -339,8 +348,17 @@ def register_routes(app):
                 app.logger.info(f"파일 처리 완료: {file_count}개 파일에서 총 {total_text_length}자 추출")
                 app.logger.info(f"파일에서 이력서 텍스트 추출 완료: {len(file_resume_text)}자")
                 
-                # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합
-                if resume_text and file_resume_text:
+                # 파일에서 추출한 텍스트와 사용자 입력 텍스트를 결합 (플레이스홀더 안전 처리)
+                placeholder_indicators = [
+                    "파일에서 추출된 이력서 내용이 있습니다",
+                    "파일에서 추출된 이력서 내용입니다"
+                ]
+
+                # 프론트의 안내용 플레이스홀더 텍스트가 온 경우, 합치지 말고 파일 텍스트만 사용
+                if resume_text and any(ind in resume_text for ind in placeholder_indicators):
+                    resume_text = file_resume_text
+                    app.logger.info("플레이스홀더 이력서 텍스트 감지: 파일 텍스트만 사용")
+                elif resume_text and file_resume_text:
                     resume_text = f"{resume_text}\n\n=== 파일에서 추출한 내용 ===\n{file_resume_text}"
                     app.logger.info(f"사용자 입력과 파일 내용 결합: {len(resume_text)}자")
                 elif file_resume_text:
@@ -571,12 +589,15 @@ def register_routes(app):
             
             # 세션의 질문들 조회
             questions = question_model.get_session_questions(session_id)
-            if not questions or question_index > len(questions):
+            if not questions or question_index <= 0 or question_index > len(questions):
                 raise APIError("질문을 찾을 수 없습니다.", status_code=404)
 
             # question_index는 1부터 시작하므로 0부터 시작하는 배열 인덱스로 변환
             question = questions[question_index - 1]
             history = question.get('answer_history', [])
+            if not history:
+                history = []
+            
             
             if action == 'undo':
                 current_version_index = question.get('current_version_index', 0)
@@ -614,13 +635,22 @@ def register_routes(app):
                     question=question['question'],
                     jd_text=jd_text,
                     resume_text=session.get('resume_text', ''),
-                    original_answer=history[current_version_index],
+                    original_answer=history[current_version_index] if history and 0 <= current_version_index < len(history) else '',
                     user_edit_prompt=revision_request,
                     company_info="",  # 회사 정보 사용 비활성화
                     company_name=session.get('company_name', ''),
                     job_title=session.get('job_title', ''),
                     answer_history=history
                 )
+                
+                # 수정 프롬프트를 revision_prompts 배열에 추가
+                revision_prompts = question.get('revision_prompts', [])
+                revision_prompts.append({
+                    'prompt': revision_request,
+                    'timestamp': int(time.time() * 1000),  # 밀리초 단위 타임스탬프
+                    'version_index': len(history)  # 새로 생성될 버전의 인덱스
+                })
+                question['revision_prompts'] = revision_prompts
                 
                 history.append(revised_text)
                 question['answer_history'] = history
@@ -632,8 +662,9 @@ def register_routes(app):
             # 질문 업데이트
             question_model.update_question(question['id'], question)
             
+            # 응답 반환
             return jsonify({
-                'revisedAnswer': history[question['current_version_index']],
+                'revisedAnswer': history[question['current_version_index']] if history and 0 <= question.get('current_version_index', 0) < len(history) else '',
                 'message': '자기소개서가 성공적으로 수정되었습니다.'
             }), 200
 
@@ -722,13 +753,17 @@ def register_routes(app):
             
             questions_with_answers = []
             for question in questions:
-                current_answer = question['answer_history'][question['current_version_index']] if question['answer_history'] else ''
+                answer_history = question.get('answer_history', [])
+                if not answer_history:
+                    answer_history = []
+                current_answer = answer_history[question['current_version_index']] if answer_history and 0 <= question.get('current_version_index', 0) < len(answer_history) else ''
                 questions_with_answers.append({
                     'id': question['id'],
                     'question': question['question'],
                     'answer': current_answer,
                     'answer_history': question['answer_history'],
                     'current_version_index': question['current_version_index'],
+                    'revision_prompts': question.get('revision_prompts', []),
                     'length': len(current_answer),
                     'question_number': question['question_number']
                 })
@@ -748,11 +783,26 @@ def register_routes(app):
 {session.get('preferred_qualifications', '')}
             """.strip()
 
+            # 건너뛰기 여부 판단: 실제 의미있는 이력서 데이터가 있는지 확인
+            resume_text_value = session.get('resume_text') or ''
+            
+            # 건너뛰기 케이스: 빈 문자열이거나 플레이스홀더만 있는 경우
+            is_skip_case = (
+                not resume_text_value.strip() or
+                resume_text_value.strip() in [
+                    "파일에서 추출된 이력서 내용이 있습니다. 업로드된 파일에서 텍스트가 추출됩니다.",
+                    "파일에서 추출된 이력서 내용입니다."
+                ]
+            )
+            
+            generated_from_skip = is_skip_case
+
             return jsonify({
                 'questions': questions_with_answers,
                 'jobDescription': jd_text,
                 'companyName': session['company_name'] or '',
                 'jobTitle': session['job_title'] or '',
+                'generatedFromSkip': generated_from_skip,
                 'message': '자기소개서 조회에 성공했습니다.'
             }), 200
 
@@ -914,9 +964,8 @@ def register_routes(app):
             if len(existing_questions) >= 3:
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
-            # 데이터 유효성 검증
-            if not session.get('resume_text') or not session.get('main_responsibilities'):
-                raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
+            # [수정] "건너뛰기" 케이스를 허용하기 위해 이력서/JD 유무 검증 로직을 제거합니다.
+            # 이 책임은 AIService로 넘어갑니다.
             
             # 개별 필드들을 조합하여 JD 텍스트 생성
             jd_text = f"""
@@ -937,7 +986,7 @@ def register_routes(app):
             generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=jd_text,
-                resume_text=session.get('resume_text'),
+                resume_text=session.get('resume_text', ''), # 빈 문자열이 전달될 수 있음
                 company_name=session.get('company_name') or "",
                 job_title=session.get('job_title') or ""
             )
@@ -1155,13 +1204,12 @@ def register_routes(app):
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
             # 세션 내 질문 인덱스 검증
-            if question_index < 0 or question_index >= len(session.questions):
+            if not session.questions or question_index < 0 or question_index >= len(session.questions):
                 raise APIError("질문을 찾을 수 없습니다.", status_code=404)
             
             # 세션 내 해당 인덱스의 질문 가져오기 (안전한 접근)
             question = session.questions[question_index]
             
-            app.logger.info(f"질문 번호: {question.question_number} (세션 내 인덱스: {question_index})")
             
             # 현재 답변을 히스토리에 추가
             current_answer = question.answer_history

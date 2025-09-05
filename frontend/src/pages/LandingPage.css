@@ -47,7 +47,7 @@
 }
 
 .hero-title {
-  font-size: clamp(32px, 6vw, 64px);
+  font-size: clamp(32px, 6vw, 44px);
   font-weight: 600;
   line-height: 1.2;
   margin: 0 0 40px;
@@ -56,6 +56,12 @@
   position: relative;
   z-index: 2;
   animation: fadeInUp 1s ease-out 0.2s both;
+  white-space: normal; /* PC에서 줄바꿈 숨김 */
+}
+
+/* PC에서 <br> 태그 숨김 */
+.hero-title br {
+  display: none;
 }
 
 .hero-button {
@@ -478,6 +484,18 @@
   }
 }
 
+/* 말풍선 전용 애니메이션 - X축 위치 유지 */
+@keyframes fadeInUpBubble {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* 모바일 반응형 */
 @media (max-width: 768px) {
   .hero {
@@ -613,14 +631,12 @@
 
 .cta-button:hover {
   background: #0b6fd8;
-  transform: translateY(-2px);
   box-shadow: 
     0 8px 24px rgba(13, 128, 242, 0.35),
     0 4px 8px rgba(13, 128, 242, 0.2);
 }
 
 .cta-button:active {
-  transform: translateY(0);
   box-shadow: 
     0 2px 8px rgba(13, 128, 242, 0.3),
     0 1px 3px rgba(13, 128, 242, 0.15);
@@ -646,6 +662,16 @@
     font-size: 16px;
     width: 100%;
     max-width: 300px;
+  }
+  
+  /* 모바일에서 히어로 제목 줄바꿈 */
+  .hero-title {
+    white-space: pre-line;
+  }
+  
+  /* 모바일에서 <br> 태그 표시 */
+  .hero-title br {
+    display: inline;
   }
 }
 
@@ -683,4 +709,42 @@
   75% {
     transform: translateX(4px);
   }
+}
+
+/* 100% 무료 말풍선 스타일 */
+.hero-button-container,
+.cta-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.free-bubble {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4444;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 16px;
+  box-shadow: 0 3px 8px rgba(255, 68, 68, 0.4);
+  z-index: 10;
+  line-height: 1.2;
+  white-space: nowrap;
+  animation: fadeInUpBubble 1s ease-out 0.4s both;
+}
+
+.free-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #ff4444;
 }
