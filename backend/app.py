@@ -964,9 +964,8 @@ def register_routes(app):
             if len(existing_questions) >= 3:
                 raise APIError("최대 3개의 질문까지만 추가할 수 있습니다.", status_code=400)
             
-            # 데이터 유효성 검증
-            if not session.get('resume_text') or not session.get('main_responsibilities'):
-                raise APIError("이력서나 채용공고 정보가 없어 답변을 생성할 수 없습니다.", status_code=400)
+            # [수정] "건너뛰기" 케이스를 허용하기 위해 이력서/JD 유무 검증 로직을 제거합니다.
+            # 이 책임은 AIService로 넘어갑니다.
             
             # 개별 필드들을 조합하여 JD 텍스트 생성
             jd_text = f"""
@@ -987,7 +986,7 @@ def register_routes(app):
             generated_answer, company_info = app.get_ai_service().generate_cover_letter(
                 question=validated_question['question'],
                 jd_text=jd_text,
-                resume_text=session.get('resume_text'),
+                resume_text=session.get('resume_text', ''), # 빈 문자열이 전달될 수 있음
                 company_name=session.get('company_name') or "",
                 job_title=session.get('job_title') or ""
             )

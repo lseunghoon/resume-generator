@@ -278,26 +278,38 @@ class AIService(LoggerMixin):
             custom_guideline = ""
             length_instruction = "" # [수정 1] 글자 수 제한 지시사항을 저장할 변수를 만듭니다 (기본값: 없음).
 
-            # 분류 결과에 따라 가이드라인과 글자 수 제한을 동적으로 구성
+            # "건너뛰기 모드"인지 판별 (이력서와 JD 텍스트가 모두 비어있는 경우)
+            is_skip_mode = not resume_text.strip() and not (
+                (company_name.strip() and job_title.strip()) or jd_text.strip()
+            )
+
+            # 분류 결과에 따라 가이드라인을 동적으로 구성
+            length_instruction = ""
             if question_type:
-                # 분류 성공 시: 핵심 가이드 + 특정 부록
+                # 분류 성공: 핵심 가이드 + 특정 부록
                 specific_appendix = self.APPENDICES.get(question_type, "")
                 custom_guideline = f"{self.MAIN_GUIDE}\n\n{specific_appendix}"
                 self.logger.info(f"'{question_type}' 유형으로 분류되어 해당 부록을 사용합니다.")
             else:
-                # 분류 실패 시: 핵심 가이드만 사용 + 글자 수 제한 추가
+                # 분류 실패: 핵심 가이드만 사용 + 글자 수 제한 추가
                 custom_guideline = self.MAIN_GUIDE
                 self.logger.info("질문이 특정 유형으로 분류되지 않아, 핵심 가이드라인만 사용하며 분량 제한을 적용합니다.")
-                # [수정 2] length_instruction 변수에 분량 제한 지시사항을 할당합니다.
                 length_instruction = "- **분량**: 최종 결과물은 한글 공백 포함 500자 내외로 간결하게 작성하세요.\n"
 
             company_info = f"{company_name} 회사 정보는 현재 검색 기능이 비활성화되어 있습니다."
-            cleaned_resume_text = self._clean_resume_text(resume_text)
-
-            submitted_data_section = f"### 정보 2: 지원자 제출 자료\n--- 자료 시작 ---\n{cleaned_resume_text}\n--- 자료 끝 ---" if cleaned_resume_text else "### 정보 2: 지원자 제출 자료\n자료가 제공되지 않았습니다."
+            
+            # [수정] "건너뛰기 모드"일 때와 아닐 때의 시스템 메시지와 제출 자료 섹션을 다르게 구성합니다.
+            if is_skip_mode:
+                self.logger.info("건너뛰기 모드 감지: 일반적인 답변을 생성합니다.")
+                system_message = "당신은 대한민국 최고의 자기소개서 작성 전문가입니다. 현재 지원자에 대한 구체적인 정보(이력서, 경력)가 제공되지 않았습니다. 당신의 임무는 주어진 질문에 대해, 특정 경험을 꾸며내지 않고 가장 이상적이고 보편적인 내용으로 답변을 작성하는 것입니다."
+                submitted_data_section = "### 정보 2: 지원자 제출 자료\n자료가 제공되지 않았습니다. 일반적인 내용으로 작성해야 합니다."
+            else:
+                system_message = "당신은 대한민국 최고의 자기소개서 작성 전문가입니다. 당신의 임무는 주어진 가이드라인을 **내부적으로, 그리고 엄격하게** 따라서, 지원자의 자료를 전략적으로 분석하고 최고의 답변을 생성하는 것입니다."
+                cleaned_resume_text = self._clean_resume_text(resume_text)
+                submitted_data_section = f"### 정보 2: 지원자 제출 자료\n--- 자료 시작 ---\n{cleaned_resume_text}\n--- 자료 끝 ---" if cleaned_resume_text else "### 정보 2: 지원자 제출 자료\n자료가 제공되지 않았습니다."
 
             prompt = f"""<|system|>
-당신은 대한민국 최고의 자기소개서 작성 전문가입니다. 당신의 임무는 주어진 가이드라인을 **내부적으로, 그리고 엄격하게** 따라서, 지원자의 자료를 전략적으로 분석하고 최고의 답변을 생성하는 것입니다.
+{system_message}
 |>
 <|user|>
 ### 정보 1: 자기소개서 문항
@@ -322,7 +334,7 @@ class AIService(LoggerMixin):
 - **최종 검증**: 생성할 답변에 '{company_name}' 이외의 회사 이름이 없는지 반드시 확인하라.
 
 ### 최종 결과물 지침
-- **절대 금지**: 분석 과정 노출, 메타 설명, 질문 반복, 공고 인용, '자료에 따르면' 같은 표현.
+{length_instruction}- **절대 금지**: 분석 과정 노출, 메타 설명, 질문 반복, 공고 인용, '자료에 따르면' 같은 표현.
 - **형식**: 제목, 헤더, 불릿 없이 오직 완성된 한국어 본문만 작성.
 - **완성도**: 자료 유무와 관계없이 바로 본론으로 시작하는 완성형 글을 작성.
 
