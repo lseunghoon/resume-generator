@@ -280,11 +280,14 @@ const JobInfoInputPage = ({ currentStep, setCurrentStep }) => {
       return;
     }
 
-    // 주요업무 단계 유효성 검사 성공 시 GA 이벤트 발송
+    // 주요업무 단계 유효성 검사 성공 시 GA 이벤트 발송 (eventCallback 적용)
     if (currentField === 'mainResponsibilities') {
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
-        'event': 'job_info_success'
+        'event': 'job_info_success',
+        'eventCallback': () => {
+          console.log('GTM: job_info_success 이벤트 전송 완료.');
+        }
       });
     }
 
