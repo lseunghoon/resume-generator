@@ -91,6 +91,8 @@ class SupabaseQuestion:
     def to_dict(self, question_data: Dict[str, Any]) -> Dict[str, Any]:
         """질문 데이터를 딕셔너리로 변환"""
         answerHistory = _parse_answer_history(question_data.get('answer_history', ''))
+        if not answerHistory:
+            answerHistory = []
         current_answer = answerHistory[question_data.get('current_version_index', 0)] if answerHistory and 0 <= question_data.get('current_version_index', 0) < len(answerHistory) else None
         
         return {

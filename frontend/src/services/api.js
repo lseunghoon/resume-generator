@@ -332,6 +332,7 @@ export const reviseAnswer = async (sessionId, questionIndex, revision) => {
     body: JSON.stringify({ 
       sessionId, 
       questionIndex, 
+      action: 'revise',  // action 필드 추가
       revisionRequest: revision 
     }),
   });

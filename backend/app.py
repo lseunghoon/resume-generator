@@ -589,12 +589,15 @@ def register_routes(app):
             
             # 세션의 질문들 조회
             questions = question_model.get_session_questions(session_id)
-            if not questions or question_index > len(questions):
+            if not questions or question_index <= 0 or question_index > len(questions):
                 raise APIError("질문을 찾을 수 없습니다.", status_code=404)
 
             # question_index는 1부터 시작하므로 0부터 시작하는 배열 인덱스로 변환
             question = questions[question_index - 1]
             history = question.get('answer_history', [])
+            if not history:
+                history = []
+            
             
             if action == 'undo':
                 current_version_index = question.get('current_version_index', 0)
@@ -632,7 +635,7 @@ def register_routes(app):
                     question=question['question'],
                     jd_text=jd_text,
                     resume_text=session.get('resume_text', ''),
-                    original_answer=history[current_version_index],
+                    original_answer=history[current_version_index] if history and 0 <= current_version_index < len(history) else '',
                     user_edit_prompt=revision_request,
                     company_info="",  # 회사 정보 사용 비활성화
                     company_name=session.get('company_name', ''),
@@ -661,7 +664,7 @@ def register_routes(app):
             
             # 응답 반환
             return jsonify({
-                'revisedAnswer': history[question['current_version_index']],
+                'revisedAnswer': history[question['current_version_index']] if history and 0 <= question.get('current_version_index', 0) < len(history) else '',
                 'message': '자기소개서가 성공적으로 수정되었습니다.'
             }), 200
 
@@ -750,7 +753,10 @@ def register_routes(app):
             
             questions_with_answers = []
             for question in questions:
-                current_answer = question['answer_history'][question['current_version_index']] if question['answer_history'] else ''
+                answer_history = question.get('answer_history', [])
+                if not answer_history:
+                    answer_history = []
+                current_answer = answer_history[question['current_version_index']] if answer_history and 0 <= question.get('current_version_index', 0) < len(answer_history) else ''
                 questions_with_answers.append({
                     'id': question['id'],
                     'question': question['question'],
@@ -1199,13 +1205,12 @@ def register_routes(app):
                 raise APIError("세션을 찾을 수 없습니다.", status_code=404)
             
             # 세션 내 질문 인덱스 검증
-            if question_index < 0 or question_index >= len(session.questions):
+            if not session.questions or question_index < 0 or question_index >= len(session.questions):
                 raise APIError("질문을 찾을 수 없습니다.", status_code=404)
             
             # 세션 내 해당 인덱스의 질문 가져오기 (안전한 접근)
             question = session.questions[question_index]
             
-            app.logger.info(f"질문 번호: {question.question_number} (세션 내 인덱스: {question_index})")
             
             # 현재 답변을 히스토리에 추가
             current_answer = question.answer_history

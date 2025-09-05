@@ -631,14 +631,12 @@
 
 .cta-button:hover {
   background: #0b6fd8;
-  transform: translateY(-2px);
   box-shadow: 
     0 8px 24px rgba(13, 128, 242, 0.35),
     0 4px 8px rgba(13, 128, 242, 0.2);
 }
 
 .cta-button:active {
-  transform: translateY(0);
   box-shadow: 
     0 2px 8px rgba(13, 128, 242, 0.3),
     0 1px 3px rgba(13, 128, 242, 0.15);

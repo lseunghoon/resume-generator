@@ -10,7 +10,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 40px 20px 20px 20px; /* 상단 패딩 줄임 */
+  padding: 40px 20px 120px 20px; /* 하단 패딩 추가로 입력창과 간격 확보 */
   width: 100%;
   align-content: flex-start;
 }
@@ -654,7 +654,7 @@
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 16px 12px;
+    padding: 16px 12px 120px 12px;
   }
 
   .result-header h1 {
@@ -775,13 +775,37 @@
     }
   
   .revision-input {
-    padding: 4px;
+    padding: 0;
   }
   
   .revision-input textarea {
-    padding: 10px 14px;
+    padding: 10px 14px 10px 0;
     font-size: 15px;
     min-height: 38px;
+  }
+  
+  .revision-notice {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  
+  .tooltip-icon img {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .tooltip-content {
+    min-width: 280px;
+    max-width: 320px;
+    padding: 12px;
+  }
+  
+  .tooltip-title {
+    font-size: 13px;
+  }
+  
+  .tooltip-body li {
+    font-size: 12px;
   }
   
   .send-revision {
@@ -838,7 +862,7 @@
 /* 웹뷰 최적화 */
 @media (max-width: 390px) {
   .page-content {
-    padding: 8px 8px;
+    padding: 8px 8px 120px 8px;
   }
 
   .result-header h1 {
@@ -912,13 +936,37 @@
     }
   
   .revision-input {
-    padding: 3px;
+    padding: 0;
   }
   
   .revision-input textarea {
-    padding: 8px 12px;
+    padding: 8px 12px 8px 0;
     font-size: 14px;
     min-height: 36px;
+  }
+  
+  .revision-notice {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+  
+  .tooltip-icon img {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .tooltip-content {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 10px;
+  }
+  
+  .tooltip-title {
+    font-size: 12px;
+  }
+  
+  .tooltip-body li {
+    font-size: 11px;
   }
   
   .send-revision {
@@ -1057,6 +1105,118 @@
   box-sizing: border-box;
 }
 
+/* 수정 안내 문구 */
+.revision-notice {
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* 툴팁 스타일 */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+.tooltip-icon {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooltip-icon img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) saturate(100%) invert(45%) sepia(8%) saturate(1018%) hue-rotate(185deg) brightness(95%) contrast(89%);
+}
+
+.tooltip-icon:hover {
+  opacity: 1;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 300px;
+  max-width: 400px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  margin-bottom: 8px;
+}
+
+/* 모바일/태블릿에서 툴팁을 툴팁 버튼 기준으로 위치 조정 */
+@media (max-width: 1024px) {
+  .tooltip-content {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    transform: none;
+    margin-bottom: 8px;
+    z-index: 1001;
+  }
+  
+  /* 터치 디바이스에서 툴팁 활성화 */
+  .tooltip-container:active .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.tooltip-container:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.tooltip-body ul {
+  margin: 0;
+  padding-left: 16px;
+  list-style: none;
+}
+
+.tooltip-body li {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.tooltip-body li:before {
+  content: "•";
+  color: #3b82f6;
+  font-weight: bold;
+  position: absolute;
+  left: -16px;
+}
+
+.tooltip-body li:last-child {
+  margin-bottom: 0;
+}
+
 /* 사이드바가 열린 상태일 때 입력창 너비 조정 - PC 환경에서만 */
 @media (min-width: 1200px) {
   .chat-input-section.sidebar-open {
@@ -1141,13 +1301,13 @@
   background: #ffffff;
   border: 1px solid #ebebeb;
   border-radius: 12px;
-  padding: 4px;
+  padding: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .revision-input textarea {
   flex: 1;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 0;
   border: none;
   border-radius: 8px;
   font-size: 18px;
@@ -1327,7 +1487,7 @@
 /* 통합된 모바일 반응형 디자인 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 16px 16px;
+    padding: 16px 16px 120px 16px;
   }
   
   .content-wrapper {

@@ -486,7 +486,7 @@ const LandingPage = () => {
 						<div className="cta-button-container">
 							<div className="free-bubble">100% 무료</div>
 							<button id="start-creation-btn_cta" data-tracking-id="start-funnel" onClick={handleStart} className="cta-button">
-							자소서 퀄리티 200% 높여보기
+							자소서 퀄리티 2배로 올리기
 							</button>
 						</div>
 					</div>

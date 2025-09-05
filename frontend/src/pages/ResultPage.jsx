@@ -453,10 +453,6 @@ function ResultPage({ onSidebarRefresh }) {
         try {
             // 세션 내 질문 인덱스 사용 (1, 2, 3으로 변환)
             const questionIndex = activeTab + 1;
-            console.log('수정 요청 - 현재 탭:', activeTab);
-            console.log('수정 요청 - answers:', answers);
-            console.log('수정 요청 - 선택된 질문:', answers[activeTab]);
-            console.log('수정 요청 - 질문 인덱스:', questionIndex);
             
             if (questionIndex < 1 || questionIndex > answers.length) {
                 console.error('유효하지 않은 질문 인덱스입니다.');
@@ -833,6 +829,24 @@ function ResultPage({ onSidebarRefresh }) {
                     {/* 고정된 수정 입력창 */}
                     <div className="chat-input-section">
                         <div className="revision-input">
+                            {/* 툴팁 아이콘 */}
+                            <div className="tooltip-container">
+                                <div className="tooltip-icon">
+                                    <img src="/assets/tooltip.svg" alt="도움말" />
+                                </div>
+                                <div className="tooltip-content">
+                                    <div className="tooltip-title">맞춤형 자소서 작성을 위한 팁!</div>
+                                    <div className="tooltip-body">
+                                        <ul>
+                                            <li>대외활동 경험 대신 OOO 인턴 경험을 중심으로 작성해줘</li>
+                                            <li>OOO 프로젝트에서 제가 맡았던 역할과 성과를 더 구체적으로 강조해줘</li>
+                                            <li>결과 부분에 대한 설명을 더 자세하게 늘려줘</li>
+                                            <li>더 확실하고 와닿는 지원동기로 작성해줘</li>
+                                            <li>두괄식으로 핵심 주장이 문단 맨 앞에 오도록 구조를 바꿔줘</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                             <textarea
                                 placeholder="수정할 내용을 입력해 주세요"
                                 value={revisionRequest || ''}
@@ -864,6 +878,10 @@ function ResultPage({ onSidebarRefresh }) {
                                     '→'
                                 )}
                             </button>
+                        </div>
+                        {/* 안내 문구 */}
+                        <div className="revision-notice">
+                            써줌은 실수를 할 수 있습니다. 수정하고 싶은 내용을 작성해 주세요.
                         </div>
                     </div>
                 </div>

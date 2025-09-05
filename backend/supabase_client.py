@@ -128,7 +128,7 @@ class SupabaseService:
                 
                 # 1. 사용자의 모든 세션 조회
                 result = self.client.table("sessions").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
-                sessions = result.data
+                sessions = result.data if result.data else []
                 print(f"📊 세션 조회 성공: {len(sessions)}개 세션 발견")
                 
                 # 2. 각 세션에 대해 질문이 있는지 확인하고, 질문이 없는 세션은 삭제
@@ -138,7 +138,7 @@ class SupabaseService:
                     
                     # 해당 세션의 질문 수 확인
                     questions_result = self.client.table("questions").select("id").eq("session_id", session_id).execute()
-                    question_count = len(questions_result.data)
+                    question_count = len(questions_result.data) if questions_result.data else 0
                     
                     if question_count > 0:
                         # 질문이 있는 세션은 유지
@@ -189,7 +189,7 @@ class SupabaseService:
         """세션 삭제"""
         try:
             result = self.client.table("sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
-            return len(result.data) > 0
+            return len(result.data) > 0 if result.data else False
             
         except Exception as e:
             raise Exception(f"세션 삭제 실패: {str(e)}")
@@ -299,7 +299,7 @@ class SupabaseService:
             
             # 3. 해당 세션의 남은 질문 수 확인
             remaining_questions_result = self.client.table("questions").select("id").eq("session_id", session_id).execute()
-            remaining_count = len(remaining_questions_result.data)
+            remaining_count = len(remaining_questions_result.data) if remaining_questions_result.data else 0
             
             # 4. 질문이 없으면 세션도 삭제
             if remaining_count == 0:
