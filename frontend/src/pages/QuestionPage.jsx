@@ -187,10 +187,13 @@ const QuestionPage = ({ onSidebarRefresh }) => {
     // 에러가 있으면 초기화
     setError('');
 
-    // 자기소개서 생성 유효성 검사 성공 시 GA 이벤트 발송
+    // 자기소개서 생성 유효성 검사 성공 시 GA 이벤트 발송 (eventCallback 적용)
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
-      'event': 'generate_cover_letter_success'
+      'event': 'generate_cover_letter_success',
+      'eventCallback': () => {
+        console.log('GTM: generate_cover_letter_success 이벤트 전송 완료.');
+      }
     });
 
     setIsGenerating(true);

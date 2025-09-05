@@ -235,43 +235,45 @@ const FileUploadPage = () => {
       return;
     }
 
-    // method 판단 및 이벤트 발송
+    // method 판단 및 이벤트 발송 (eventCallback으로 페이지 이동 지연)
     const method = determineMethod();
-    sendFileUploadEvent(method);
+    sendFileUploadEvent(method, () => {
+      console.log('GTM: submit_file_upload 이벤트 전송 완료. 페이지 이동을 시작합니다.');
+      
+      // 로그인 체크
+      if (!isAuthenticated) {
+        // 현재 업로드 데이터와 채용정보를 localStorage에 저장
+        try {
+          localStorage.setItem('auth_redirect_path', '/job-info');
+          localStorage.setItem('temp_file_upload', JSON.stringify({
+            jobInfo: jobInfo,
+            activeTab: activeTab,
+            uploadedFiles: uploadedFiles.map(f => ({
+              name: f.name,
+              size: f.size,
+              type: f.file?.type || 'application/pdf'
+            })), // File 객체는 직렬화할 수 없으므로 메타데이터만 저장
+            manualText: manualText,
+            timestamp: Date.now()
+          }));
+        } catch (_) {}
+        navigate('/login?next=/job-info', { replace: true });
+        return;
+      }
 
-    // 로그인 체크
-    if (!isAuthenticated) {
-      // 현재 업로드 데이터와 채용정보를 localStorage에 저장
-      try {
-        localStorage.setItem('auth_redirect_path', '/job-info');
-        localStorage.setItem('temp_file_upload', JSON.stringify({
-          jobInfo: jobInfo,
-          activeTab: activeTab,
-          uploadedFiles: uploadedFiles.map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.file?.type || 'application/pdf'
-          })), // File 객체는 직렬화할 수 없으므로 메타데이터만 저장
-          manualText: manualText,
-          timestamp: Date.now()
-        }));
-      } catch (_) {}
-      navigate('/login?next=/job-info', { replace: true });
-      return;
-    }
-
-    // 업로드된 파일들의 실제 File 객체들을 전달
-    const fileObjects = uploadedFiles.map(f => f.file);
-    
-    navigate('/question', { 
-      state: { 
-        uploadedFiles: fileObjects, // 다중 파일 배열로 전달
-        manualText: manualText, // 직접 입력 텍스트 전달
-        activeTab: activeTab, // 활성 탭 정보 전달
-        jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
-        question: location.state?.question || '', // 이전에 입력한 질문 전달
-        skipResumeUpload: !hasFiles && !hasManualText // 둘 다 없으면 건너뛰기 플래그 추가
-      } 
+      // 업로드된 파일들의 실제 File 객체들을 전달
+      const fileObjects = uploadedFiles.map(f => f.file);
+      
+      navigate('/question', { 
+        state: { 
+          uploadedFiles: fileObjects, // 다중 파일 배열로 전달
+          manualText: manualText, // 직접 입력 텍스트 전달
+          activeTab: activeTab, // 활성 탭 정보 전달
+          jobInfo, // 새로운 채용정보 입력 방식 데이터 전달
+          question: location.state?.question || '', // 이전에 입력한 질문 전달
+          skipResumeUpload: !hasFiles && !hasManualText // 둘 다 없으면 건너뛰기 플래그 추가
+        } 
+      });
     });
   };
 
@@ -379,12 +381,13 @@ const FileUploadPage = () => {
 
     const canUploadMore = uploadedFiles.length < maxFiles;
 
-  // Google Analytics 이벤트 발송 함수
-  const sendFileUploadEvent = (method) => {
+  // Google Analytics 이벤트 발송 함수 (eventCallback 적용)
+  const sendFileUploadEvent = (method, callback) => {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'submit_file_upload',
-      'method': method
+      'method': method,
+      'eventCallback': callback
     });
   };
 
