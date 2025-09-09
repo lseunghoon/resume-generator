@@ -839,7 +839,7 @@ function ResultPage({ onSidebarRefresh }) {
                                     <div className="tooltip-body">
                                         <ul>
                                             <li>대외활동 경험 대신 OOO 인턴 경험을 중심으로 작성해줘</li>
-                                            <li>OOO 프로젝트에서 제가 맡았던 역할과 성과를 더 구체적으로 강조해줘</li>
+                                            <li>OOO 프로젝트에서 내가 맡았던 역할과 성과를 더 구체적으로 강조해줘</li>
                                             <li>결과 부분에 대한 설명을 더 자세하게 늘려줘</li>
                                             <li>더 확실하고 와닿는 지원동기로 작성해줘</li>
                                             <li>두괄식으로 핵심 주장이 문단 맨 앞에 오도록 구조를 바꿔줘</li>
